@@ -1,0 +1,16 @@
+﻿{
+  "特性": {
+    "名称": "做噩梦",
+    "效果": "敌方精灵离场后，更换入场的精灵失去3能量。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "未识别为当前项目关心的伤害计算类结构化效果",
+      "ignored_text": "敌方精灵离场后，更换入场的精灵失去3能量。"
+    }
+  }
+}

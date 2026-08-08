@@ -1,0 +1,35 @@
+{
+    "特性": {
+        "名称": "壮胆",
+        "效果": "队伍存在虫系精灵，自己获得双攻+50%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "bug_member_present",
+                    "context": {
+                        "subject": "ally_team",
+                        "timing": "current"
+                    },
+                    "passive": true,
+                    "stack": {
+                        "enabled": false,
+                        "input": false,
+                        "permanent": false,
+                        "hint": ""
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values": {
+                                "atk": 0.5,
+                                "mag": 0.5
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

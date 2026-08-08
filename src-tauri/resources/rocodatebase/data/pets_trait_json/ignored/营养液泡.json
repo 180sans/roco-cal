@@ -1,0 +1,16 @@
+{
+  "特性": {
+    "名称": "营养液泡",
+    "效果": "获得增益时，额外获得层数+2。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "未识别为当前项目关心的伤害或防御类结构化效果",
+      "ignored_text": "获得增益时，额外获得层数+2。"
+    }
+  }
+}

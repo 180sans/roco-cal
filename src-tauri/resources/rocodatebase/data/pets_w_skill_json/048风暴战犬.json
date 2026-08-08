@@ -1,0 +1,206 @@
+{
+  "id": "048",
+  "name": "风暴战犬",
+  "other_name": [],
+  "elements": [
+    "火"
+  ],
+  "种族资质": 562,
+  "hp": 85,
+  "atk": 128,
+  "mag": 46,
+  "def": 101,
+  "res": 82,
+  "spd": 120,
+  "特性": "全神贯注",
+  "evolution": {
+    "stage": "mega",
+    "chain": [
+      "047护主犬",
+      "048音速犬",
+      "048风暴战犬"
+    ],
+    "prev": [
+      "048音速犬"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "火苗",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（默认）Lv.7"
+    },
+    {
+      "skill_name": "流星火雨",
+      "unlock_condition": "（默认）Lv.9"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "当头棒喝",
+      "unlock_condition": "（默认）Lv.22"
+    },
+    {
+      "skill_name": "焚烧烙印",
+      "unlock_condition": "（默认）Lv.24"
+    },
+    {
+      "skill_name": "高温回火",
+      "unlock_condition": "（默认）Lv.28"
+    },
+    {
+      "skill_name": "怒火",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "灼伤",
+      "unlock_condition": "（默认）Lv.42"
+    },
+    {
+      "skill_name": "热身",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "火云车",
+      "unlock_condition": "（默认）Lv.47"
+    },
+    {
+      "skill_name": "闪燃",
+      "unlock_condition": "（默认）Lv.49"
+    },
+    {
+      "skill_name": "拍击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰箭",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冷风",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "幻象",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "念力膨胀",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "诋毁",
+      "unlock_condition": "[技能石]诋毁"
+    },
+    {
+      "skill_name": "撕咬",
+      "unlock_condition": "[技能石]撕咬"
+    },
+    {
+      "skill_name": "跌落",
+      "unlock_condition": "[技能石]跌落"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "[技能石]贪婪"
+    },
+    {
+      "skill_name": "导电撞击",
+      "unlock_condition": "[技能石]导电撞击"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "[技能石]麻痹"
+    },
+    {
+      "skill_name": "过载回路",
+      "unlock_condition": "[技能石]过载回路"
+    },
+    {
+      "skill_name": "闪光冲击",
+      "unlock_condition": "[技能石]闪光冲击"
+    },
+    {
+      "skill_name": "吞噬",
+      "unlock_condition": "[技能石]吞噬"
+    },
+    {
+      "skill_name": "偷袭",
+      "unlock_condition": "[技能石]偷袭"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "摇篮曲",
+      "unlock_condition": "[技能石]摇篮曲"
+    }
+  ]
+}

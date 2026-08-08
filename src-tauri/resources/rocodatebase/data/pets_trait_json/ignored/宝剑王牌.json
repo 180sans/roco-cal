@@ -1,0 +1,16 @@
+{
+  "特性": {
+    "名称": "宝剑王牌",
+    "效果": "仅可使用1号和3号位技能。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "未识别为当前项目关心的伤害或防御类结构化效果",
+      "ignored_text": "仅可使用1号和3号位技能。"
+    }
+  }
+}

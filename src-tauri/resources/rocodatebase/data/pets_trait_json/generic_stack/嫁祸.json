@@ -1,0 +1,30 @@
+{
+    "特性": {
+        "名称": "嫁祸",
+        "效果": "自己每失去25%生命，连击数+2。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "lost_hp_25_percent_count",
+                    "context": {
+                        "subject": "self",
+                        "timing": "current"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "已损失的25%生命段数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "combo_plus",
+                            "value_per_stack": 2
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

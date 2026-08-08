@@ -1,0 +1,16 @@
+{
+  "特性": {
+    "名称": "化茧",
+    "效果": "受到致命伤害时，获得1层萌化，并免疫此次伤害。（最多触发2次）",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "未识别为当前项目关心的伤害或防御类结构化效果",
+      "ignored_text": "受到致命伤害时，获得1层萌化，并免疫此次伤害。（最多触发2次）"
+    }
+  }
+}

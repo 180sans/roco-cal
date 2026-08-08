@@ -1,0 +1,16 @@
+﻿{
+  "特性": {
+    "名称": "滴眼液",
+    "效果": "天气为雨天时，使用水系攻击技能时吸血50%。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "吸血未纳入当前结构化范围",
+      "ignored_text": "天气为雨天时，使用水系攻击技能时吸血50%。"
+    }
+  }
+}

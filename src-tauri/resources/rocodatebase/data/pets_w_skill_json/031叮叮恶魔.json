@@ -1,0 +1,214 @@
+{
+  "id": "031",
+  "name": "叮叮恶魔",
+  "other_name": [],
+  "elements": [
+    "恶",
+    "翼"
+  ],
+  "种族资质": 576,
+  "hp": 117,
+  "atk": 125,
+  "mag": 53,
+  "def": 103,
+  "res": 73,
+  "spd": 105,
+  "特性": "渴求",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "030恶魔叮",
+      "031叮叮恶魔"
+    ],
+    "prev": [
+      "030恶魔叮"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "魔爪",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "乘风",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "抓挠",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.8"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "鹰爪",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "撕咬",
+      "unlock_condition": "（默认）Lv.20"
+    },
+    {
+      "skill_name": "暗箱操作",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "疾风刺",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "扇风",
+      "unlock_condition": "（默认）Lv.30"
+    },
+    {
+      "skill_name": "趁火打劫",
+      "unlock_condition": "（默认）Lv.37"
+    },
+    {
+      "skill_name": "暗突袭",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "龙卷风",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰冲锋",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冰爪",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "诋毁",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "撕裂",
+      "unlock_condition": "[技能石]撕裂"
+    },
+    {
+      "skill_name": "幻象",
+      "unlock_condition": "[技能石]幻象"
+    },
+    {
+      "skill_name": "惊吓盒子",
+      "unlock_condition": "[技能石]惊吓盒子"
+    },
+    {
+      "skill_name": "降灵",
+      "unlock_condition": "[技能石]降灵"
+    },
+    {
+      "skill_name": "连续毒针",
+      "unlock_condition": "[技能石]连续毒针"
+    },
+    {
+      "skill_name": "乘胜追击",
+      "unlock_condition": "[技能石]乘胜追击"
+    },
+    {
+      "skill_name": "偷袭",
+      "unlock_condition": "[技能石]偷袭"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "热身运动",
+      "unlock_condition": "[技能石]热身运动"
+    },
+    {
+      "skill_name": "三连破",
+      "unlock_condition": "[技能石]三连破"
+    },
+    {
+      "skill_name": "快速移动",
+      "unlock_condition": "[技能石]快速移动"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "[技能石]羽化加速"
+    },
+    {
+      "skill_name": "彼岸之手",
+      "unlock_condition": "[技能石]彼岸之手"
+    },
+    {
+      "skill_name": "下注",
+      "unlock_condition": "[技能石]下注"
+    },
+    {
+      "skill_name": "血契",
+      "unlock_condition": "[技能石]血契"
+    }
+  ]
+}

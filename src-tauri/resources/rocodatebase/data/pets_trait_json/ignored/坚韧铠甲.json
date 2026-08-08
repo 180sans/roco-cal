@@ -1,0 +1,16 @@
+{
+  "特性": {
+    "名称": "坚韧铠甲",
+    "效果": "每受到1次攻击伤害，己方队伍获得1次随机奉献。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "未识别为当前项目关心的伤害或防御类结构化效果",
+      "ignored_text": "每受到1次攻击伤害，己方队伍获得1次随机奉献。"
+    }
+  }
+}

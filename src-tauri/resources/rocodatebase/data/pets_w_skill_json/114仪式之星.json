@@ -1,0 +1,242 @@
+{
+  "id": "114",
+  "name": "仪式之星",
+  "other_name": [],
+  "elements": [
+    "地",
+    "幻"
+  ],
+  "种族资质": 478,
+  "hp": 85,
+  "atk": 67,
+  "mag": 71,
+  "def": 92,
+  "res": 95,
+  "spd": 68,
+  "特性": "观星",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "113仪使者",
+      "114仪式之星",
+      "115仪式巨像",
+      "115祭礼巨像"
+    ],
+    "prev": [
+      "113仪使者"
+    ],
+    "next": [
+      "115仪式巨像"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "硬化",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "偷师",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "星轨裂变",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "热砂",
+      "unlock_condition": "（默认）Lv.4"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "（默认）Lv.9"
+    },
+    {
+      "skill_name": "落石",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "不动如山",
+      "unlock_condition": "（默认）Lv.21"
+    },
+    {
+      "skill_name": "陨石",
+      "unlock_condition": "（默认）Lv.26"
+    },
+    {
+      "skill_name": "超新星馈赠",
+      "unlock_condition": "（默认）Lv.30"
+    },
+    {
+      "skill_name": "坍缩",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "钧势",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "沙涌",
+      "unlock_condition": "（默认）Lv.39"
+    },
+    {
+      "skill_name": "流沙",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "抛石",
+      "unlock_condition": "（默认）Lv.42"
+    },
+    {
+      "skill_name": "泥浆铠甲",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "徒长",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "啮合传递",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "念力膨胀",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "多维击打",
+      "unlock_condition": "[技能石]多维击打"
+    },
+    {
+      "skill_name": "四维降解",
+      "unlock_condition": "[技能石]四维降解"
+    },
+    {
+      "skill_name": "空间压迫",
+      "unlock_condition": "[技能石]空间压迫"
+    },
+    {
+      "skill_name": "二律背反",
+      "unlock_condition": "[技能石]二律背反"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "[技能石]超维投射"
+    },
+    {
+      "skill_name": "心灵洞悉",
+      "unlock_condition": "[技能石]心灵洞悉"
+    },
+    {
+      "skill_name": "蓄势待发",
+      "unlock_condition": "[技能石]蓄势待发"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "[技能石]灵媒"
+    },
+    {
+      "skill_name": "灵光",
+      "unlock_condition": "[技能石]灵光"
+    },
+    {
+      "skill_name": "嘲弄",
+      "unlock_condition": "[技能石]嘲弄"
+    },
+    {
+      "skill_name": "恶作剧",
+      "unlock_condition": "[技能石]恶作剧"
+    },
+    {
+      "skill_name": "鼓劲",
+      "unlock_condition": "[技能石]鼓劲"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "应激反应",
+      "unlock_condition": "[技能石]应激反应"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "[技能石]防御"
+    },
+    {
+      "skill_name": "天体吸积",
+      "unlock_condition": "[技能石]天体吸积"
+    },
+    {
+      "skill_name": "星痕",
+      "unlock_condition": "[技能石]星痕"
+    }
+  ]
+}

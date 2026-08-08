@@ -1,0 +1,38 @@
+{
+    "特性": {
+        "名称": "淬炼火",
+        "效果": "入场前己方精灵每使用1次火系技能，获得攻防+10%，速度+10。（最多触发10次）",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "fire_skill_count",
+                    "context": {
+                        "subject": "ally_team",
+                        "timing": "entrance"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "max": 10,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "入场前己方精灵使用火系技能次数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values_per_stack": {
+                                "atk": 0.1,
+                                "mag": 0.1,
+                                "def": 0.1,
+                                "res": 0.1,
+                                "spd": 10
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

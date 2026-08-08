@@ -1,0 +1,30 @@
+{
+    "特性": {
+        "名称": "绝对秩序",
+        "效果": "受到非敌方系别的技能攻击时伤害-50%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "non_attacker_element",
+                    "context": {
+                        "subject": "attacker",
+                        "timing": "incoming"
+                    },
+                    "stack": {
+                        "enabled": false,
+                        "input": false,
+                        "permanent": false,
+                        "hint": ""
+                    },
+                    "effects": [
+                        {
+                            "kind": "damage_reduction",
+                            "value": 0.5
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,16 @@
+{
+  "特性": {
+    "名称": "抓到你了",
+    "效果": "自己入场时敌方获得2层冻结，使敌方获得冻结时，也会使其获得全技能能耗+1。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "未识别为当前项目关心的伤害或防御类结构化效果",
+      "ignored_text": "自己入场时敌方获得2层冻结，使敌方获得冻结时，也会使其获得全技能能耗+1。"
+    }
+  }
+}

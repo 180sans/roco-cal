@@ -1,0 +1,16 @@
+﻿{
+  "特性": {
+    "名称": "守望者",
+    "效果": "自己防御应对成功时，敌方获得萌化。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "状态施加未纳入当前结构化范围",
+      "ignored_text": "自己防御应对成功时，敌方获得萌化。"
+    }
+  }
+}

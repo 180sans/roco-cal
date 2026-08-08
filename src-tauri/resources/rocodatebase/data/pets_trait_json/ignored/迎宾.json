@@ -1,0 +1,16 @@
+﻿{
+  "特性": {
+    "名称": "迎宾",
+    "效果": "自己或其他精灵离场时，更换入场的精灵获得萌化。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "状态施加未纳入当前结构化范围",
+      "ignored_text": "自己或其他精灵离场时，更换入场的精灵获得萌化。"
+    }
+  }
+}

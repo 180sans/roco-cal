@@ -1,0 +1,35 @@
+{
+    "特性": {
+        "名称": "全神贯注",
+        "效果": "入场时，获得物攻+100%，每次行动后-20%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "first_turn",
+                    "context": {
+                        "subject": "self",
+                        "timing": "turn_start"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "当前专注层数（初始5层，每次行动后-1层）"
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "default_stack": 5,
+                            "values_per_stack": {
+                                "atk": 0.2
+                            }
+                        }
+                    ]
+                }
+            ],
+            "mega": true
+        }
+    }
+}

@@ -1,0 +1,34 @@
+{
+    "特性": {
+        "名称": "助燃",
+        "效果": "使用火系技能后，获得双攻+20%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "fire_skill",
+                    "context": {
+                        "subject": "self",
+                        "timing": "usage"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "火系技能触发次数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values_per_stack": {
+                                "atk": 0.2,
+                                "mag": 0.2
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

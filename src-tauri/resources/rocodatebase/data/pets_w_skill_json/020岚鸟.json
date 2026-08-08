@@ -1,0 +1,223 @@
+{
+  "id": "020",
+  "name": "岚鸟",
+  "other_name": [
+    "冬岚鸟"
+  ],
+  "elements": [
+    "翼"
+  ],
+  "种族资质": 570,
+  "hp": 90,
+  "atk": 128,
+  "mag": 55,
+  "def": 108,
+  "res": 74,
+  "spd": 115,
+  "特性": "顺风",
+  "evolution": {
+    "stage": 3,
+    "chain": [
+      "018雪绒鸟",
+      "019冬羽雀",
+      "020岚鸟",
+      "020霜翼领主"
+    ],
+    "prev": [
+      "019冬羽雀"
+    ],
+    "next": [
+      "020霜翼领主"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "啄击",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "先发制人",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "乘风",
+      "unlock_condition": "（默认）Lv.8"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "扇风",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（默认）Lv.18"
+    },
+    {
+      "skill_name": "闪击",
+      "unlock_condition": "（默认）Lv.21"
+    },
+    {
+      "skill_name": "风起",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "俯冲猛击",
+      "unlock_condition": "（默认）Lv.30"
+    },
+    {
+      "skill_name": "快速移动",
+      "unlock_condition": "（默认）Lv.37"
+    },
+    {
+      "skill_name": "羽刃",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "龙卷风",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰冲锋",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冷风",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "潮涌",
+      "unlock_condition": "[技能石]潮涌"
+    },
+    {
+      "skill_name": "水幕冲击",
+      "unlock_condition": "[技能石]水幕冲击"
+    },
+    {
+      "skill_name": "水刃",
+      "unlock_condition": "[技能石]水刃"
+    },
+    {
+      "skill_name": "热身运动",
+      "unlock_condition": "[技能石]热身运动"
+    },
+    {
+      "skill_name": "冰爪",
+      "unlock_condition": "[技能石]冰爪"
+    },
+    {
+      "skill_name": "冰雹",
+      "unlock_condition": "[技能石]冰雹"
+    },
+    {
+      "skill_name": "速冻",
+      "unlock_condition": "[技能石]速冻"
+    },
+    {
+      "skill_name": "撕咬",
+      "unlock_condition": "[技能石]撕咬"
+    },
+    {
+      "skill_name": "以重制重",
+      "unlock_condition": "[技能石]以重制重"
+    },
+    {
+      "skill_name": "偷袭",
+      "unlock_condition": "[技能石]偷袭"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "伺机而动",
+      "unlock_condition": "[技能石]伺机而动"
+    },
+    {
+      "skill_name": "疾风刺",
+      "unlock_condition": "[技能石]疾风刺"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "[技能石]蓄水"
+    },
+    {
+      "skill_name": "有效预防",
+      "unlock_condition": "[技能石]有效预防"
+    },
+    {
+      "skill_name": "沉溺",
+      "unlock_condition": "[技能石]沉溺"
+    }
+  ]
+}

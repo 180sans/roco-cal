@@ -1,0 +1,213 @@
+{
+  "id": "396",
+  "name": "友爱天天",
+  "other_name": [],
+  "elements": [
+    "普通"
+  ],
+  "种族资质": 446,
+  "hp": 113,
+  "atk": 26,
+  "mag": 81,
+  "def": 70,
+  "res": 80,
+  "spd": 76,
+  "特性": "友谊之果",
+  "skills": [
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "许愿星",
+      "unlock_condition": "（默认）Lv.4"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "主场优势",
+      "unlock_condition": "（默认）Lv.12"
+    },
+    {
+      "skill_name": "音爆",
+      "unlock_condition": "（默认）Lv.20"
+    },
+    {
+      "skill_name": "鼓劲",
+      "unlock_condition": "（默认）Lv.22"
+    },
+    {
+      "skill_name": "吓退",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "缓一缓",
+      "unlock_condition": "（默认）Lv.34"
+    },
+    {
+      "skill_name": "应激反应",
+      "unlock_condition": "（默认）Lv.41"
+    },
+    {
+      "skill_name": "友谊满溢",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "精神扰乱",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "拍击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "徒长",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "泥浆铠甲",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "无畏之心",
+      "unlock_condition": "[技能石]无畏之心"
+    },
+    {
+      "skill_name": "鸣叫",
+      "unlock_condition": "[技能石]鸣叫"
+    },
+    {
+      "skill_name": "飞羽",
+      "unlock_condition": "[技能石]飞羽"
+    },
+    {
+      "skill_name": "风起",
+      "unlock_condition": "[技能石]风起"
+    },
+    {
+      "skill_name": "飞吻",
+      "unlock_condition": "[技能石]飞吻"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "[技能石]甜心续航"
+    },
+    {
+      "skill_name": "生日蛋糕",
+      "unlock_condition": "[技能石]生日蛋糕"
+    },
+    {
+      "skill_name": "棘刺",
+      "unlock_condition": "[技能石]棘刺"
+    },
+    {
+      "skill_name": "倾泻",
+      "unlock_condition": "[技能石]倾泻"
+    },
+    {
+      "skill_name": "消毒法",
+      "unlock_condition": "[技能石]消毒法"
+    },
+    {
+      "skill_name": "摇篮曲",
+      "unlock_condition": "[技能石]摇篮曲"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "湮灭",
+      "unlock_condition": "[技能石]湮灭"
+    },
+    {
+      "skill_name": "可爱",
+      "unlock_condition": "[技能石]可爱"
+    },
+    {
+      "skill_name": "吹散",
+      "unlock_condition": "[技能石]吹散"
+    }
+  ],
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "396友爱天天",
+      "397友爱星飞"
+    ],
+    "prev": [],
+    "next": [
+      "397友爱星飞"
+    ]
+  }
+}

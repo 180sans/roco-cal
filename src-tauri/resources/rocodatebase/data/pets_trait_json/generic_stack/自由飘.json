@@ -1,0 +1,30 @@
+{
+    "特性": {
+        "名称": "自由飘",
+        "效果": "自己每有1层萌化，获得连击数+3。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "degeneration_count",
+                    "context": {
+                        "subject": "self",
+                        "timing": "current"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "当前萌化层数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "combo_plus",
+                            "value_per_stack": 3
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

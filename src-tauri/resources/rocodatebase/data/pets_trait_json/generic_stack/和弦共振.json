@@ -1,0 +1,33 @@
+{
+    "特性": {
+        "名称": "和弦共振",
+        "效果": "双方场上每有1种不同的印记，自己获得魔攻+50%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "mark_type_count",
+                    "context": {
+                        "subject": "all",
+                        "timing": "current"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "双方场上不同印记种类数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values_per_stack": {
+                                "mag": 0.5
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

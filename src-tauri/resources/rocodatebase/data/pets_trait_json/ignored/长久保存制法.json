@@ -1,0 +1,16 @@
+﻿{
+  "特性": {
+    "名称": "长久保存制法",
+    "效果": "自己的聚能获得选择：偷取敌方3能量。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "能量偷取未纳入当前结构化范围",
+      "ignored_text": "自己的聚能获得选择：偷取敌方3能量。"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+# Node.js
+node_modules/
+dist/
+.pnpm-store/
+
+# Tauri and Rust build output
+src-tauri/target/
+src-tauri/gen/
+
+# Bundled Python runtime (downloaded during the Windows build)
+src-tauri/resources/python/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Local app data and logs
+.runtime-data/
+*.log
+
+# Local environment settings
+.env
+.env.*
+!.env.example
+
+# Operating system files
+.DS_Store
+Thumbs.db

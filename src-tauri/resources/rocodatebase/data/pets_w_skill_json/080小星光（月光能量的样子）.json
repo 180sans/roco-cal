@@ -1,0 +1,234 @@
+{
+  "id": "080",
+  "name": "小星光（月光能量的样子）",
+  "other_name": [],
+  "elements": [
+    "电",
+    "光"
+  ],
+  "种族资质": 493,
+  "hp": 64,
+  "atk": 76,
+  "mag": 85,
+  "def": 72,
+  "res": 96,
+  "spd": 100,
+  "特性": "电流刺激",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "080小星光（月光能量的样子）",
+      "081星光狮（月光能量的样子）"
+    ],
+    "prev": [],
+    "next": [
+      "081星光狮（月光能量的样子）"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "导电撞击",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "超导",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "漫反射",
+      "unlock_condition": "（默认）Lv.7"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "离子火花",
+      "unlock_condition": "（默认）Lv.14"
+    },
+    {
+      "skill_name": "增程电池",
+      "unlock_condition": "（默认）Lv.24"
+    },
+    {
+      "skill_name": "光球",
+      "unlock_condition": "（默认）Lv.32"
+    },
+    {
+      "skill_name": "加大功率",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "天光",
+      "unlock_condition": "（默认）Lv.34"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（默认）Lv.39"
+    },
+    {
+      "skill_name": "光之矛",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "过曝",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "雷暴",
+      "unlock_condition": "（默认）Lv.49"
+    },
+    {
+      "skill_name": "强制重启",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "拍击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰冲锋",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "折线冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "触电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "贯手",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "鹰爪",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "幻象",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "闪击折返",
+      "unlock_condition": "[技能石]闪击折返"
+    },
+    {
+      "skill_name": "气波",
+      "unlock_condition": "[技能石]气波"
+    },
+    {
+      "skill_name": "影袭",
+      "unlock_condition": "[技能石]影袭"
+    },
+    {
+      "skill_name": "破绽",
+      "unlock_condition": "[技能石]破绽"
+    },
+    {
+      "skill_name": "提气",
+      "unlock_condition": "[技能石]提气"
+    },
+    {
+      "skill_name": "背袭",
+      "unlock_condition": "[技能石]背袭"
+    },
+    {
+      "skill_name": "坟场搏击",
+      "unlock_condition": "[技能石]坟场搏击"
+    },
+    {
+      "skill_name": "埋伏",
+      "unlock_condition": "[技能石]埋伏"
+    },
+    {
+      "skill_name": "阻断",
+      "unlock_condition": "[技能石]阻断"
+    },
+    {
+      "skill_name": "乘胜追击",
+      "unlock_condition": "[技能石]乘胜追击"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "伺机而动",
+      "unlock_condition": "[技能石]伺机而动"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "三连破",
+      "unlock_condition": "[技能石]三连破"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "[技能石]麻痹"
+    },
+    {
+      "skill_name": "热身运动",
+      "unlock_condition": "[技能石]热身运动"
+    },
+    {
+      "skill_name": "色散",
+      "unlock_condition": "[技能石]色散"
+    },
+    {
+      "skill_name": "透镜实验",
+      "unlock_condition": "[技能石]透镜实验"
+    }
+  ]
+}

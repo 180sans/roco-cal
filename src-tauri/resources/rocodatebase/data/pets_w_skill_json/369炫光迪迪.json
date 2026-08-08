@@ -1,0 +1,206 @@
+{
+  "id": "369",
+  "name": "炫光迪迪",
+  "other_name": [],
+  "elements": [
+    "电",
+    "光"
+  ],
+  "种族资质": 551,
+  "hp": 83,
+  "atk": 95,
+  "mag": 111,
+  "def": 52,
+  "res": 106,
+  "spd": 104,
+  "特性": "安可",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "369炫光迪迪",
+      "370霹雳迪迪"
+    ],
+    "prev": [],
+    "next": [
+      "370霹雳迪迪"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "电流",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "光球",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "超导",
+      "unlock_condition": "（默认）Lv.5"
+    },
+    {
+      "skill_name": "远程访问",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "色散",
+      "unlock_condition": "（默认）Lv.22"
+    },
+    {
+      "skill_name": "电磁偏转",
+      "unlock_condition": "（默认）Lv.24"
+    },
+    {
+      "skill_name": "电离爆破",
+      "unlock_condition": "（默认）Lv.27"
+    },
+    {
+      "skill_name": "双联脉冲",
+      "unlock_condition": "（默认）Lv.32"
+    },
+    {
+      "skill_name": "增程电池",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "落雷",
+      "unlock_condition": "（默认）Lv.39"
+    },
+    {
+      "skill_name": "踏雷",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "放晴",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "徒长",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "贯手",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "金属噪音",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "[技能石]麻痹"
+    },
+    {
+      "skill_name": "加大功率",
+      "unlock_condition": "[技能石]加大功率"
+    },
+    {
+      "skill_name": "泥巴喷射",
+      "unlock_condition": "[技能石]泥巴喷射"
+    },
+    {
+      "skill_name": "蓄势待发",
+      "unlock_condition": "[技能石]蓄势待发"
+    },
+    {
+      "skill_name": "流沙",
+      "unlock_condition": "[技能石]流沙"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "天光",
+      "unlock_condition": "[技能石]天光"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "[技能石]防反"
+    },
+    {
+      "skill_name": "耀眼",
+      "unlock_condition": "[技能石]耀眼"
+    },
+    {
+      "skill_name": "主场优势",
+      "unlock_condition": "[技能石]主场优势"
+    },
+    {
+      "skill_name": "镜像反射",
+      "unlock_condition": "[技能石]镜像反射"
+    },
+    {
+      "skill_name": "棘刺",
+      "unlock_condition": "[技能石]棘刺"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    }
+  ]
+}

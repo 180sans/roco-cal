@@ -1,0 +1,227 @@
+{
+  "id": "405",
+  "name": "夜游魔",
+  "other_name": [],
+  "elements": [
+    "翼",
+    "恶"
+  ],
+  "种族资质": 598,
+  "hp": 126,
+  "atk": 99,
+  "mag": 98,
+  "def": 97,
+  "res": 123,
+  "spd": 55,
+  "特性": "异类",
+  "skills": [
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "掠夺",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "鸣叫",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "撕咬",
+      "unlock_condition": "（默认）Lv.3"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.8"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（默认）Lv.18"
+    },
+    {
+      "skill_name": "回旋风暴",
+      "unlock_condition": "（默认）Lv.21"
+    },
+    {
+      "skill_name": "牵连",
+      "unlock_condition": "（默认）Lv.30"
+    },
+    {
+      "skill_name": "乘风",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "俯冲猛击",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "超声波",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "血契",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "龙卷风",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "撕裂",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "拍击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰冲锋",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "触电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "鹰爪",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "幻象",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "羽刃",
+      "unlock_condition": "[技能石]羽刃"
+    },
+    {
+      "skill_name": "力量吞噬",
+      "unlock_condition": "[技能石]力量吞噬"
+    },
+    {
+      "skill_name": "腐蚀酸液",
+      "unlock_condition": "[技能石]腐蚀酸液"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "[技能石]毒沼"
+    },
+    {
+      "skill_name": "鸩毒",
+      "unlock_condition": "[技能石]鸩毒"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "[技能石]毒孢子"
+    },
+    {
+      "skill_name": "虫蛊",
+      "unlock_condition": "[技能石]虫蛊"
+    },
+    {
+      "skill_name": "尾后针",
+      "unlock_condition": "[技能石]尾后针"
+    },
+    {
+      "skill_name": "埋伏",
+      "unlock_condition": "[技能石]埋伏"
+    },
+    {
+      "skill_name": "先发制人",
+      "unlock_condition": "[技能石]先发制人"
+    },
+    {
+      "skill_name": "热身运动",
+      "unlock_condition": "[技能石]热身运动"
+    },
+    {
+      "skill_name": "三连破",
+      "unlock_condition": "[技能石]三连破"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "[技能石]魔法增效"
+    },
+    {
+      "skill_name": "偷袭",
+      "unlock_condition": "[技能石]偷袭"
+    },
+    {
+      "skill_name": "快速移动",
+      "unlock_condition": "[技能石]快速移动"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    }
+  ],
+  "evolution": {
+    "stage": 3,
+    "chain": [
+      "403觅觅蝠",
+      "404翻翻蝠",
+      "405夜游魔"
+    ],
+    "prev": [
+      "404翻翻蝠"
+    ],
+    "next": []
+  }
+}

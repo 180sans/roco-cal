@@ -1,0 +1,212 @@
+{
+  "id": "311",
+  "name": "光纤兽",
+  "other_name": [],
+  "elements": [
+    "光"
+  ],
+  "种族资质": 490,
+  "hp": 83,
+  "atk": 117,
+  "mag": 54,
+  "def": 90,
+  "res": 58,
+  "spd": 88,
+  "特性": "月光审判",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "310犀角鸟",
+      "311光纤兽",
+      "312疾光千兽"
+    ],
+    "prev": [
+      "310犀角鸟"
+    ],
+    "next": [
+      "312疾光千兽"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "先发制人",
+      "unlock_condition": "（默认）Lv.5"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "漫反射",
+      "unlock_condition": "（默认）Lv.22"
+    },
+    {
+      "skill_name": "光之矛",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "三连破",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "光刃",
+      "unlock_condition": "（默认）Lv.37"
+    },
+    {
+      "skill_name": "热身运动",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "折射",
+      "unlock_condition": "（默认）Lv.39"
+    },
+    {
+      "skill_name": "快速移动",
+      "unlock_condition": "（默认）Lv.41"
+    },
+    {
+      "skill_name": "偷袭",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "猛烈撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰冲锋",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "折线冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冰爪",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "念力膨胀",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "乘风",
+      "unlock_condition": "[技能石]乘风"
+    },
+    {
+      "skill_name": "风起",
+      "unlock_condition": "[技能石]风起"
+    },
+    {
+      "skill_name": "风隐",
+      "unlock_condition": "[技能石]风隐"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "[技能石]羽化加速"
+    },
+    {
+      "skill_name": "粒子对撞",
+      "unlock_condition": "[技能石]粒子对撞"
+    },
+    {
+      "skill_name": "星轨裂变",
+      "unlock_condition": "[技能石]星轨裂变"
+    },
+    {
+      "skill_name": "崩拳",
+      "unlock_condition": "[技能石]崩拳"
+    },
+    {
+      "skill_name": "无影脚",
+      "unlock_condition": "[技能石]无影脚"
+    },
+    {
+      "skill_name": "倾泻",
+      "unlock_condition": "[技能石]倾泻"
+    },
+    {
+      "skill_name": "连续爪击",
+      "unlock_condition": "[技能石]连续爪击"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "精神扰乱",
+      "unlock_condition": "[技能石]精神扰乱"
+    },
+    {
+      "skill_name": "刺盾",
+      "unlock_condition": "[技能石]刺盾"
+    },
+    {
+      "skill_name": "透镜实验",
+      "unlock_condition": "[技能石]透镜实验"
+    }
+  ]
+}

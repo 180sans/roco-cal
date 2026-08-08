@@ -1,0 +1,234 @@
+{
+  "id": "242",
+  "name": "胆小鳗鱼",
+  "other_name": [],
+  "elements": [
+    "电",
+    "水"
+  ],
+  "种族资质": 517,
+  "hp": 68,
+  "atk": 92,
+  "mag": 92,
+  "def": 83,
+  "res": 90,
+  "spd": 92,
+  "特性": "生物电",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "242胆小鳗鱼",
+      "243闪电鳗鱼"
+    ],
+    "prev": [],
+    "next": [
+      "243闪电鳗鱼"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（默认）Lv.2"
+    },
+    {
+      "skill_name": "电弧",
+      "unlock_condition": "（默认）Lv.9"
+    },
+    {
+      "skill_name": "电离爆破",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "当头棒喝",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（默认）Lv.25"
+    },
+    {
+      "skill_name": "交叉闪电",
+      "unlock_condition": "（默认）Lv.32"
+    },
+    {
+      "skill_name": "水花四溅",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "电磁偏转",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "双联脉冲",
+      "unlock_condition": "（默认）Lv.43"
+    },
+    {
+      "skill_name": "水光冲击",
+      "unlock_condition": "（默认）Lv.45"
+    },
+    {
+      "skill_name": "泡沫幻影",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "雷暴",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "强制重启",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水弹枪",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "淤泥表皮",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "触电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风墙",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "虚化",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "潮涌",
+      "unlock_condition": "[技能石]潮涌"
+    },
+    {
+      "skill_name": "水泡盾",
+      "unlock_condition": "[技能石]水泡盾"
+    },
+    {
+      "skill_name": "远程访问",
+      "unlock_condition": "[技能石]远程访问"
+    },
+    {
+      "skill_name": "潮汐",
+      "unlock_condition": "[技能石]潮汐"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "[技能石]跺地"
+    },
+    {
+      "skill_name": "泥巴喷射",
+      "unlock_condition": "[技能石]泥巴喷射"
+    },
+    {
+      "skill_name": "硬化",
+      "unlock_condition": "[技能石]硬化"
+    },
+    {
+      "skill_name": "音爆",
+      "unlock_condition": "[技能石]音爆"
+    },
+    {
+      "skill_name": "消毒法",
+      "unlock_condition": "[技能石]消毒法"
+    },
+    {
+      "skill_name": "追打",
+      "unlock_condition": "[技能石]追打"
+    },
+    {
+      "skill_name": "耀眼",
+      "unlock_condition": "[技能石]耀眼"
+    },
+    {
+      "skill_name": "激怒",
+      "unlock_condition": "[技能石]激怒"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "血气",
+      "unlock_condition": "[技能石]血气"
+    },
+    {
+      "skill_name": "热身运动",
+      "unlock_condition": "[技能石]热身运动"
+    },
+    {
+      "skill_name": "嗜痛",
+      "unlock_condition": "[技能石]嗜痛"
+    },
+    {
+      "skill_name": "叠浪",
+      "unlock_condition": "[技能石]叠浪"
+    },
+    {
+      "skill_name": "惊雷",
+      "unlock_condition": "[技能石]惊雷"
+    }
+  ]
+}

@@ -1,0 +1,237 @@
+{
+  "id": "199",
+  "name": "气球猫",
+  "other_name": [],
+  "elements": [
+    "萌"
+  ],
+  "种族资质": 511,
+  "hp": 64,
+  "atk": 93,
+  "mag": 86,
+  "def": 90,
+  "res": 90,
+  "spd": 88,
+  "特性": "鼓气",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "198逗逗",
+      "199气球猫",
+      "200梦想三三",
+      "200奇梦咪"
+    ],
+    "prev": [
+      "198逗逗"
+    ],
+    "next": [
+      "200梦想三三"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "飞吻",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "示弱",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "超级糖果",
+      "unlock_condition": "（默认）Lv.2"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "撒娇",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "反弹",
+      "unlock_condition": "（默认）Lv.17"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "（默认）Lv.22"
+    },
+    {
+      "skill_name": "破罐破摔",
+      "unlock_condition": "（默认）Lv.26"
+    },
+    {
+      "skill_name": "生日蛋糕",
+      "unlock_condition": "（默认）Lv.28"
+    },
+    {
+      "skill_name": "月光合奏",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "赤子之心",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "退化",
+      "unlock_condition": "（默认）Lv.39"
+    },
+    {
+      "skill_name": "吨位压制",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "应激反应",
+      "unlock_condition": "（默认）Lv.49"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "徒长",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "泥浆铠甲",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "啮合传递",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "[技能石]缠丝劲"
+    },
+    {
+      "skill_name": "影袭",
+      "unlock_condition": "[技能石]影袭"
+    },
+    {
+      "skill_name": "叠势",
+      "unlock_condition": "[技能石]叠势"
+    },
+    {
+      "skill_name": "提气",
+      "unlock_condition": "[技能石]提气"
+    },
+    {
+      "skill_name": "气沉丹田",
+      "unlock_condition": "[技能石]气沉丹田"
+    },
+    {
+      "skill_name": "破防",
+      "unlock_condition": "[技能石]破防"
+    },
+    {
+      "skill_name": "交叉闪电",
+      "unlock_condition": "[技能石]交叉闪电"
+    },
+    {
+      "skill_name": "超导",
+      "unlock_condition": "[技能石]超导"
+    },
+    {
+      "skill_name": "过载回路",
+      "unlock_condition": "[技能石]过载回路"
+    },
+    {
+      "skill_name": "击鼓传花",
+      "unlock_condition": "[技能石]击鼓传花"
+    },
+    {
+      "skill_name": "防御反击",
+      "unlock_condition": "[技能石]防御反击"
+    },
+    {
+      "skill_name": "热身运动",
+      "unlock_condition": "[技能石]热身运动"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "主场优势",
+      "unlock_condition": "[技能石]主场优势"
+    },
+    {
+      "skill_name": "摇篮曲",
+      "unlock_condition": "[技能石]摇篮曲"
+    },
+    {
+      "skill_name": "电磁偏转",
+      "unlock_condition": "[技能石]电磁偏转"
+    },
+    {
+      "skill_name": "拆礼物",
+      "unlock_condition": "[技能石]拆礼物"
+    },
+    {
+      "skill_name": "通电",
+      "unlock_condition": "[技能石]通电"
+    }
+  ]
+}

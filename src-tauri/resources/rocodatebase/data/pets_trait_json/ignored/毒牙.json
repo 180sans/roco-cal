@@ -1,0 +1,15 @@
+{
+  "特性": {
+    "名称": "毒牙",
+    "效果": "使敌方获得中毒时，也会使其获得物攻-40%和速度-40。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": true,
+      "permanent": false,
+      "stacks_input": true,
+      "stack_hint": "附带弱化的中毒触发次数",
+      "note": "速度下降未纳入当前结构化字段"
+    }
+  }
+}

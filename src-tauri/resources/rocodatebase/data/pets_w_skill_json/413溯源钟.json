@@ -1,0 +1,226 @@
+{
+  "id": "413",
+  "name": "溯源钟",
+  "other_name": [],
+  "elements": [
+    "机械",
+    "幻"
+  ],
+  "种族资质": 538,
+  "hp": 85,
+  "atk": 84,
+  "mag": 86,
+  "def": 72,
+  "res": 116,
+  "spd": 95,
+  "特性": "整点报时",
+  "skills": [
+    {
+      "skill_name": "针状物",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "传感器",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "三连破",
+      "unlock_condition": "（默认）Lv.4"
+    },
+    {
+      "skill_name": "双星",
+      "unlock_condition": "（默认）Lv.9"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "轴承支撑",
+      "unlock_condition": "（默认）Lv.19"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（默认）Lv.27"
+    },
+    {
+      "skill_name": "相位移动",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "超新星馈赠",
+      "unlock_condition": "（默认）Lv.37"
+    },
+    {
+      "skill_name": "绞轮",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "啮合传递",
+      "unlock_condition": "（默认）Lv.42"
+    },
+    {
+      "skill_name": "二律背反",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "大爆炸",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "联动装置",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "许愿池",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "徒长",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "贯手",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "多维击打",
+      "unlock_condition": "[技能石]多维击打"
+    },
+    {
+      "skill_name": "钢钻",
+      "unlock_condition": "[技能石]钢钻"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "[技能石]超维投射"
+    },
+    {
+      "skill_name": "心灵洞悉",
+      "unlock_condition": "[技能石]心灵洞悉"
+    },
+    {
+      "skill_name": "疾风刺",
+      "unlock_condition": "[技能石]疾风刺"
+    },
+    {
+      "skill_name": "回旋风暴",
+      "unlock_condition": "[技能石]回旋风暴"
+    },
+    {
+      "skill_name": "伺机而动",
+      "unlock_condition": "[技能石]伺机而动"
+    },
+    {
+      "skill_name": "热身运动",
+      "unlock_condition": "[技能石]热身运动"
+    },
+    {
+      "skill_name": "风起",
+      "unlock_condition": "[技能石]风起"
+    },
+    {
+      "skill_name": "主场优势",
+      "unlock_condition": "[技能石]主场优势"
+    },
+    {
+      "skill_name": "见招拆招",
+      "unlock_condition": "[技能石]见招拆招"
+    },
+    {
+      "skill_name": "摇篮曲",
+      "unlock_condition": "[技能石]摇篮曲"
+    },
+    {
+      "skill_name": "打鼾",
+      "unlock_condition": "[技能石]打鼾"
+    },
+    {
+      "skill_name": "魔能爆",
+      "unlock_condition": "[技能石]魔能爆"
+    },
+    {
+      "skill_name": "棘刺",
+      "unlock_condition": "[技能石]棘刺"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    }
+  ],
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "412不咕钟",
+      "413溯源钟"
+    ],
+    "prev": [
+      "412不咕钟"
+    ],
+    "next": []
+  }
+}

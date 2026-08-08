@@ -1,0 +1,219 @@
+{
+  "id": "220",
+  "name": "海枝枝（翠绿纶布）",
+  "other_name": [],
+  "elements": [
+    "水",
+    "幽"
+  ],
+  "种族资质": 603,
+  "hp": 90,
+  "atk": 53,
+  "mag": 135,
+  "def": 92,
+  "res": 113,
+  "spd": 120,
+  "特性": "珊瑚骨",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "220海枝枝（翠绿纶布）"
+    ],
+    "prev": [],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "拍击",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "甩水",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "（默认）Lv.4"
+    },
+    {
+      "skill_name": "恐吓",
+      "unlock_condition": "（默认）Lv.9"
+    },
+    {
+      "skill_name": "嘲弄",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "午夜噪音",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "打湿",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "背袭",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "润泽",
+      "unlock_condition": "（默认）Lv.34"
+    },
+    {
+      "skill_name": "涌泉",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "水波术",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "天洪",
+      "unlock_condition": "（默认）Lv.45"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "荆棘爪",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火爪",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水弹枪",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冷风",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "磁干扰",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "尾后针",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "贯手",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "黑手",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "针状物",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "汲取",
+      "unlock_condition": "[技能石]汲取"
+    },
+    {
+      "skill_name": "根吸收",
+      "unlock_condition": "[技能石]根吸收"
+    },
+    {
+      "skill_name": "虫鸣",
+      "unlock_condition": "[技能石]虫鸣"
+    },
+    {
+      "skill_name": "消毒法",
+      "unlock_condition": "[技能石]消毒法"
+    },
+    {
+      "skill_name": "突袭",
+      "unlock_condition": "[技能石]突袭"
+    },
+    {
+      "skill_name": "追打",
+      "unlock_condition": "[技能石]追打"
+    },
+    {
+      "skill_name": "打鼾",
+      "unlock_condition": "[技能石]打鼾"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "伺机而动",
+      "unlock_condition": "[技能石]伺机而动"
+    },
+    {
+      "skill_name": "摇篮曲",
+      "unlock_condition": "[技能石]摇篮曲"
+    },
+    {
+      "skill_name": "精神扰乱",
+      "unlock_condition": "[技能石]精神扰乱"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "[技能石]防御"
+    },
+    {
+      "skill_name": "落雨",
+      "unlock_condition": "[技能石]落雨"
+    },
+    {
+      "skill_name": "灵光",
+      "unlock_condition": "[技能石]灵光"
+    },
+    {
+      "skill_name": "有效预防",
+      "unlock_condition": "[技能石]有效预防"
+    },
+    {
+      "skill_name": "清洗",
+      "unlock_condition": "[技能石]清洗"
+    },
+    {
+      "skill_name": "速冻",
+      "unlock_condition": "[技能石]速冻"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+﻿{
+  "特性": {
+    "名称": "与星星同行",
+    "效果": "攻击时，将敌方所有印记变为相同层数的星陨印记。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "印记转换未纳入当前结构化范围",
+      "ignored_text": "攻击时，将敌方所有印记变为相同层数的星陨印记。"
+    }
+  }
+}

@@ -1,0 +1,235 @@
+{
+  "id": "402",
+  "name": "邪眼巨魔",
+  "other_name": [],
+  "elements": [
+    "恶",
+    "虫"
+  ],
+  "种族资质": 621,
+  "hp": 111,
+  "atk": 98,
+  "mag": 99,
+  "def": 99,
+  "res": 119,
+  "spd": 95,
+  "特性": "瞳中倒影",
+  "skills": [
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "虫网",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "啃咬",
+      "unlock_condition": "（默认）Lv.5"
+    },
+    {
+      "skill_name": "伪造账单",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "困兽",
+      "unlock_condition": "（默认）Lv.14"
+    },
+    {
+      "skill_name": "虫群智慧",
+      "unlock_condition": "（默认）Lv.21"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（默认）Lv.25"
+    },
+    {
+      "skill_name": "先发制人",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "欺诈契约",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "虫蛊",
+      "unlock_condition": "（默认）Lv.42"
+    },
+    {
+      "skill_name": "骗局",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "拟寄生",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "灾厄",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "虫击",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水泡盾",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "淤泥表皮",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "尾后针",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "虚化",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "诋毁",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "虫鸣",
+      "unlock_condition": "[技能石]虫鸣"
+    },
+    {
+      "skill_name": "虚假破产",
+      "unlock_condition": "[技能石]虚假破产"
+    },
+    {
+      "skill_name": "彼岸之手",
+      "unlock_condition": "[技能石]彼岸之手"
+    },
+    {
+      "skill_name": "虫结阵",
+      "unlock_condition": "[技能石]虫结阵"
+    },
+    {
+      "skill_name": "炎打",
+      "unlock_condition": "[技能石]炎打"
+    },
+    {
+      "skill_name": "吹火",
+      "unlock_condition": "[技能石]吹火"
+    },
+    {
+      "skill_name": "淬火",
+      "unlock_condition": "[技能石]淬火"
+    },
+    {
+      "skill_name": "魔能爆",
+      "unlock_condition": "[技能石]魔能爆"
+    },
+    {
+      "skill_name": "垂死反击",
+      "unlock_condition": "[技能石]垂死反击"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "[技能石]休息回复"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "有效预防",
+      "unlock_condition": "[技能石]有效预防"
+    },
+    {
+      "skill_name": "嗜痛",
+      "unlock_condition": "[技能石]嗜痛"
+    },
+    {
+      "skill_name": "恶意逃离",
+      "unlock_condition": "[技能石]恶意逃离"
+    },
+    {
+      "skill_name": "吓退",
+      "unlock_condition": "[技能石]吓退"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "[技能石]防御"
+    },
+    {
+      "skill_name": "纺纱",
+      "unlock_condition": "[技能石]纺纱"
+    },
+    {
+      "skill_name": "假冒",
+      "unlock_condition": "[技能石]假冒"
+    }
+  ],
+  "evolution": {
+    "stage": 3,
+    "chain": [
+      "400瑰眼仔",
+      "401耳翎瑰魅",
+      "402邪眼巨魔"
+    ],
+    "prev": [
+      "401耳翎瑰魅"
+    ],
+    "next": []
+  }
+}

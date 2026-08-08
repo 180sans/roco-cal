@@ -1,0 +1,221 @@
+{
+  "id": "222",
+  "name": "库多西",
+  "other_name": [],
+  "elements": [
+    "机械",
+    "地"
+  ],
+  "种族资质": 459,
+  "hp": 85,
+  "atk": 98,
+  "mag": 34,
+  "def": 109,
+  "res": 93,
+  "spd": 40,
+  "特性": "定向精炼",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "221多西",
+      "222库多西",
+      "223波多西"
+    ],
+    "prev": [
+      "221多西"
+    ],
+    "next": [
+      "223波多西"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "先发制人",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "啮合传递",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "能量守恒",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "齿轮扭矩",
+      "unlock_condition": "（默认）Lv.8"
+    },
+    {
+      "skill_name": "轴承支撑",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "鸣沙陷阱",
+      "unlock_condition": "（默认）Lv.17"
+    },
+    {
+      "skill_name": "蓄势待发",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "壁垒",
+      "unlock_condition": "（默认）Lv.24"
+    },
+    {
+      "skill_name": "钢钻",
+      "unlock_condition": "（默认）Lv.26"
+    },
+    {
+      "skill_name": "齿轮切开",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "岩土暴击",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "地震",
+      "unlock_condition": "（默认）Lv.37"
+    },
+    {
+      "skill_name": "地刺",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水泡盾",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽翼庇护",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "金属噪音",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "不动如山",
+      "unlock_condition": "[技能石]不动如山"
+    },
+    {
+      "skill_name": "遁地",
+      "unlock_condition": "[技能石]遁地"
+    },
+    {
+      "skill_name": "彼岸之手",
+      "unlock_condition": "[技能石]彼岸之手"
+    },
+    {
+      "skill_name": "虚假破产",
+      "unlock_condition": "[技能石]虚假破产"
+    },
+    {
+      "skill_name": "重击",
+      "unlock_condition": "[技能石]重击"
+    },
+    {
+      "skill_name": "连续爪击",
+      "unlock_condition": "[技能石]连续爪击"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "棘刺",
+      "unlock_condition": "[技能石]棘刺"
+    },
+    {
+      "skill_name": "嗜痛",
+      "unlock_condition": "[技能石]嗜痛"
+    },
+    {
+      "skill_name": "有效预防",
+      "unlock_condition": "[技能石]有效预防"
+    },
+    {
+      "skill_name": "吓退",
+      "unlock_condition": "[技能石]吓退"
+    },
+    {
+      "skill_name": "刺盾",
+      "unlock_condition": "[技能石]刺盾"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "[技能石]防御"
+    },
+    {
+      "skill_name": "相位移动",
+      "unlock_condition": "[技能石]相位移动"
+    },
+    {
+      "skill_name": "沙石阵",
+      "unlock_condition": "[技能石]沙石阵"
+    },
+    {
+      "skill_name": "绞轮",
+      "unlock_condition": "[技能石]绞轮"
+    }
+  ]
+}

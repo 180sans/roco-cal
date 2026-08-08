@@ -1,0 +1,230 @@
+{
+  "id": "426",
+  "name": "炮米花",
+  "other_name": [],
+  "elements": [
+    "草",
+    "火"
+  ],
+  "种族资质": 580,
+  "hp": 107,
+  "atk": 93,
+  "mag": 95,
+  "def": 105,
+  "res": 105,
+  "spd": 75,
+  "特性": "爆裂玉米",
+  "skills": [
+    {
+      "skill_name": "双响炮",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "怒火",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "种子弹",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "火焰箭",
+      "unlock_condition": "（默认）Lv.2"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "叶绿光束",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "炎枪",
+      "unlock_condition": "（默认）Lv.21"
+    },
+    {
+      "skill_name": "花炮",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "孢子爆散",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "闪燃",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "针刺射击",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "撒花",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "暖气",
+      "unlock_condition": "（默认）Lv.45"
+    },
+    {
+      "skill_name": "抽枝",
+      "unlock_condition": "（默认）Lv.47"
+    },
+    {
+      "skill_name": "爆裂飞弹",
+      "unlock_condition": "（默认）Lv.49"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰冲锋",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冷风",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "盛开",
+      "unlock_condition": "[技能石]盛开"
+    },
+    {
+      "skill_name": "孢子",
+      "unlock_condition": "[技能石]孢子"
+    },
+    {
+      "skill_name": "高温回火",
+      "unlock_condition": "[技能石]高温回火"
+    },
+    {
+      "skill_name": "天火",
+      "unlock_condition": "[技能石]天火"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "[技能石]引燃"
+    },
+    {
+      "skill_name": "龙炮",
+      "unlock_condition": "[技能石]龙炮"
+    },
+    {
+      "skill_name": "绵里藏针",
+      "unlock_condition": "[技能石]绵里藏针"
+    },
+    {
+      "skill_name": "龙吟",
+      "unlock_condition": "[技能石]龙吟"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "[技能石]透射"
+    },
+    {
+      "skill_name": "光球",
+      "unlock_condition": "[技能石]光球"
+    },
+    {
+      "skill_name": "能量炮",
+      "unlock_condition": "[技能石]能量炮"
+    },
+    {
+      "skill_name": "音爆",
+      "unlock_condition": "[技能石]音爆"
+    },
+    {
+      "skill_name": "偷袭",
+      "unlock_condition": "[技能石]偷袭"
+    },
+    {
+      "skill_name": "阻断",
+      "unlock_condition": "[技能石]阻断"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "急中生智",
+      "unlock_condition": "[技能石]急中生智"
+    }
+  ],
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "425苞米仔",
+      "426炮米花"
+    ],
+    "prev": [
+      "425苞米仔"
+    ],
+    "next": []
+  }
+}

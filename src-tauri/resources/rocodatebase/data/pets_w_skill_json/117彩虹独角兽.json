@@ -1,0 +1,226 @@
+{
+  "id": "117",
+  "name": "彩虹独角兽",
+  "other_name": [],
+  "elements": [
+    "光"
+  ],
+  "种族资质": 643,
+  "hp": 99,
+  "atk": 78,
+  "mag": 192,
+  "def": 77,
+  "res": 92,
+  "spd": 105,
+  "特性": "夺目",
+  "evolution": {
+    "stage": "mega",
+    "chain": [
+      "116小独角兽",
+      "117白金独角兽",
+      "117彩虹独角兽"
+    ],
+    "prev": [
+      "117白金独角兽"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "许愿星",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（默认）Lv.9"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "（默认）Lv.18"
+    },
+    {
+      "skill_name": "天光",
+      "unlock_condition": "（默认）Lv.27"
+    },
+    {
+      "skill_name": "伺机而动",
+      "unlock_condition": "（默认）Lv.28"
+    },
+    {
+      "skill_name": "过曝",
+      "unlock_condition": "（默认）Lv.30"
+    },
+    {
+      "skill_name": "漫反射",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "折射",
+      "unlock_condition": "（默认）Lv.37"
+    },
+    {
+      "skill_name": "快速移动",
+      "unlock_condition": "（默认）Lv.39"
+    },
+    {
+      "skill_name": "突袭",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "阻断",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "荆棘爪",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火爪",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "肥皂泡",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "折线冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冰爪",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "磁干扰",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "尾后针",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "贯手",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "黑手",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "针状物",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "回旋风暴",
+      "unlock_condition": "[技能石]回旋风暴"
+    },
+    {
+      "skill_name": "翼击",
+      "unlock_condition": "[技能石]翼击"
+    },
+    {
+      "skill_name": "龙卷风",
+      "unlock_condition": "[技能石]龙卷风"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "[技能石]羽化加速"
+    },
+    {
+      "skill_name": "冷风",
+      "unlock_condition": "[技能石]冷风"
+    },
+    {
+      "skill_name": "极寒领域",
+      "unlock_condition": "[技能石]极寒领域"
+    },
+    {
+      "skill_name": "速冻",
+      "unlock_condition": "[技能石]速冻"
+    },
+    {
+      "skill_name": "超导",
+      "unlock_condition": "[技能石]超导"
+    },
+    {
+      "skill_name": "倾泻",
+      "unlock_condition": "[技能石]倾泻"
+    },
+    {
+      "skill_name": "追打",
+      "unlock_condition": "[技能石]追打"
+    },
+    {
+      "skill_name": "耀眼",
+      "unlock_condition": "[技能石]耀眼"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "[技能石]麻痹"
+    },
+    {
+      "skill_name": "叶绿光束",
+      "unlock_condition": "[技能石]叶绿光束"
+    },
+    {
+      "skill_name": "根吸收",
+      "unlock_condition": "[技能石]根吸收"
+    },
+    {
+      "skill_name": "远程访问",
+      "unlock_condition": "[技能石]远程访问"
+    },
+    {
+      "skill_name": "气泡",
+      "unlock_condition": "[技能石]气泡"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "[技能石]蓄水"
+    }
+  ]
+}

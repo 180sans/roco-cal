@@ -1,0 +1,34 @@
+{
+    "特性": {
+        "名称": "指挥家",
+        "效果": "应对成功后，永久获得双攻+30%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "handle_success_count",
+                    "context": {
+                        "subject": "self",
+                        "timing": "after_handle"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": true,
+                        "hint": "应对成功次数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values_per_stack": {
+                                "atk": 0.3,
+                                "mag": 0.3
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

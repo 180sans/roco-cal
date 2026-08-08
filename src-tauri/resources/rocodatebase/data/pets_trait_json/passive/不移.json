@@ -1,0 +1,36 @@
+{
+    "特性": {
+        "名称": "不移",
+        "效果": "携带的无额外效果的攻击技能，威力+30%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "skill_no_effect",
+                    "context": {
+                        "subject": "self",
+                        "timing": "default"
+                    },
+                    "passive": true,
+                    "stack": {
+                        "enabled": false,
+                        "input": false,
+                        "permanent": true,
+                        "hint": ""
+                    },
+                    "effects": [
+                        {
+                            "kind": "power_multiplier",
+                            "filters": {
+                                "skill_effect": [
+                                    "false"
+                                ]
+                            },
+                            "value": 0.3
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

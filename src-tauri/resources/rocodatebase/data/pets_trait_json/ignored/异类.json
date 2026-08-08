@@ -1,0 +1,16 @@
+﻿{
+  "特性": {
+    "名称": "异类",
+    "效果": "携带的翼系攻击技能获得选择：能耗+1，攻击时吸血50%。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "能耗与吸血未纳入当前结构化范围",
+      "ignored_text": "携带的翼系攻击技能获得选择：能耗+1，攻击时吸血50%。"
+    }
+  }
+}

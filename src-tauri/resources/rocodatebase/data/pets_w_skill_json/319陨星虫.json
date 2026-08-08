@@ -1,0 +1,230 @@
+{
+  "id": "319",
+  "name": "陨星虫",
+  "other_name": [],
+  "elements": [
+    "虫"
+  ],
+  "种族资质": 509,
+  "hp": 81,
+  "atk": 78,
+  "mag": 78,
+  "def": 76,
+  "res": 96,
+  "spd": 100,
+  "特性": "性格",
+  "evolution": {
+    "stage": 3,
+    "chain": [
+      "317星尘虫",
+      "318落星虫",
+      "319陨星虫"
+    ],
+    "prev": [
+      "318落星虫"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "啃咬",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "耀眼",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "飞断",
+      "unlock_condition": "（默认）Lv.7"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（默认）Lv.8"
+    },
+    {
+      "skill_name": "虫刺",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（默认）Lv.19"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "（默认）Lv.22"
+    },
+    {
+      "skill_name": "网缚",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "食腐",
+      "unlock_condition": "（默认）Lv.30"
+    },
+    {
+      "skill_name": "先发制人",
+      "unlock_condition": "（默认）Lv.34"
+    },
+    {
+      "skill_name": "虫结阵",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "虫蛊",
+      "unlock_condition": "（默认）Lv.39"
+    },
+    {
+      "skill_name": "虫群",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "吓退",
+      "unlock_condition": "（默认）Lv.41"
+    },
+    {
+      "skill_name": "虫击",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水泡盾",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "淤泥表皮",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "尾后针",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽翼庇护",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "虚化",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "泥巴喷射",
+      "unlock_condition": "[技能石]泥巴喷射"
+    },
+    {
+      "skill_name": "落石",
+      "unlock_condition": "[技能石]落石"
+    },
+    {
+      "skill_name": "陨石",
+      "unlock_condition": "[技能石]陨石"
+    },
+    {
+      "skill_name": "石肤术",
+      "unlock_condition": "[技能石]石肤术"
+    },
+    {
+      "skill_name": "壁垒",
+      "unlock_condition": "[技能石]壁垒"
+    },
+    {
+      "skill_name": "硬化",
+      "unlock_condition": "[技能石]硬化"
+    },
+    {
+      "skill_name": "刺盾",
+      "unlock_condition": "[技能石]刺盾"
+    },
+    {
+      "skill_name": "粒子对撞",
+      "unlock_condition": "[技能石]粒子对撞"
+    },
+    {
+      "skill_name": "坍缩",
+      "unlock_condition": "[技能石]坍缩"
+    },
+    {
+      "skill_name": "天旋地转",
+      "unlock_condition": "[技能石]天旋地转"
+    },
+    {
+      "skill_name": "乘胜追击",
+      "unlock_condition": "[技能石]乘胜追击"
+    },
+    {
+      "skill_name": "追打",
+      "unlock_condition": "[技能石]追打"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "有效预防",
+      "unlock_condition": "[技能石]有效预防"
+    },
+    {
+      "skill_name": "虫群过境",
+      "unlock_condition": "[技能石]虫群过境"
+    },
+    {
+      "skill_name": "热身运动",
+      "unlock_condition": "[技能石]热身运动"
+    }
+  ]
+}

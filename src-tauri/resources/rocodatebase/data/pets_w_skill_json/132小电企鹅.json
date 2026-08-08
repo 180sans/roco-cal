@@ -1,0 +1,218 @@
+{
+  "id": "132",
+  "name": "小电企鹅",
+  "other_name": [],
+  "elements": [
+    "冰",
+    "电"
+  ],
+  "种族资质": 467,
+  "hp": 75,
+  "atk": 45,
+  "mag": 101,
+  "def": 59,
+  "res": 87,
+  "spd": 100,
+  "特性": "超负荷",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "132小电企鹅",
+      "133电企鹅"
+    ],
+    "prev": [],
+    "next": [
+      "133电企鹅"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "风吹雪",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "超导加速",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "聒噪",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "寒风吹",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "电流",
+      "unlock_condition": "（默认）Lv.22"
+    },
+    {
+      "skill_name": "霜冻",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "冰锋横扫",
+      "unlock_condition": "（默认）Lv.28"
+    },
+    {
+      "skill_name": "增程电池",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "感电",
+      "unlock_condition": "（默认）Lv.42"
+    },
+    {
+      "skill_name": "雾气环绕",
+      "unlock_condition": "（默认）Lv.47"
+    },
+    {
+      "skill_name": "落雷",
+      "unlock_condition": "（默认）Lv.49"
+    },
+    {
+      "skill_name": "极寒领域",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "触电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽翼庇护",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "金属噪音",
+      "unlock_condition": "[技能石]金属噪音"
+    },
+    {
+      "skill_name": "杠杆置换",
+      "unlock_condition": "[技能石]杠杆置换"
+    },
+    {
+      "skill_name": "肥皂泡",
+      "unlock_condition": "[技能石]肥皂泡"
+    },
+    {
+      "skill_name": "摇篮曲",
+      "unlock_condition": "[技能石]摇篮曲"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "[技能石]魔法增效"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "突袭",
+      "unlock_condition": "[技能石]突袭"
+    },
+    {
+      "skill_name": "阻断",
+      "unlock_condition": "[技能石]阻断"
+    },
+    {
+      "skill_name": "强制重启",
+      "unlock_condition": "[技能石]强制重启"
+    },
+    {
+      "skill_name": "许愿星",
+      "unlock_condition": "[技能石]许愿星"
+    },
+    {
+      "skill_name": "音爆",
+      "unlock_condition": "[技能石]音爆"
+    },
+    {
+      "skill_name": "过载回路",
+      "unlock_condition": "[技能石]过载回路"
+    },
+    {
+      "skill_name": "冰点",
+      "unlock_condition": "[技能石]冰点"
+    },
+    {
+      "skill_name": "埋伏",
+      "unlock_condition": "[技能石]埋伏"
+    },
+    {
+      "skill_name": "寒潮",
+      "unlock_condition": "[技能石]寒潮"
+    },
+    {
+      "skill_name": "友谊满溢",
+      "unlock_condition": "[技能石]友谊满溢"
+    }
+  ]
+}

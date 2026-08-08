@@ -1,0 +1,211 @@
+{
+  "id": "424",
+  "name": "徘徊爪爪",
+  "other_name": [],
+  "elements": [
+    "萌",
+    "毒"
+  ],
+  "种族资质": 516,
+  "hp": 95,
+  "atk": 78,
+  "mag": 14,
+  "def": 109,
+  "res": 95,
+  "spd": 125,
+  "特性": "猫精灵的礼物",
+  "skills": [
+    {
+      "skill_name": "鞭打",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "毒针",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.7"
+    },
+    {
+      "skill_name": "超级糖果",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.20"
+    },
+    {
+      "skill_name": "示弱",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "爆米花爆破",
+      "unlock_condition": "（默认）Lv.28"
+    },
+    {
+      "skill_name": "重金属粉尘",
+      "unlock_condition": "（默认）Lv.30"
+    },
+    {
+      "skill_name": "毒誓",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "赤子之心",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "拆礼物",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "毒囊",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冷风",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "鹰爪",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "幻象",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "诋毁",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "[技能石]毒孢子"
+    },
+    {
+      "skill_name": "彼岸之手",
+      "unlock_condition": "[技能石]彼岸之手"
+    },
+    {
+      "skill_name": "撕咬",
+      "unlock_condition": "[技能石]撕咬"
+    },
+    {
+      "skill_name": "暗突袭",
+      "unlock_condition": "[技能石]暗突袭"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "[技能石]贪婪"
+    },
+    {
+      "skill_name": "力量吞噬",
+      "unlock_condition": "[技能石]力量吞噬"
+    },
+    {
+      "skill_name": "恶意逃离",
+      "unlock_condition": "[技能石]恶意逃离"
+    },
+    {
+      "skill_name": "火焰冲锋",
+      "unlock_condition": "[技能石]火焰冲锋"
+    },
+    {
+      "skill_name": "怒火",
+      "unlock_condition": "[技能石]怒火"
+    },
+    {
+      "skill_name": "有效预防",
+      "unlock_condition": "[技能石]有效预防"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "先发制人",
+      "unlock_condition": "[技能石]先发制人"
+    },
+    {
+      "skill_name": "吞噬",
+      "unlock_condition": "[技能石]吞噬"
+    },
+    {
+      "skill_name": "野火",
+      "unlock_condition": "[技能石]野火"
+    }
+  ],
+  "evolution": {
+    "stage": 3,
+    "chain": [
+      "422蝴蝶陶陶",
+      "423铆钉毛毛",
+      "424徘徊爪爪"
+    ],
+    "prev": [
+      "423铆钉毛毛"
+    ],
+    "next": []
+  }
+}

@@ -1,0 +1,16 @@
+﻿{
+  "特性": {
+    "名称": "有求必应",
+    "效果": "使用「选择」技能后，会额外使用1次另一种「选择」效果。使用任意技能后，该技能冷却1回合。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "技能追加效果与冷却变化未纳入当前结构化范围",
+      "ignored_text": "使用「选择」技能后，会额外使用1次另一种「选择」效果。使用任意技能后，该技能冷却1回合。"
+    }
+  }
+}

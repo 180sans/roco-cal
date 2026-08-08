@@ -1,0 +1,231 @@
+{
+  "id": "408",
+  "name": "障眼魔",
+  "other_name": [],
+  "elements": [
+    "恶",
+    "水"
+  ],
+  "种族资质": 572,
+  "hp": 113,
+  "atk": 103,
+  "mag": 98,
+  "def": 85,
+  "res": 98,
+  "spd": 75,
+  "特性": "滴眼液",
+  "skills": [
+    {
+      "skill_name": "掠夺",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "力量吞噬",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "水弹",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "潮涌",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "蝙蝠",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "水炮",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "骗局",
+      "unlock_condition": "（默认）Lv.22"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（默认）Lv.27"
+    },
+    {
+      "skill_name": "下注",
+      "unlock_condition": "（默认）Lv.34"
+    },
+    {
+      "skill_name": "恶意逃离",
+      "unlock_condition": "（默认）Lv.41"
+    },
+    {
+      "skill_name": "沉溺",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "盐水浴",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "暗突袭",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "水刃",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "拍击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰冲锋",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水弹枪",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冷风",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "龙吼",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "幻象",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "天洪",
+      "unlock_condition": "[技能石]天洪"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "[技能石]贪婪"
+    },
+    {
+      "skill_name": "落雨",
+      "unlock_condition": "[技能石]落雨"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "[技能石]毒沼"
+    },
+    {
+      "skill_name": "腐蚀酸液",
+      "unlock_condition": "[技能石]腐蚀酸液"
+    },
+    {
+      "skill_name": "毒囊",
+      "unlock_condition": "[技能石]毒囊"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "[技能石]毒孢子"
+    },
+    {
+      "skill_name": "金属噪音",
+      "unlock_condition": "[技能石]金属噪音"
+    },
+    {
+      "skill_name": "主轴",
+      "unlock_condition": "[技能石]主轴"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "[技能石]魔法增效"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "[技能石]力量增效"
+    },
+    {
+      "skill_name": "偷袭",
+      "unlock_condition": "[技能石]偷袭"
+    },
+    {
+      "skill_name": "飞踢",
+      "unlock_condition": "[技能石]飞踢"
+    },
+    {
+      "skill_name": "音爆",
+      "unlock_condition": "[技能石]音爆"
+    },
+    {
+      "skill_name": "快速移动",
+      "unlock_condition": "[技能石]快速移动"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "蒸汽进行曲",
+      "unlock_condition": "[技能石]蒸汽进行曲"
+    }
+  ],
+  "evolution": {
+    "stage": 3,
+    "chain": [
+      "406芽眼魔",
+      "407叶眼魔",
+      "408障眼魔"
+    ],
+    "prev": [
+      "407叶眼魔"
+    ],
+    "next": []
+  }
+}

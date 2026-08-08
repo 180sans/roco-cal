@@ -1,0 +1,34 @@
+{
+    "特性": {
+        "名称": "悲悯",
+        "效果": "己方队伍中每有1只力竭的精灵，自己获得双攻+30%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "pets_dead_count",
+                    "context": {
+                        "subject": "ally_team",
+                        "timing": "current"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "己方队伍已力竭精灵数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values_per_stack": {
+                                "atk": 0.3,
+                                "mag": 0.3
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

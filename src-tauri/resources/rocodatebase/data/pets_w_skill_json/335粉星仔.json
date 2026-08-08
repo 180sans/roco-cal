@@ -1,0 +1,175 @@
+{
+  "id": "335",
+  "name": "粉星仔",
+  "other_name": [],
+  "elements": [
+    "幻"
+  ],
+  "种族资质": 514,
+  "hp": 80,
+  "atk": 63,
+  "mag": 119,
+  "def": 58,
+  "res": 102,
+  "spd": 92,
+  "特性": "双向光速",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "335粉星仔",
+      "336粉耳星兔",
+      "337落陨星兔"
+    ],
+    "prev": [],
+    "next": [
+      "336粉耳星兔",
+      "337落陨星兔"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "拍击",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "星轨裂变",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "大爆炸",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "（默认）Lv.8"
+    },
+    {
+      "skill_name": "坍缩",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "（默认）Lv.17"
+    },
+    {
+      "skill_name": "多维击打",
+      "unlock_condition": "（默认）Lv.25"
+    },
+    {
+      "skill_name": "二律背反",
+      "unlock_condition": "（默认）Lv.32"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "徒长",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "泥浆铠甲",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "啮合传递",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "念力膨胀",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "流火",
+      "unlock_condition": "[技能石]流火"
+    },
+    {
+      "skill_name": "炎打",
+      "unlock_condition": "[技能石]炎打"
+    },
+    {
+      "skill_name": "热身",
+      "unlock_condition": "[技能石]热身"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "操控",
+      "unlock_condition": "[技能石]操控"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "精神扰乱",
+      "unlock_condition": "[技能石]精神扰乱"
+    },
+    {
+      "skill_name": "嗜痛",
+      "unlock_condition": "[技能石]嗜痛"
+    },
+    {
+      "skill_name": "吓退",
+      "unlock_condition": "[技能石]吓退"
+    }
+  ]
+}

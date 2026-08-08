@@ -1,0 +1,210 @@
+{
+  "id": "398",
+  "name": "莫比乌乌",
+  "other_name": [],
+  "elements": [
+    "龙",
+    "萌"
+  ],
+  "种族资质": 436,
+  "hp": 72,
+  "atk": 36,
+  "mag": 98,
+  "def": 66,
+  "res": 84,
+  "spd": 80,
+  "特性": "莫比乌斯",
+  "skills": [
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "绵里藏针",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "示弱",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.3"
+    },
+    {
+      "skill_name": "撒娇",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "怨力打击",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "架势",
+      "unlock_condition": "（默认）Lv.21"
+    },
+    {
+      "skill_name": "捧杀",
+      "unlock_condition": "（默认）Lv.26"
+    },
+    {
+      "skill_name": "可爱",
+      "unlock_condition": "（默认）Lv.34"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（默认）Lv.42"
+    },
+    {
+      "skill_name": "触底强击",
+      "unlock_condition": "（默认）Lv.45"
+    },
+    {
+      "skill_name": "龙吟",
+      "unlock_condition": "（默认）Lv.47"
+    },
+    {
+      "skill_name": "龙守望",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "拍击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "徒长",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰箭",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "泥浆铠甲",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "角击",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "飞吻",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "诋毁",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "[技能石]蓄水"
+    },
+    {
+      "skill_name": "赤子之心",
+      "unlock_condition": "[技能石]赤子之心"
+    },
+    {
+      "skill_name": "击鼓传花",
+      "unlock_condition": "[技能石]击鼓传花"
+    },
+    {
+      "skill_name": "肥皂泡",
+      "unlock_condition": "[技能石]肥皂泡"
+    },
+    {
+      "skill_name": "水花四溅",
+      "unlock_condition": "[技能石]水花四溅"
+    },
+    {
+      "skill_name": "润泽",
+      "unlock_condition": "[技能石]润泽"
+    },
+    {
+      "skill_name": "盐水浴",
+      "unlock_condition": "[技能石]盐水浴"
+    },
+    {
+      "skill_name": "倾泻",
+      "unlock_condition": "[技能石]倾泻"
+    },
+    {
+      "skill_name": "反弹",
+      "unlock_condition": "[技能石]反弹"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "[技能石]魔法增效"
+    },
+    {
+      "skill_name": "退化",
+      "unlock_condition": "[技能石]退化"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "[技能石]休息回复"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "转圈圈",
+      "unlock_condition": "[技能石]转圈圈"
+    }
+  ],
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "398莫比乌乌",
+      "399克莱因龙"
+    ],
+    "prev": [],
+    "next": [
+      "399克莱因龙"
+    ]
+  }
+}

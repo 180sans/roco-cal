@@ -1,0 +1,214 @@
+{
+  "id": "395",
+  "name": "火巨人",
+  "other_name": [],
+  "elements": [
+    "火"
+  ],
+  "种族资质": 359,
+  "hp": 75,
+  "atk": 77,
+  "mag": 26,
+  "def": 81,
+  "res": 51,
+  "spd": 49,
+  "特性": "淬炼火",
+  "skills": [
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "炎息",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "怒火",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "先发制人",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "野火",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "火焰切割",
+      "unlock_condition": "（默认）Lv.19"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（默认）Lv.21"
+    },
+    {
+      "skill_name": "流星火雨",
+      "unlock_condition": "（默认）Lv.27"
+    },
+    {
+      "skill_name": "火云车",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "焚尽",
+      "unlock_condition": "（默认）Lv.32"
+    },
+    {
+      "skill_name": "闪燃",
+      "unlock_condition": "（默认）Lv.37"
+    },
+    {
+      "skill_name": "焚身",
+      "unlock_condition": "（默认）Lv.41"
+    },
+    {
+      "skill_name": "淬火",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰箭",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水弹枪",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "淤泥表皮",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽翼庇护",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "虚化",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "[技能石]力量增效"
+    },
+    {
+      "skill_name": "闪光冲击",
+      "unlock_condition": "[技能石]闪光冲击"
+    },
+    {
+      "skill_name": "光刃",
+      "unlock_condition": "[技能石]光刃"
+    },
+    {
+      "skill_name": "漫反射",
+      "unlock_condition": "[技能石]漫反射"
+    },
+    {
+      "skill_name": "镜像反射",
+      "unlock_condition": "[技能石]镜像反射"
+    },
+    {
+      "skill_name": "崩拳",
+      "unlock_condition": "[技能石]崩拳"
+    },
+    {
+      "skill_name": "防御反击",
+      "unlock_condition": "[技能石]防御反击"
+    },
+    {
+      "skill_name": "压扁",
+      "unlock_condition": "[技能石]压扁"
+    },
+    {
+      "skill_name": "偷袭",
+      "unlock_condition": "[技能石]偷袭"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "有效预防",
+      "unlock_condition": "[技能石]有效预防"
+    },
+    {
+      "skill_name": "无畏之心",
+      "unlock_condition": "[技能石]无畏之心"
+    },
+    {
+      "skill_name": "透镜实验",
+      "unlock_condition": "[技能石]透镜实验"
+    },
+    {
+      "skill_name": "马步",
+      "unlock_condition": "[技能石]马步"
+    },
+    {
+      "skill_name": "缓一缓",
+      "unlock_condition": "[技能石]缓一缓"
+    }
+  ],
+  "evolution": {
+    "stage": 3,
+    "chain": [
+      "393火豆丁",
+      "394火蛮人",
+      "395火巨人"
+    ],
+    "prev": [
+      "394火蛮人"
+    ],
+    "next": []
+  }
+}

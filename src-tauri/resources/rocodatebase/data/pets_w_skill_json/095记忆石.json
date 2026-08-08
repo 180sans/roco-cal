@@ -1,0 +1,218 @@
+{
+  "id": "095",
+  "name": "记忆石",
+  "other_name": [],
+  "elements": [
+    "地"
+  ],
+  "种族资质": 607,
+  "hp": 112,
+  "atk": 108,
+  "mag": 97,
+  "def": 141,
+  "res": 79,
+  "spd": 70,
+  "特性": "不移",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "095记忆石"
+    ],
+    "prev": [],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（默认）Lv.7"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.9"
+    },
+    {
+      "skill_name": "陨石",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "钧势",
+      "unlock_condition": "（默认）Lv.20"
+    },
+    {
+      "skill_name": "践踏",
+      "unlock_condition": "（默认）Lv.22"
+    },
+    {
+      "skill_name": "蓄势待发",
+      "unlock_condition": "（默认）Lv.26"
+    },
+    {
+      "skill_name": "地震",
+      "unlock_condition": "（默认）Lv.32"
+    },
+    {
+      "skill_name": "沙涌",
+      "unlock_condition": "（默认）Lv.34"
+    },
+    {
+      "skill_name": "抛石",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "泥浆铠甲",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "裂石",
+      "unlock_condition": "（默认）Lv.49"
+    },
+    {
+      "skill_name": "地陷",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "猛烈撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "荆棘爪",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰冲锋",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "泥巴喷射",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冰爪",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "棘突",
+      "unlock_condition": "[技能石]棘突"
+    },
+    {
+      "skill_name": "顶端优势",
+      "unlock_condition": "[技能石]顶端优势"
+    },
+    {
+      "skill_name": "抽枝",
+      "unlock_condition": "[技能石]抽枝"
+    },
+    {
+      "skill_name": "光合作用",
+      "unlock_condition": "[技能石]光合作用"
+    },
+    {
+      "skill_name": "脉冲光线",
+      "unlock_condition": "[技能石]脉冲光线"
+    },
+    {
+      "skill_name": "光刃",
+      "unlock_condition": "[技能石]光刃"
+    },
+    {
+      "skill_name": "漫反射",
+      "unlock_condition": "[技能石]漫反射"
+    },
+    {
+      "skill_name": "大爆炸",
+      "unlock_condition": "[技能石]大爆炸"
+    },
+    {
+      "skill_name": "双星",
+      "unlock_condition": "[技能石]双星"
+    },
+    {
+      "skill_name": "音爆",
+      "unlock_condition": "[技能石]音爆"
+    },
+    {
+      "skill_name": "追打",
+      "unlock_condition": "[技能石]追打"
+    },
+    {
+      "skill_name": "偷袭",
+      "unlock_condition": "[技能石]偷袭"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "应激反应",
+      "unlock_condition": "[技能石]应激反应"
+    }
+  ]
+}

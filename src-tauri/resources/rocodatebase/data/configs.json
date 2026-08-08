@@ -1,0 +1,15 @@
+{
+  "pet_picker": {
+    "sort_desc": false,
+    "final_only": true
+  },
+  "trait_picker": {
+    "sort_desc": true
+  },
+  "team_battle": {
+    "slot_count": 6
+  },
+  "skill_picker": {
+    "active_tab": "library"
+  }
+}

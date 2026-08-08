@@ -1,0 +1,213 @@
+{
+  "id": "007",
+  "name": "火神",
+  "other_name": [],
+  "elements": [
+    "火"
+  ],
+  "种族资质": 613,
+  "hp": 117,
+  "atk": 139,
+  "mag": 61,
+  "def": 94,
+  "res": 72,
+  "spd": 130,
+  "特性": "助燃",
+  "evolution": {
+    "stage": 3,
+    "chain": [
+      "005火花",
+      "006焰火",
+      "007火神",
+      "007烈火战神"
+    ],
+    "prev": [
+      "006焰火"
+    ],
+    "next": [
+      "007烈火战神"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "猛烈撞击",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "火苗",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "火焰切割",
+      "unlock_condition": "（默认）Lv.8"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "吹火",
+      "unlock_condition": "（默认）Lv.12"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "（默认）Lv.17"
+    },
+    {
+      "skill_name": "怒火",
+      "unlock_condition": "（默认）Lv.21"
+    },
+    {
+      "skill_name": "持续高温",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "火云车",
+      "unlock_condition": "（默认）Lv.30"
+    },
+    {
+      "skill_name": "热身",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "闪燃",
+      "unlock_condition": "（默认）Lv.42"
+    },
+    {
+      "skill_name": "山火",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰箭",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冰爪",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "鹰爪",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "[技能石]风矢"
+    },
+    {
+      "skill_name": "扇风",
+      "unlock_condition": "[技能石]扇风"
+    },
+    {
+      "skill_name": "龙卷风",
+      "unlock_condition": "[技能石]龙卷风"
+    },
+    {
+      "skill_name": "乘风",
+      "unlock_condition": "[技能石]乘风"
+    },
+    {
+      "skill_name": "诋毁",
+      "unlock_condition": "[技能石]诋毁"
+    },
+    {
+      "skill_name": "暗突袭",
+      "unlock_condition": "[技能石]暗突袭"
+    },
+    {
+      "skill_name": "力量吞噬",
+      "unlock_condition": "[技能石]力量吞噬"
+    },
+    {
+      "skill_name": "龙之利爪",
+      "unlock_condition": "[技能石]龙之利爪"
+    },
+    {
+      "skill_name": "压扁",
+      "unlock_condition": "[技能石]压扁"
+    },
+    {
+      "skill_name": "阻断",
+      "unlock_condition": "[技能石]阻断"
+    },
+    {
+      "skill_name": "锐利眼神",
+      "unlock_condition": "[技能石]锐利眼神"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "精神扰乱",
+      "unlock_condition": "[技能石]精神扰乱"
+    },
+    {
+      "skill_name": "伪造账单",
+      "unlock_condition": "技能石"
+    }
+  ]
+}

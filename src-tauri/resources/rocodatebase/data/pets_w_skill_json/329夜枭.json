@@ -1,0 +1,225 @@
+{
+  "id": "329",
+  "name": "夜枭",
+  "other_name": [],
+  "elements": [
+    "幽"
+  ],
+  "种族资质": 464,
+  "hp": 117,
+  "atk": 10,
+  "mag": 61,
+  "def": 90,
+  "res": 106,
+  "spd": 80,
+  "特性": "搜刮",
+  "evolution": {
+    "stage": 3,
+    "chain": [
+      "327空空颅",
+      "328夜宿颅",
+      "329夜枭",
+      "329暗夜颅主"
+    ],
+    "prev": [
+      "328夜宿颅"
+    ],
+    "next": [
+      "329暗夜颅主"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "灵光",
+      "unlock_condition": "（默认）Lv.9"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "音爆",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "（默认）Lv.22"
+    },
+    {
+      "skill_name": "幽灵爆发",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "嘲弄",
+      "unlock_condition": "（默认）Lv.28"
+    },
+    {
+      "skill_name": "背袭",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "降灵",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "惊吓盒子",
+      "unlock_condition": "（默认）Lv.49"
+    },
+    {
+      "skill_name": "快速移动",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "拍击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰冲锋",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冷风",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "鹰爪",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "鬼火",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "易燃物质",
+      "unlock_condition": "[技能石]易燃物质"
+    },
+    {
+      "skill_name": "烈焰风暴",
+      "unlock_condition": "[技能石]烈焰风暴"
+    },
+    {
+      "skill_name": "持续高温",
+      "unlock_condition": "[技能石]持续高温"
+    },
+    {
+      "skill_name": "怒火",
+      "unlock_condition": "[技能石]怒火"
+    },
+    {
+      "skill_name": "掠夺",
+      "unlock_condition": "[技能石]掠夺"
+    },
+    {
+      "skill_name": "跌落",
+      "unlock_condition": "[技能石]跌落"
+    },
+    {
+      "skill_name": "伪造账单",
+      "unlock_condition": "[技能石]伪造账单"
+    },
+    {
+      "skill_name": "多维击打",
+      "unlock_condition": "[技能石]多维击打"
+    },
+    {
+      "skill_name": "倾泻",
+      "unlock_condition": "[技能石]倾泻"
+    },
+    {
+      "skill_name": "阻断",
+      "unlock_condition": "[技能石]阻断"
+    },
+    {
+      "skill_name": "突袭",
+      "unlock_condition": "[技能石]突袭"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "精神扰乱",
+      "unlock_condition": "[技能石]精神扰乱"
+    },
+    {
+      "skill_name": "阳火增辉",
+      "unlock_condition": "[技能石]阳火增辉"
+    },
+    {
+      "skill_name": "有效预防",
+      "unlock_condition": "[技能石]有效预防"
+    },
+    {
+      "skill_name": "友谊满溢",
+      "unlock_condition": "[技能石]友谊满溢"
+    },
+    {
+      "skill_name": "限时特惠",
+      "unlock_condition": "[技能石]限时特惠"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+    "特性": {
+        "名称": "张弛有度",
+        "效果": "周末时自己获得双攻+40%，其他时间获得双防+40%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "weekend",
+                    "context": {
+                        "subject": "system",
+                        "timing": "current"
+                    },
+                    "exclusive_group": "calendar_day_type",
+                    "passive": true,
+                    "stack": {
+                        "enabled": false,
+                        "input": false,
+                        "permanent": false,
+                        "hint": ""
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values": {
+                                "atk": 0.4,
+                                "mag": 0.4
+                            }
+                        }
+                    ]
+                },
+                {
+                    "mode": "workday",
+                    "context": {
+                        "subject": "system",
+                        "timing": "current"
+                    },
+                    "exclusive_group": "calendar_day_type",
+                    "passive": true,
+                    "stack": {
+                        "enabled": false,
+                        "input": false,
+                        "permanent": false,
+                        "hint": ""
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values": {
+                                "def": 0.4,
+                                "res": 0.4
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

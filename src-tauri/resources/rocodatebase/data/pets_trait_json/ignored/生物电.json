@@ -1,0 +1,21 @@
+{
+  "特性": {
+    "名称": "生物电",
+    "效果": "携带的电系技能获得迸发：能耗-2。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "conditions": [
+        {
+          "mode": "burst"
+        }
+      ],
+      "effects": [],
+      "note": "未识别为当前项目关心的伤害或防御类结构化效果",
+      "ignored_text": "携带的电系技能获得迸发：能耗-2。"
+    }
+  }
+}

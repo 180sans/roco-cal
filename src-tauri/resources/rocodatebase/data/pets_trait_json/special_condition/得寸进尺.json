@@ -1,0 +1,34 @@
+{
+    "特性": {
+        "名称": "得寸进尺",
+        "效果": "天气为雨天，或处于其他水系环境中时，获得双攻+100%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "water_environment",
+                    "context": {
+                        "subject": "weather",
+                        "timing": "on_field"
+                    },
+                    "stack": {
+                        "enabled": false,
+                        "input": false,
+                        "permanent": false,
+                        "hint": ""
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values": {
+                                "atk": 1.0,
+                                "mag": 1.0
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

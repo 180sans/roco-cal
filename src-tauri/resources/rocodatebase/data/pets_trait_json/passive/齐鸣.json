@@ -1,0 +1,36 @@
+{
+    "特性": {
+        "名称": "齐鸣",
+        "效果": "自己携带的「虫鸣」技能威力+20，己方精灵携带的虫系技能获得巧变：虫鸣。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "chongming_bonus",
+                    "context": {
+                        "subject": "self",
+                        "timing": "default"
+                    },
+                    "passive": true,
+                    "stack": {
+                        "enabled": false,
+                        "input": false,
+                        "permanent": true,
+                        "hint": ""
+                    },
+                    "effects": [
+                        {
+                            "kind": "power_bonus",
+                            "filters": {
+                                "skill_names": [
+                                    "虫鸣"
+                                ]
+                            },
+                            "value": 20
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

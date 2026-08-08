@@ -1,0 +1,242 @@
+{
+  "id": "141",
+  "name": "雪灵",
+  "other_name": [],
+  "elements": [
+    "冰"
+  ],
+  "种族资质": 643,
+  "hp": 94,
+  "atk": 112,
+  "mag": 112,
+  "def": 105,
+  "res": 105,
+  "spd": 115,
+  "特性": "冰封",
+  "evolution": {
+    "stage": 3,
+    "chain": [
+      "139雪娃娃",
+      "140冰封怨灵",
+      "141雪灵"
+    ],
+    "prev": [
+      "140冰封怨灵"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "冰锥",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "雪球",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "旋转突击",
+      "unlock_condition": "（默认）Lv.4"
+    },
+    {
+      "skill_name": "激怒",
+      "unlock_condition": "（默认）Lv.9"
+    },
+    {
+      "skill_name": "丢冰块",
+      "unlock_condition": "（默认）Lv.12"
+    },
+    {
+      "skill_name": "雾气环绕",
+      "unlock_condition": "（默认）Lv.26"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "能量炮",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "聒噪",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "冰锋横扫",
+      "unlock_condition": "（默认）Lv.42"
+    },
+    {
+      "skill_name": "冰捆缚",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "速冻",
+      "unlock_condition": "（默认）Lv.47"
+    },
+    {
+      "skill_name": "冰冻光线",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "冬至",
+      "unlock_condition": "（默认）Lv.49"
+    },
+    {
+      "skill_name": "瞬间零度",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "徒长",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "泥浆铠甲",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冰爪",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "啮合传递",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "诡刺",
+      "unlock_condition": "[技能石]诡刺"
+    },
+    {
+      "skill_name": "恐吓",
+      "unlock_condition": "[技能石]恐吓"
+    },
+    {
+      "skill_name": "灵光",
+      "unlock_condition": "[技能石]灵光"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "[技能石]勾魂"
+    },
+    {
+      "skill_name": "嘲弄",
+      "unlock_condition": "[技能石]嘲弄"
+    },
+    {
+      "skill_name": "恶作剧",
+      "unlock_condition": "[技能石]恶作剧"
+    },
+    {
+      "skill_name": "粒子对撞",
+      "unlock_condition": "[技能石]粒子对撞"
+    },
+    {
+      "skill_name": "四维降解",
+      "unlock_condition": "[技能石]四维降解"
+    },
+    {
+      "skill_name": "星轨裂变",
+      "unlock_condition": "[技能石]星轨裂变"
+    },
+    {
+      "skill_name": "二律背反",
+      "unlock_condition": "[技能石]二律背反"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "操控",
+      "unlock_condition": "[技能石]操控"
+    },
+    {
+      "skill_name": "热身运动",
+      "unlock_condition": "[技能石]热身运动"
+    },
+    {
+      "skill_name": "摇篮曲",
+      "unlock_condition": "[技能石]摇篮曲"
+    },
+    {
+      "skill_name": "冰墙",
+      "unlock_condition": "[技能石]冰墙"
+    },
+    {
+      "skill_name": "有效预防",
+      "unlock_condition": "[技能石]有效预防"
+    },
+    {
+      "skill_name": "冷凝",
+      "unlock_condition": "[技能石]冷凝"
+    },
+    {
+      "skill_name": "冰天雪地",
+      "unlock_condition": "技能石"
+    },
+    {
+      "skill_name": "打喷嚏",
+      "unlock_condition": "[技能石]打喷嚏"
+    }
+  ]
+}

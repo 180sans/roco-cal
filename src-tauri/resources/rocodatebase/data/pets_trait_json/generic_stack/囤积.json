@@ -1,0 +1,34 @@
+{
+    "特性": {
+        "名称": "囤积",
+        "效果": "每有1能量，获得双防+10%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "energy_count",
+                    "context": {
+                        "subject": "self",
+                        "timing": "current"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "当前能量值"
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values_per_stack": {
+                                "def": 0.1,
+                                "res": 0.1
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

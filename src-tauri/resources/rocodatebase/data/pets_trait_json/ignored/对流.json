@@ -1,0 +1,16 @@
+{
+  "特性": {
+    "名称": "对流",
+    "效果": "自己的能耗增加变为能耗降低；能耗降低变为能耗增加。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "未识别为当前项目关心的伤害或防御类结构化效果",
+      "ignored_text": "自己的能耗增加变为能耗降低；能耗降低变为能耗增加。"
+    }
+  }
+}

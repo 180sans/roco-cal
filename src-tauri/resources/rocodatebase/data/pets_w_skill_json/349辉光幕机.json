@@ -1,0 +1,236 @@
+{
+  "id": "349",
+  "name": "辉光幕机",
+  "other_name": [],
+  "elements": [
+    "机械"
+  ],
+  "种族资质": 478,
+  "hp": 83,
+  "atk": 91,
+  "mag": 84,
+  "def": 104,
+  "res": 72,
+  "spd": 44,
+  "特性": "狂欢开始",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "348钨丝贝贝",
+      "349辉光幕机",
+      "350机幕方舟"
+    ],
+    "prev": [
+      "348钨丝贝贝"
+    ],
+    "next": [
+      "350机幕方舟"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "轴承支撑",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "能量守恒",
+      "unlock_condition": "（默认）Lv.7"
+    },
+    {
+      "skill_name": "齿轮扭矩",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "啮合传递",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "主轴",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "操控",
+      "unlock_condition": "（默认）Lv.24"
+    },
+    {
+      "skill_name": "磁暴",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "有效预防",
+      "unlock_condition": "（默认）Lv.34"
+    },
+    {
+      "skill_name": "齿轮切开",
+      "unlock_condition": "（默认）Lv.37"
+    },
+    {
+      "skill_name": "阻断",
+      "unlock_condition": "（默认）Lv.41"
+    },
+    {
+      "skill_name": "微型斥候",
+      "unlock_condition": "（默认）Lv.45"
+    },
+    {
+      "skill_name": "相位移动",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水泡盾",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽翼庇护",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "虚化",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "金属噪音",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "[技能石]力量增效"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "[技能石]魔法增效"
+    },
+    {
+      "skill_name": "空间压迫",
+      "unlock_condition": "[技能石]空间压迫"
+    },
+    {
+      "skill_name": "坍缩",
+      "unlock_condition": "[技能石]坍缩"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "[技能石]冥想"
+    },
+    {
+      "skill_name": "心灵洞悉",
+      "unlock_condition": "[技能石]心灵洞悉"
+    },
+    {
+      "skill_name": "热砂",
+      "unlock_condition": "[技能石]热砂"
+    },
+    {
+      "skill_name": "落石",
+      "unlock_condition": "[技能石]落石"
+    },
+    {
+      "skill_name": "硬化",
+      "unlock_condition": "[技能石]硬化"
+    },
+    {
+      "skill_name": "血气",
+      "unlock_condition": "[技能石]血气"
+    },
+    {
+      "skill_name": "气势一击",
+      "unlock_condition": "[技能石]气势一击"
+    },
+    {
+      "skill_name": "能量刃",
+      "unlock_condition": "[技能石]能量刃"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "无畏之心",
+      "unlock_condition": "[技能石]无畏之心"
+    },
+    {
+      "skill_name": "倾泻",
+      "unlock_condition": "[技能石]倾泻"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "铁蒺藜",
+      "unlock_condition": "[技能石]铁蒺藜"
+    },
+    {
+      "skill_name": "过山车",
+      "unlock_condition": "（传说）合体：机幕方舟"
+    }
+  ]
+}
