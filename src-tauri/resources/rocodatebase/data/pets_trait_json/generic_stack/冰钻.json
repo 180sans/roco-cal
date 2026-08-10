@@ -1,0 +1,30 @@
+{
+    "特性": {
+        "名称": "冰钻",
+        "效果": "敌方携带技能总能耗每有1点，自己攻击时威力+10%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "skills_total_cost",
+                    "context": {
+                        "subject": "enemy",
+                        "timing": "carried"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "敌方携带技能总能耗"
+                    },
+                    "effects": [
+                        {
+                            "kind": "power_multiplier",
+                            "value_per_stack": 0.1
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

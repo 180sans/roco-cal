@@ -153,7 +153,11 @@ def _unit_trait_runtime(state: dict[str, Any]) -> dict[str, Any]:
 
     mega_form = (state.get("mega_form") or "").strip()
     query = (state.get("trait_override_query") or state.get("name") or "").strip()
-    trait_data = find_trait(query, mega=bool(state.get("mega", False)) or bool(mega_form))
+    trait_data = find_trait(
+        query,
+        mega=bool(state.get("mega", False)) or bool(mega_form),
+        mega_target_query=mega_form or None,
+    )
     if trait_data is None:
         trait_data = load_trait_data_by_name(query)
     return resolve_trait_runtime(
@@ -404,6 +408,7 @@ def trait_info(payload: dict[str, Any]) -> dict[str, Any]:
     trait_data = find_trait(
         (payload.get("query") or "").strip(),
         mega=bool(payload.get("mega", False)),
+        mega_target_query=(payload.get("megaForm") or "").strip() or None,
     )
     runtime = resolve_trait_runtime(
         trait_data,

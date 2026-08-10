@@ -47,9 +47,24 @@ def _get_battle_effect(trait_data: dict[str, Any] | None) -> dict[str, Any]:
     return battle_effect if isinstance(battle_effect, dict) else {}
 
 
-def _should_replace_with_mega_trait(trait_data: dict[str, Any] | None) -> bool:
-    # Mega traits replace the base trait unless the data explicitly opts out.
-    return _get_battle_effect(trait_data).get("mega", True) is not False
+def _has_battle_effect(trait_data: dict[str, Any] | None) -> bool:
+    battle_effect = _get_battle_effect(trait_data)
+    effect_groups = battle_effect.get("effect_groups")
+    return isinstance(effect_groups, list) and any(
+        isinstance(group, dict)
+        and isinstance(group.get("effects"), list)
+        and bool(group["effects"])
+        for group in effect_groups
+    )
+
+
+def _should_replace_with_mega_trait(
+    base_trait_data: dict[str, Any] | None,
+    mega_trait_data: dict[str, Any] | None,
+) -> bool:
+    base_has_battle_effect = _has_battle_effect(base_trait_data)
+    mega_has_battle_effect = _has_battle_effect(mega_trait_data)
+    return not base_has_battle_effect or mega_has_battle_effect
 
 
 def _find_mega_target(pet_data: dict[str, Any]) -> dict[str, Any] | None:
@@ -98,7 +113,12 @@ def _attach_trait_source(
     return result
 
 
-def find_trait(query: str | None, devolution: int = 0, mega: bool = False) -> dict[str, Any] | None:
+def find_trait(
+    query: str | None,
+    devolution: int = 0,
+    mega: bool = False,
+    mega_target_query: str | None = None,
+) -> dict[str, Any] | None:
     if not query:
         return None
 
@@ -108,14 +128,21 @@ def find_trait(query: str | None, devolution: int = 0, mega: bool = False) -> di
     if requested_pet is None:
         return None
 
-    mega_target = _find_mega_target(requested_pet) if mega else None
+    mega_target = None
+    if mega:
+        if mega_target_query:
+            candidate = pets_dataset.find(mega_target_query)
+            if candidate and candidate.get("evolution", {}).get("stage") == "mega":
+                mega_target = candidate
+        else:
+            mega_target = _find_mega_target(requested_pet)
     source_pet = requested_pet
     trait_data = _load_trait_data_for_pet(requested_pet)
     replaced_by_mega = False
 
     if mega_target is not None:
         mega_trait_data = _load_trait_data_for_pet(mega_target)
-        if _should_replace_with_mega_trait(mega_trait_data):
+        if mega_trait_data and _should_replace_with_mega_trait(trait_data, mega_trait_data):
             source_pet = mega_target
             trait_data = mega_trait_data
             replaced_by_mega = True

@@ -2135,22 +2135,26 @@ function TeamTraitEditor({
   const [picker, setPicker] = useState(false);
   const [traitRuntime, setTraitRuntime] = useState<any>(null);
   const [expanded, setExpanded] = useState(false);
+  const traitQuery = value.trait_override_query || value.name;
+  const selectedMegaForm = value.trait_override_query ? null : value.mega_form;
+  const resolveMega = !value.trait_override_query && Boolean(value.mega || selectedMegaForm);
 
   useEffect(() => {
-    if (!value.name && !value.trait_override_query) {
+    if (!traitQuery) {
       setTraitRuntime(null);
       return;
     }
     void cachedTraitInfo({
-      query: value.trait_override_query || value.name,
-      mega: Boolean(value.mega || value.mega_form),
+      query: traitQuery,
+      mega: resolveMega,
+      megaForm: selectedMegaForm,
       triggered: value.trait_triggered,
       stacks: value.trait_stacks,
       choices: value.trait_choices,
     })
       .then((data) => setTraitRuntime(data.runtime))
       .catch((err) => setTraitRuntime({ error: asError(err) }));
-  }, [value.name, value.mega, value.mega_form, value.trait_override_query, value.trait_triggered, value.trait_stacks, value.trait_choices]);
+  }, [traitQuery, selectedMegaForm, resolveMega, value.trait_triggered, value.trait_stacks, value.trait_choices]);
 
   const traitLabel = traitRuntime?.error
     ? "特性读取失败"
