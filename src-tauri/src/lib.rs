@@ -2,10 +2,8 @@ use serde::Deserialize;
 use serde_json::Value;
 #[cfg(windows)]
 use std::ffi::{c_void, OsString};
-use std::fs::OpenOptions;
-use std::io::Write;
 #[cfg(windows)]
-use std::os::windows::ffi::{OsStrExt, OsStringExt};
+use std::os::windows::ffi::OsStringExt;
 use std::path::PathBuf;
 use std::process::Command;
 use tauri::Manager;
@@ -131,42 +129,6 @@ fn roaming_app_data_dir() -> Option<PathBuf> {
     Some(PathBuf::from(path))
 }
 
-fn startup_log(message: &str) {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("rocodatebase-startup.log");
-    if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(path) {
-        let _ = writeln!(file, "{message}");
-    }
-}
-
-#[cfg(windows)]
-fn path_utf16(path: &std::path::Path) -> String {
-    path.as_os_str()
-        .encode_wide()
-        .map(|code_unit| format!("{code_unit:04X}"))
-        .collect::<Vec<_>>()
-        .join(" ")
-}
-
-#[cfg(windows)]
-fn environment_utf16(name: &str) -> String {
-    std::env::var_os(name)
-        .map(|value| {
-            value
-                .encode_wide()
-                .map(|code_unit| format!("{code_unit:04X}"))
-                .collect::<Vec<_>>()
-                .join(" ")
-        })
-        .unwrap_or_else(|| "<missing>".to_string())
-}
-
-fn current_process_user() -> String {
-    Command::new("whoami")
-        .output()
-        .map(|output| String::from_utf8_lossy(&output.stdout).trim().to_string())
-        .unwrap_or_else(|error| format!("<whoami failed: {error}>"))
-}
-
 fn resource_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let mut candidates =
         vec![PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources\\rocodatebase")];
@@ -235,13 +197,18 @@ fn run_python(app: tauri::AppHandle, args: &[&str]) -> Result<Value, String> {
 }
 
 fn embedded_python(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let mut candidates = vec![PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    let local_runtime = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("resources")
-        .join("python")
-        .join("python.exe")];
+        .join("python");
+    let mut candidates = vec![
+        local_runtime.join("pythonw.exe"),
+        local_runtime.join("python.exe"),
+    ];
 
     if let Ok(resource_dir) = app.path().resource_dir() {
-        candidates.push(resource_dir.join("python").join("python.exe"));
+        let runtime = resource_dir.join("python");
+        candidates.push(runtime.join("pythonw.exe"));
+        candidates.push(runtime.join("python.exe"));
     }
 
     candidates
@@ -253,14 +220,27 @@ fn embedded_python(app: &tauri::AppHandle) -> Result<PathBuf, String> {
         })
 }
 
-fn run_python_payload(
+async fn run_python_async(app: tauri::AppHandle, args: Vec<String>) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let arg_refs = args.iter().map(String::as_str).collect::<Vec<_>>();
+        run_python(app, &arg_refs)
+    })
+    .await
+    .map_err(|error| format!("Python task failed: {error}"))?
+}
+
+async fn run_python_payload_async(
     app: tauri::AppHandle,
     command: &str,
     payload: Value,
 ) -> Result<Value, String> {
     let payload_text = serde_json::to_string(&payload)
         .map_err(|error| format!("Cannot serialize payload: {error}"))?;
-    run_python(app, &[command, "--payload", &payload_text])
+    run_python_async(
+        app,
+        vec![command.to_string(), "--payload".to_string(), payload_text],
+    )
+    .await
 }
 
 fn webview_data_dir(app: &tauri::AppHandle) -> PathBuf {
@@ -330,124 +310,94 @@ fn configured_window_size(app: &tauri::AppHandle) -> Option<(f64, f64)> {
 }
 
 #[tauri::command]
-fn database_summary(app: tauri::AppHandle) -> Result<Value, String> {
-    run_python(app, &["summary"])
+async fn database_summary(app: tauri::AppHandle) -> Result<Value, String> {
+    run_python_async(app, vec!["summary".to_string()]).await
 }
 
 #[tauri::command]
-fn search_pets(app: tauri::AppHandle, query: String) -> Result<Value, String> {
-    run_python_payload(app, "list-pets", serde_json::json!({ "query": query }))
+async fn search_pets(app: tauri::AppHandle, query: String) -> Result<Value, String> {
+    run_python_payload_async(app, "list-pets", serde_json::json!({ "query": query })).await
 }
 
 #[tauri::command]
-fn list_presets(app: tauri::AppHandle) -> Result<Value, String> {
-    run_python(app, &["presets"])
+async fn list_presets(app: tauri::AppHandle) -> Result<Value, String> {
+    run_python_async(app, vec!["presets".to_string()]).await
 }
 
 #[tauri::command]
-fn core_probe(app: tauri::AppHandle) -> Result<Value, String> {
-    run_python(app, &["core-probe"])
+async fn core_probe(app: tauri::AppHandle) -> Result<Value, String> {
+    run_python_async(app, vec!["core-probe".to_string()]).await
 }
 
 #[tauri::command]
-fn app_state(app: tauri::AppHandle) -> Result<Value, String> {
-    run_python(app, &["app-state"])
+async fn app_state(app: tauri::AppHandle) -> Result<Value, String> {
+    run_python_async(app, vec!["app-state".to_string()]).await
 }
 
 #[tauri::command]
-fn list_pets(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload(app, "list-pets", payload)
+async fn list_pets(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
+    run_python_payload_async(app, "list-pets", payload).await
 }
 
 #[tauri::command]
-fn list_skills(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload(app, "list-skills", payload)
+async fn list_skills(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
+    run_python_payload_async(app, "list-skills", payload).await
 }
 
 #[tauri::command]
-fn trait_info(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload(app, "trait-info", payload)
+async fn trait_info(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
+    run_python_payload_async(app, "trait-info", payload).await
 }
 
 #[tauri::command]
-fn list_traits(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload(app, "list-traits", payload)
+async fn list_traits(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
+    run_python_payload_async(app, "list-traits", payload).await
 }
 
 #[tauri::command]
-fn list_burst_effects(app: tauri::AppHandle) -> Result<Value, String> {
-    run_python(app, &["list-burst-effects"])
+async fn list_burst_effects(app: tauri::AppHandle) -> Result<Value, String> {
+    run_python_async(app, vec!["list-burst-effects".to_string()]).await
 }
 
 #[tauri::command]
-fn calculate_battle(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload(app, "calculate-battle", payload)
+async fn calculate_battle(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
+    run_python_payload_async(app, "calculate-battle", payload).await
 }
 
 #[tauri::command]
-fn apply_skill_buffs(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload(app, "apply-skill-buffs", payload)
+async fn apply_skill_buffs(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
+    run_python_payload_async(app, "apply-skill-buffs", payload).await
 }
 
 #[tauri::command]
-fn skill_trigger_info(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload(app, "skill-trigger-info", payload)
+async fn skill_trigger_info(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
+    run_python_payload_async(app, "skill-trigger-info", payload).await
 }
 
 #[tauri::command]
-fn save_preset(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload(app, "save-preset", payload)
+async fn save_preset(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
+    run_python_payload_async(app, "save-preset", payload).await
 }
 
 #[tauri::command]
-fn manage_preset(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload(app, "manage-preset", payload)
+async fn manage_preset(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
+    run_python_payload_async(app, "manage-preset", payload).await
 }
 
 #[tauri::command]
-fn save_picker_config(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload(app, "save-picker-config", payload)
+async fn save_picker_config(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
+    run_python_payload_async(app, "save-picker-config", payload).await
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    startup_log("run: starting Tauri");
-    startup_log(&format!("process: whoami={}", current_process_user()));
-    #[cfg(windows)]
-    {
-        startup_log(&format!(
-            "process: USERPROFILE_utf16={}, APPDATA_utf16={}, LOCALAPPDATA_utf16={}",
-            environment_utf16("USERPROFILE"),
-            environment_utf16("APPDATA"),
-            environment_utf16("LOCALAPPDATA")
-        ));
-        match profile_dir_from_current_token() {
-            Ok(path) => startup_log(&format!(
-                "process: token_profile_dir_utf16={}",
-                path_utf16(&path)
-            )),
-            Err(error) => startup_log(&format!("process: token_profile_dir failed: {error}")),
-        }
-    }
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            startup_log("setup: entered");
             let user_data_dir = app_data_dir(app.handle());
             let webview_dir = webview_data_dir(app.handle());
-            startup_log(&format!(
-                "setup: user_data_dir={}, webview_dir={}",
-                user_data_dir.display(),
-                webview_dir.display()
-            ));
-            startup_log(&format!(
-                "setup: user_data_dir_utf16={}, webview_dir_utf16={}",
-                path_utf16(&user_data_dir),
-                path_utf16(&webview_dir)
-            ));
             std::fs::create_dir_all(&user_data_dir)?;
             std::fs::create_dir_all(&webview_dir)?;
-            startup_log("setup: data directories are available");
 
             let window_config = app
                 .config()
@@ -461,32 +411,14 @@ pub fn run() {
 
             let window_builder =
                 tauri::WebviewWindowBuilder::from_config(app.handle(), &window_config)?
-                    .data_directory(webview_dir)
-                    .on_page_load(|_, payload| {
-                        startup_log(&format!(
-                            "page load: {:?} {}",
-                            payload.event(),
-                            payload.url()
-                        ));
-                    });
+                    .data_directory(webview_dir);
             let window_builder = if let Some((width, height)) = configured_window_size(app.handle())
             {
                 window_builder.inner_size(width, height)
             } else {
                 window_builder
             };
-            startup_log("setup: building main window");
-            let window = window_builder.build().map_err(|error| {
-                startup_log(&format!("setup: main window build failed: {error}"));
-                error
-            })?;
-            startup_log("setup: main window built");
-            window.on_window_event(|event| {
-                startup_log(&format!("window event: {event:?}"));
-            });
-            window.on_webview_event(|event| {
-                startup_log(&format!("webview event: {event:?}"));
-            });
+            window_builder.build()?;
 
             Ok(())
         })
