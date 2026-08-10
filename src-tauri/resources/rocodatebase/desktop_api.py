@@ -538,7 +538,12 @@ def skill_trigger_info(payload: dict[str, Any]) -> dict[str, Any]:
         for index, option in enumerate(options)
         if isinstance(option, dict) and option.get("mode") == "usage"
     ]
-    return {"skill_name": skill_name, "stackable": stackable, "usage_mode_options": usage_mode_options}
+    return {
+        "skill_name": skill_name,
+        "description": skill_data.get("description", "") if skill_data else "",
+        "stackable": stackable,
+        "usage_mode_options": usage_mode_options,
+    }
 
 
 def save_preset(payload: dict[str, Any]) -> dict[str, Any]:

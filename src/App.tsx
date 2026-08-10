@@ -370,11 +370,12 @@ type BuffTarget = "self" | "opponent" | "both";
 type BuffEffect = { target: BuffTarget; field: BuffStateField; value: number };
 type BuffOption = { label: string; effects: BuffEffect[] };
 type ApplySkillBuffsResult = { skill_name: string; options: BuffOption[]; effects: BuffEffect[] };
-  type SkillTriggerInfo = {
-    skill_name: string;
-    stackable: Array<{ index: number; label: string }>;
-    usage_mode_options: Array<{ index: number; label: string }>;
-  };
+type SkillTriggerInfo = {
+  skill_name: string;
+  description: string;
+  stackable: Array<{ index: number; label: string }>;
+  usage_mode_options: Array<{ index: number; label: string }>;
+};
 
 type TeamOtherBonuses = {
   dedication_power_stacks: number;
@@ -2024,6 +2025,29 @@ function TeamSkillCardGrid({
   onChoose: (index: number) => void;
   onClear: (index: number) => void;
 }) {
+  const cardSkillNames = [...new Set(cards.flatMap((skill) => (skill ? [skill.name] : [])))];
+  const cardSkillNamesKey = cardSkillNames.join("\u0000");
+  const [skillDescriptions, setSkillDescriptions] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!cardSkillNames.length) {
+      setSkillDescriptions({});
+      return () => { cancelled = true; };
+    }
+    void Promise.all(cardSkillNames.map(async (name) => {
+      const data = await cachedSkillTriggerInfo(name);
+      return [name, data.description || ""] as const;
+    }))
+      .then((descriptions) => {
+        if (!cancelled) setSkillDescriptions(Object.fromEntries(descriptions));
+      })
+      .catch(() => {
+        if (!cancelled) setSkillDescriptions({});
+      });
+    return () => { cancelled = true; };
+  }, [cardSkillNamesKey]);
+
   return (
     <div className="skill-card-grid">
       {cards.map((skill, index) => (
@@ -2032,6 +2056,7 @@ function TeamSkillCardGrid({
           className={skill?.name === currentSkill ? "skill-card selected team-skill-card" : "skill-card team-skill-card"}
           role="button"
           tabIndex={0}
+          title={skill ? [skill.name, skillDescriptions[skill.name]].filter(Boolean).join("\n") : "空技能"}
           onClick={() => {
             if (skill) onPick(skill.name);
           }}
@@ -2042,7 +2067,7 @@ function TeamSkillCardGrid({
             }
           }}
         >
-          <strong title={skill?.name || "空技能"}>{skill?.name || "空技能"}</strong>
+          <strong>{skill?.name || "空技能"}</strong>
           <button
             className="slot-action"
             onClick={(event) => {
