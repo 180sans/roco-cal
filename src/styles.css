@@ -85,9 +85,26 @@ select {
 .app-header {
   align-items: center;
   display: flex;
-  gap: 18px;
   justify-content: flex-end;
   margin-bottom: 12px;
+  min-height: 42px;
+  position: relative;
+}
+
+.app-header .weather-panel {
+  left: 0;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.app-header .tabs {
+  display: grid;
+  grid-template-columns: repeat(4, max-content);
+}
+
+.app-header .tabs button {
+  white-space: nowrap;
 }
 
 .app-header h1 {
@@ -235,16 +252,22 @@ select {
 }
 
 .burst-card-detail {
-  border-top: 1px solid #dfe7ed;
-  padding: 9px;
+  background: #fff;
+  border-top: 1px solid #b9c9d5;
+  margin-top: 4px;
+  padding: 10px 9px 9px;
 }
 
-.burst-card-detail p {
+.burst-card-detail .burst-effect-description {
   color: #536474;
+  display: grid;
   font-size: 12px;
+  gap: 3px;
   line-height: 1.5;
   margin: 0 0 8px;
 }
+
+.burst-effect-description span { color: #215947; font-size: 11px; font-weight: 700; }
 
 .burst-card-detail label {
   color: #536474;
@@ -395,11 +418,11 @@ select {
   align-items: stretch;
   gap: 8px;
   grid-template-areas:
-    "left-roster right-roster weather"
-    "left-buff right-buff weather"
-    "left-skills right-skills weather"
-    "left-other right-other weather";
-  grid-template-columns: var(--team-side-column-width) var(--team-side-column-width) 116px;
+    "left-roster right-roster"
+    "left-bonus-tools right-bonus-tools"
+    "left-buff right-buff"
+    "left-skills right-skills";
+  grid-template-columns: var(--team-side-column-width) var(--team-side-column-width);
   grid-template-rows: auto auto auto;
   justify-content: center;
 }
@@ -600,19 +623,119 @@ select {
   align-self: center;
   background: #f6f7fb;
   border-color: #c9cfdf;
+  display: flex;
+  height: var(--weather-panel-height);
+  width: var(--weather-panel-width);
+}
+
+.team-bonus-toolbar {
+  align-items: center;
+  background: #f1f3f5;
+  border: 1px solid #c8ced4;
+  border-radius: 8px;
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  padding: 6px;
+}
+
+.team-left-bonus-toolbar {
+  grid-area: left-bonus-tools;
+}
+
+.team-right-bonus-toolbar {
+  grid-area: right-bonus-tools;
+}
+
+.team-bonus-toolbar button {
+  background: #fafbfc;
+  border-color: #bfc6cd;
+  color: #111;
+  min-width: 0;
+}
+
+.bonus-tool-button.dedication { font-size: var(--dedication-button-font-size); height: var(--dedication-button-height); width: var(--dedication-button-width); }
+.bonus-tool-button.marks { font-size: var(--marks-button-font-size); height: var(--marks-button-height); width: var(--marks-button-width); }
+.bonus-tool-button.thunderstorm { font-size: var(--thunderstorm-button-font-size); height: var(--thunderstorm-button-height); width: var(--thunderstorm-button-width); }
+
+.team-bonus-toolbar button.active {
+  background: #23785e;
+  border-color: #1c614c;
+  color: #fff;
+}
+
+.bonus-tool-floating {
+  background: #f8fdf9;
+  border: 1px solid #9bd8b1;
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(25, 35, 45, 0.2);
+  max-height: min(410px, calc(100vh - 16px));
+  overflow: auto;
+  padding: 8px;
+  position: fixed;
+  width: min(var(--dedication-panel-width), calc(100vw - 16px));
+  z-index: 17;
+}
+
+.bonus-tool-floating.dedication { height: min(var(--dedication-panel-height), calc(100vh - 16px)); width: min(var(--dedication-panel-width), calc(100vw - 16px)); }
+.bonus-tool-floating.marks { height: min(var(--marks-panel-height), calc(100vh - 16px)); width: min(var(--marks-panel-width), calc(100vw - 16px)); }
+.bonus-tool-floating.thunderstorm { height: min(var(--thunderstorm-panel-height), calc(100vh - 16px)); width: min(var(--thunderstorm-panel-width), calc(100vw - 16px)); }
+.bonus-tool-floating.dedication .field-label { font-size: var(--dedication-label-font-size); }
+.bonus-tool-floating.marks .field-label { font-size: var(--marks-label-font-size); }
+.bonus-tool-floating.thunderstorm .check-row { font-size: var(--thunderstorm-label-font-size); }
+.bonus-tool-floating.dedication .number-input-control { width: var(--dedication-input-width); }
+.bonus-tool-floating.marks .number-input-control { width: var(--marks-input-width); }
+.bonus-tool-floating.dedication .num-input { font-size: var(--dedication-input-font-size); height: var(--dedication-input-height); }
+.bonus-tool-floating.marks .num-input { font-size: var(--marks-input-font-size); height: var(--marks-input-height); }
+.mark-add-control { align-items: center; display: flex; gap: 6px; }
+.mark-add-control span { font-size: var(--marks-add-label-font-size); }
+.mark-add-control select { font-size: var(--marks-add-select-font-size); height: var(--marks-add-select-height); width: var(--marks-add-select-width); }
+
+.bonus-tool-floating > header {
+  align-items: center;
+  cursor: move;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  user-select: none;
+}
+
+.bonus-tool-fields {
   display: grid;
-  grid-area: weather;
-  width: 116px;
+  gap: 8px;
+}
+
+.bonus-tool-fields > div {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: space-between;
+}
+
+.bonus-tool-fields .field-label {
+  color: #111;
+}
+
+.bonus-tool-fields .number-input-control {
+  width: 62px;
 }
 
 .weather-panel label {
-  display: grid;
-  gap: 5px;
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  min-width: 0;
 }
 
+.weather-panel .ui-field-title { font-size: var(--weather-label-font-size); }
+
 .weather-panel select {
+  flex: 1;
   min-width: 0;
-  width: 100%;
+  font-size: var(--weather-select-font-size);
+  height: var(--weather-select-height);
+  width: var(--weather-select-width);
 }
 
 .preset-row-top,
@@ -1007,16 +1130,45 @@ select {
 
 .burst-trigger-checklist {
   display: grid;
-  gap: 5px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  grid-template-columns: minmax(0, 1fr);
   margin-top: 5px;
 }
 
 .burst-trigger-checklist .check-row {
+  align-items: flex-start;
+  background: #f8fffb;
+  border: 1px solid #b9dfd0;
   color: #536474;
+  display: flex;
   font-size: 12px;
+  gap: 7px;
   min-width: 0;
+  padding: 6px;
 }
+
+.bonus-tool-floating .burst-trigger-checklist .check-row { background: #fafbfc; border-color: #bfc6cd; color: #111; }
+.bonus-tool-floating .burst-trigger-content strong { color: #111; }
+
+.bonus-tool-floating .burst-trigger-checklist {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.bonus-tool-floating .burst-trigger-checklist .check-row {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: #111;
+  gap: 5px;
+  padding: 2px 0;
+}
+
+.bonus-tool-floating .burst-trigger-checklist .check-row input { margin-top: 0; }
+
+.burst-trigger-checklist .check-row input { flex: 0 0 auto; margin-top: 3px; }
+.burst-trigger-content { display: grid; gap: 2px; min-width: 0; }
+.burst-trigger-content strong { color: #215947; font-size: inherit; }
+.burst-trigger-content small { color: #536474; font-size: 11px; line-height: 1.35; }
 
 
 .skill-stack-control .number-input-control {
@@ -2229,14 +2381,13 @@ select {
   .team-layout {
     grid-template-areas:
       "left-roster"
+      "left-bonus-tools"
       "left-buff"
       "left-skills"
-      "left-other"
       "right-roster"
+      "right-bonus-tools"
       "right-buff"
-      "right-skills"
-      "right-other"
-      "weather";
+      "right-skills";
   }
 
 }

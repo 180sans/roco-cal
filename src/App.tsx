@@ -36,6 +36,11 @@ const UI_TOKEN_DEFAULTS = {
   "buff-button-height": 34,
   "buff-button-font-size": 12,
   "buff-option-width": 100,
+  "weather-panel-width": 116, "weather-panel-height": 42, "weather-label-font-size": 12, "weather-select-width": 68, "weather-select-height": 28, "weather-select-font-size": 12,
+  "dedication-button-width": 62, "dedication-button-height": 28, "dedication-button-font-size": 12, "dedication-panel-width": 330, "dedication-panel-height": 170, "dedication-label-font-size": 12, "dedication-input-width": 62, "dedication-input-height": 28, "dedication-input-font-size": 12,
+  "marks-button-width": 62, "marks-button-height": 28, "marks-button-font-size": 12, "marks-panel-width": 330, "marks-panel-height": 290, "marks-label-font-size": 12, "marks-input-width": 62, "marks-input-height": 28, "marks-input-font-size": 12,
+  "marks-add-label-font-size": 12, "marks-add-select-width": 110, "marks-add-select-height": 28, "marks-add-select-font-size": 12,
+  "thunderstorm-button-width": 62, "thunderstorm-button-height": 28, "thunderstorm-button-font-size": 12, "thunderstorm-panel-width": 330, "thunderstorm-panel-height": 300, "thunderstorm-label-font-size": 12,
   "team-title-font-size": 13,
   "import-group-width": 94,
   "import-group-height": 28,
@@ -142,6 +147,22 @@ type UiTokenField = { key: keyof typeof UI_TOKEN_DEFAULTS; label: string; min: n
 const sizeField = (key: keyof typeof UI_TOKEN_DEFAULTS, label: string, min = 20, max = 240): UiTokenField => ({ key, label, min, max });
 const fontField = (key: keyof typeof UI_TOKEN_DEFAULTS, label: string): UiTokenField => ({ key, label, min: 8, max: 32 });
 const UI_TOKEN_SECTIONS: Array<{ title: string; fields: UiTokenField[] }> = [
+  {
+    title: "天气",
+    fields: [sizeField("weather-panel-width", "天气外框宽度"), sizeField("weather-panel-height", "天气外框高度"), fontField("weather-label-font-size", "天气文本大小"), sizeField("weather-select-width", "天气选择框宽度"), sizeField("weather-select-height", "天气选择框高度"), fontField("weather-select-font-size", "天气选择框文本大小")],
+  },
+  {
+    title: "奉献",
+    fields: [sizeField("dedication-button-width", "奉献按钮宽度"), sizeField("dedication-button-height", "奉献按钮高度"), fontField("dedication-button-font-size", "奉献按钮文本大小"), sizeField("dedication-panel-width", "奉献面板宽度"), sizeField("dedication-panel-height", "奉献面板高度"), fontField("dedication-label-font-size", "奉献字段文本大小"), sizeField("dedication-input-width", "奉献数值框宽度"), sizeField("dedication-input-height", "奉献数值框高度"), fontField("dedication-input-font-size", "奉献数值文本大小")],
+  },
+  {
+    title: "印记",
+    fields: [sizeField("marks-button-width", "印记按钮宽度"), sizeField("marks-button-height", "印记按钮高度"), fontField("marks-button-font-size", "印记按钮文本大小"), sizeField("marks-panel-width", "印记面板宽度"), sizeField("marks-panel-height", "印记面板高度"), fontField("marks-label-font-size", "印记字段文本大小"), sizeField("marks-input-width", "印记数值框宽度"), sizeField("marks-input-height", "印记数值框高度"), fontField("marks-input-font-size", "印记数值文本大小"), fontField("marks-add-label-font-size", "新增印记文本大小"), sizeField("marks-add-select-width", "新增印记选择框宽度"), sizeField("marks-add-select-height", "新增印记选择框高度"), fontField("marks-add-select-font-size", "新增印记选择框文本大小")],
+  },
+  {
+    title: "雷暴",
+    fields: [sizeField("thunderstorm-button-width", "雷暴按钮宽度"), sizeField("thunderstorm-button-height", "雷暴按钮高度"), fontField("thunderstorm-button-font-size", "雷暴按钮文本大小"), sizeField("thunderstorm-panel-width", "雷暴面板宽度"), sizeField("thunderstorm-panel-height", "雷暴面板高度"), fontField("thunderstorm-label-font-size", "雷暴选项文本大小")],
+  },
   {
     title: "区域布局",
     fields: [
@@ -445,6 +466,8 @@ type BattleContext = {
 };
 
 type PickerMode = "pet" | "skill" | "trait";
+type BonusTool = "dedication" | "marks" | "thunderstorm";
+type MarkField = "charge" | "attack" | "momentum" | "starfall";
 type SkillListResult = { petSkills: SkillItem[]; allSkills: SkillItem[] };
 type PresetManagerResult = { presets: PresetGroup[]; groupName?: string; presetName?: string };
 
@@ -1253,6 +1276,26 @@ function TeamActionPanel({
   const dragRef = useRef<{ pointerX: number; pointerY: number; x: number; y: number } | null>(null);
   const panelRef = useRef<HTMLElement | null>(null);
 
+  function clampToViewport(x: number, y: number) {
+    const panelWidth = panelRef.current?.offsetWidth || 300;
+    const panelHeight = panelRef.current?.offsetHeight || 46;
+    return {
+      x: Math.min(Math.max(8, x), Math.max(8, window.innerWidth - panelWidth - 8)),
+      y: Math.min(Math.max(8, y), Math.max(8, window.innerHeight - panelHeight - 8)),
+    };
+  }
+
+  useEffect(() => {
+    const keepVisible = () => setPosition((current) => clampToViewport(current.x, current.y));
+    window.addEventListener("resize", keepVisible);
+    const observer = new ResizeObserver(keepVisible);
+    if (panelRef.current) observer.observe(panelRef.current);
+    return () => {
+      window.removeEventListener("resize", keepVisible);
+      observer.disconnect();
+    };
+  }, []);
+
   function startDrag(event: ReactPointerEvent<HTMLElement>) {
     if ((event.target as HTMLElement).closest("button, select")) return;
     event.preventDefault();
@@ -1260,12 +1303,10 @@ function TeamActionPanel({
     const move = (moveEvent: PointerEvent) => {
       const start = dragRef.current;
       if (!start) return;
-      const panelWidth = panelRef.current?.offsetWidth || 300;
-      const panelHeight = panelRef.current?.offsetHeight || 46;
-      setPosition({
-        x: Math.min(Math.max(8, start.x + moveEvent.clientX - start.pointerX), Math.max(8, window.innerWidth - panelWidth - 8)),
-        y: Math.min(Math.max(8, start.y + moveEvent.clientY - start.pointerY), Math.max(8, window.innerHeight - panelHeight - 8)),
-      });
+      setPosition(clampToViewport(
+        start.x + moveEvent.clientX - start.pointerX,
+        start.y + moveEvent.clientY - start.pointerY,
+      ));
     };
     const stop = () => {
       dragRef.current = null;
@@ -1303,6 +1344,7 @@ function TeamBattlePage({
   elements,
   configs,
   burstEffects,
+  weather,
   onPresetsChanged,
   onConfigsChanged,
 }: {
@@ -1311,6 +1353,7 @@ function TeamBattlePage({
   elements: string[];
   configs: PickerConfigs;
   burstEffects: BurstEffectItem[];
+  weather: (typeof WEATHER_OPTIONS)[number]["value"];
   onPresetsChanged: (groups: PresetGroup[]) => void;
   onConfigsChanged: (configs: PickerConfigs) => void;
 }) {
@@ -1325,12 +1368,15 @@ function TeamBattlePage({
   const [leftAttacks, setLeftAttacks] = useState(true);
   const [leftOtherBonuses, setLeftOtherBonuses] = useState<TeamOtherBonuses>(blankTeamOtherBonuses);
   const [rightOtherBonuses, setRightOtherBonuses] = useState<TeamOtherBonuses>(blankTeamOtherBonuses);
-  const [weather, setWeather] = useState<(typeof WEATHER_OPTIONS)[number]["value"]>("none");
+  const [leftMarkFields, setLeftMarkFields] = useState<MarkField[]>([]);
+  const [rightMarkFields, setRightMarkFields] = useState<MarkField[]>([]);
   const [results, setResults] = useState<BattleResult[]>([]);
   const [battleContext, setBattleContext] = useState<BattleContext | null>(null);
   const [error, setError] = useState("");
   const [buffOptions, setBuffOptions] = useState<BuffOption[]>([]);
   const [selectedBuffOption, setSelectedBuffOption] = useState(0);
+  const [bonusTool, setBonusTool] = useState<BonusTool | null>(null);
+  const [bonusSide, setBonusSide] = useState<"left" | "right">("left");
   const activeBuffUnit = leftAttacks ? leftSlots[leftIndex] : rightSlots[rightIndex];
   const activeBuffSkillName = activeBuffUnit?.current_skill || activeBuffUnit?.skills?.[0] || "";
 
@@ -1380,6 +1426,11 @@ function TeamBattlePage({
   function patchSlot(side: "left" | "right", index: number, partial: Partial<UnitState>) {
     const slots = side === "left" ? leftSlots : rightSlots;
     setSlot(side, index, { ...slots[index], ...partial });
+  }
+
+  function openBonusTool(side: "left" | "right", tool: BonusTool) {
+    setBonusSide(side);
+    setBonusTool((current) => current === tool && bonusSide === side ? null : tool);
   }
 
   function importGroup(side: "left" | "right", groupName: string) {
@@ -1444,22 +1495,40 @@ function TeamBattlePage({
       <div className="team-layout">
         <Roster className="team-left-roster" title="己方队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={leftSlots} activeIndex={leftIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("left", groupName)} onSelect={setLeftIndex} onPatchSlot={(partial) => patchSlot("left", leftIndex, partial)} onChoose={(index) => { setLeftIndex(index); setPetPicker({ side: "left", index }); }} onClear={(index) => setSlot("left", index, blankUnit())} />
         <Roster className="team-right-roster" title="敌方队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={rightSlots} activeIndex={rightIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("right", groupName)} onSelect={setRightIndex} onPatchSlot={(partial) => patchSlot("right", rightIndex, partial)} onChoose={(index) => { setRightIndex(index); setPetPicker({ side: "right", index }); }} onClear={(index) => setSlot("right", index, blankUnit())} />
-        <section className="weather-panel">
-          <label>
-            <span className="ui-field-title">天气</span>
-            <select value={weather} onChange={(event) => setWeather(event.target.value as (typeof WEATHER_OPTIONS)[number]["value"])}>
-              {WEATHER_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
-          </label>
+        <section className="team-bonus-toolbar team-left-bonus-toolbar" aria-label="己方其他加成">
+          {(["dedication", "marks", "thunderstorm"] as const).map((tool) => (
+            <button key={tool} className={`bonus-tool-button ${tool}${bonusTool === tool && bonusSide === "left" ? " active" : ""}`} aria-pressed={bonusTool === tool && bonusSide === "left"} onClick={() => openBonusTool("left", tool)}>
+              {{ dedication: "奉献", marks: "印记", thunderstorm: "雷暴" }[tool]}
+            </button>
+          ))}
+        </section>
+        <section className="team-bonus-toolbar team-right-bonus-toolbar" aria-label="敌方其他加成">
+          {(["dedication", "marks", "thunderstorm"] as const).map((tool) => (
+            <button key={tool} className={`bonus-tool-button ${tool}${bonusTool === tool && bonusSide === "right" ? " active" : ""}`} aria-pressed={bonusTool === tool && bonusSide === "right"} onClick={() => openBonusTool("right", tool)}>
+              {{ dedication: "奉献", marks: "印记", thunderstorm: "雷暴" }[tool]}
+            </button>
+          ))}
         </section>
         <TeamBuffPanel className="team-left-buff" title="己方 buff" value={leftSlots[leftIndex]} onChange={(partial) => patchSlot("left", leftIndex, partial)} />
         <TeamBuffPanel className="team-right-buff" title="敌方 buff" value={rightSlots[rightIndex]} onChange={(partial) => patchSlot("right", rightIndex, partial)} />
         <TeamSkillCards className="team-left-skills" title="己方技能卡片" cardCount={teamSkillCardCount} value={leftSlots[leftIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onChange={(partial) => patchSlot("left", leftIndex, partial)} />
         <TeamSkillCards className="team-right-skills" title="敌方技能卡片" cardCount={teamSkillCardCount} value={rightSlots[rightIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onChange={(partial) => patchSlot("right", rightIndex, partial)} />
-        <TeamOtherBonusPanel className="team-left-other-bonuses" title="己方其他加成" value={leftOtherBonuses} burstEffects={burstEffects} onChange={(partial) => setLeftOtherBonuses((current) => ({ ...current, ...partial }))} />
-        <TeamOtherBonusPanel className="team-right-other-bonuses" title="敌方其他加成" value={rightOtherBonuses} burstEffects={burstEffects} onChange={(partial) => setRightOtherBonuses((current) => ({ ...current, ...partial }))} />
       </div>
       <TeamActionPanel leftAttacks={leftAttacks} onToggleDirection={() => setLeftAttacks((value) => !value)} onCalculate={() => void calculate()} onApplyBuff={() => void applyBuff()} buffOptions={buffOptions} selectedBuffOption={selectedBuffOption} onSelectBuffOption={setSelectedBuffOption} />
+      {bonusTool ? (
+        <BattleBonusToolPanel
+          tool={bonusTool}
+          side={bonusSide}
+          value={bonusSide === "left" ? leftOtherBonuses : rightOtherBonuses}
+          burstEffects={burstEffects}
+          markFields={bonusSide === "left" ? leftMarkFields : rightMarkFields}
+          onMarkFieldsChange={bonusSide === "left" ? setLeftMarkFields : setRightMarkFields}
+          onChange={bonusSide === "left"
+            ? (partial) => setLeftOtherBonuses((current) => ({ ...current, ...partial }))
+            : (partial) => setRightOtherBonuses((current) => ({ ...current, ...partial }))}
+          onClose={() => setBonusTool(null)}
+        />
+      ) : null}
       <ResultView results={results} error={error} context={battleContext} />
       {petPicker ? (
         <PickerModal
@@ -2009,6 +2078,141 @@ function TeamOtherBonusPanel({
         </div>
       </details>
     </details>
+  );
+}
+
+function BonusToolContent({
+  tool,
+  value,
+  burstEffects,
+  markFields,
+  onMarkFieldsChange,
+  onChange,
+}: {
+  tool: BonusTool;
+  value: TeamOtherBonuses;
+  burstEffects: BurstEffectItem[];
+  markFields: MarkField[];
+  onMarkFieldsChange: (fields: MarkField[]) => void;
+  onChange: (partial: Partial<TeamOtherBonuses>) => void;
+}) {
+  if (tool === "dedication") {
+    return (
+      <div className="bonus-tool-fields">
+        <div>
+          <FieldLabel>威力层数</FieldLabel>
+          <NumberInput value={value.dedication_power_stacks} min={0} max={99} onChange={(dedication_power_stacks) => onChange({ dedication_power_stacks })} />
+        </div>
+        <div>
+          <FieldLabel>连击层数</FieldLabel>
+          <NumberInput value={value.dedication_combo_stacks} min={0} max={99} onChange={(dedication_combo_stacks) => onChange({ dedication_combo_stacks })} />
+        </div>
+      </div>
+    );
+  }
+
+  if (tool === "marks") {
+    const markOptions = [
+      ["charge", "蓄电印记", "charge_mark_stacks"],
+      ["attack", "攻击印记", "attack_mark_stacks"],
+      ["momentum", "蓄势印记", "momentum_mark_stacks"],
+      ["starfall", "星陨印记", "starfall_mark_stacks"],
+    ] as const;
+    return (
+      <div className="bonus-tool-fields">
+        {markOptions.filter(([id]) => markFields.includes(id)).map(([id, label, key]) => <div key={id}><FieldLabel>{label}</FieldLabel><NumberInput value={value[key]} min={0} max={99} onChange={(stacks) => onChange({ [key]: stacks })} />{id === "charge" ? <button className={value.charge_mark_triggered ? "compact-button active" : "compact-button"} aria-pressed={value.charge_mark_triggered} onClick={() => onChange({ charge_mark_triggered: !value.charge_mark_triggered })}>触发</button> : null}<button className="compact-button" title="移除印记" onClick={() => { onChange({ [key]: 0, ...(id === "charge" ? { charge_mark_triggered: false } : {}) }); onMarkFieldsChange(markFields.filter((field) => field !== id)); }}>移除</button></div>)}
+        {markFields.length < markOptions.length ? <label className="mark-add-control"><span>新增印记</span><select value="" onChange={(event) => { const next = event.target.value as MarkField; if (next) onMarkFieldsChange([...markFields, next]); }}><option value="">选择印记</option>{markOptions.filter(([id]) => !markFields.includes(id)).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label> : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="burst-trigger-checklist">
+      {burstEffects.map((effect) => {
+        const checked = value.burst_triggered_effect_ids.includes(effect.id);
+        return (
+          <label key={effect.id} className="check-row">
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={() => onChange({
+                burst_triggered_effect_ids: checked
+                  ? value.burst_triggered_effect_ids.filter((id) => id !== effect.id)
+                  : [...value.burst_triggered_effect_ids, effect.id],
+              })}
+            />
+            <span>{effect.name}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function BattleBonusToolPanel({
+  tool,
+  side,
+  value,
+  burstEffects,
+  markFields,
+  onMarkFieldsChange,
+  onChange,
+  onClose,
+}: {
+  tool: BonusTool;
+  side: "left" | "right";
+  value: TeamOtherBonuses;
+  burstEffects: BurstEffectItem[];
+  markFields: MarkField[];
+  onMarkFieldsChange: (fields: MarkField[]) => void;
+  onChange: (partial: Partial<TeamOtherBonuses>) => void;
+  onClose: () => void;
+}) {
+  const [position, setPosition] = useState(() => ({ x: Math.max(8, window.innerWidth - 348), y: 84 }));
+  const panelRef = useRef<HTMLElement | null>(null);
+  const dragRef = useRef<{ pointerX: number; pointerY: number; x: number; y: number } | null>(null);
+  const title = `${side === "left" ? "己方" : "敌方"}${{ dedication: "奉献", marks: "印记", thunderstorm: "雷暴" }[tool]}`;
+
+  function clampToViewport(x: number, y: number) {
+    const width = panelRef.current?.offsetWidth || 330;
+    const height = panelRef.current?.offsetHeight || 260;
+    return {
+      x: Math.min(Math.max(8, x), Math.max(8, window.innerWidth - width - 8)),
+      y: Math.min(Math.max(8, y), Math.max(8, window.innerHeight - height - 8)),
+    };
+  }
+
+  useEffect(() => {
+    const keepVisible = () => setPosition((current) => clampToViewport(current.x, current.y));
+    window.addEventListener("resize", keepVisible);
+    return () => window.removeEventListener("resize", keepVisible);
+  }, []);
+
+  function startDrag(event: ReactPointerEvent<HTMLElement>) {
+    if ((event.target as HTMLElement).closest("button")) return;
+    event.preventDefault();
+    dragRef.current = { pointerX: event.clientX, pointerY: event.clientY, x: position.x, y: position.y };
+    const move = (moveEvent: PointerEvent) => {
+      const start = dragRef.current;
+      if (start) setPosition(clampToViewport(start.x + moveEvent.clientX - start.pointerX, start.y + moveEvent.clientY - start.pointerY));
+    };
+    const stop = () => {
+      dragRef.current = null;
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+  }
+
+  return (
+    <section ref={panelRef} className={`bonus-tool-floating ${tool}`} style={{ left: position.x, top: position.y }}>
+      <header onPointerDown={startDrag}>
+        <strong>{title}</strong>
+        <button className="icon-button" title="关闭" aria-label="关闭" onClick={onClose}>×</button>
+      </header>
+      <BonusToolContent tool={tool} value={value} burstEffects={burstEffects} markFields={markFields} onMarkFieldsChange={onMarkFieldsChange} onChange={onChange} />
+    </section>
   );
 }
 
@@ -2717,27 +2921,14 @@ function InterfaceSettingsPage({
           <section className="settings-token-section" key={activeSection.title}>
             <div className="settings-token-section-header">
               <h3>{activeSection.title}</h3>
-              {activeSection.title === "队伍配置" ? (
+              {configIndex === "team" ? (
                 <button
                   className="compact-button"
                   onClick={() => {
-                    const nextValues = {
-                      ...values,
-                      "team-slot-count": UI_TOKEN_DEFAULTS["team-slot-count"],
-                      "team-skill-card-count": UI_TOKEN_DEFAULTS["team-skill-card-count"],
-                      "team-action-frame-width": UI_TOKEN_DEFAULTS["team-action-frame-width"],
-                      "team-action-frame-height": UI_TOKEN_DEFAULTS["team-action-frame-height"],
-                      "direction-button-width": UI_TOKEN_DEFAULTS["direction-button-width"],
-                      "direction-button-height": UI_TOKEN_DEFAULTS["direction-button-height"],
-                      "direction-button-font-size": UI_TOKEN_DEFAULTS["direction-button-font-size"],
-                      "calc-button-width": UI_TOKEN_DEFAULTS["calc-button-width"],
-                      "calc-button-height": UI_TOKEN_DEFAULTS["calc-button-height"],
-                      "calc-button-font-size": UI_TOKEN_DEFAULTS["calc-button-font-size"],
-                      "buff-button-width": UI_TOKEN_DEFAULTS["buff-button-width"],
-                      "buff-button-height": UI_TOKEN_DEFAULTS["buff-button-height"],
-                      "buff-button-font-size": UI_TOKEN_DEFAULTS["buff-button-font-size"],
-                      "buff-option-width": UI_TOKEN_DEFAULTS["buff-option-width"],
-                    };
+                    const nextValues = { ...values };
+                    activeSection.fields.forEach(({ key }) => {
+                      nextValues[key] = UI_TOKEN_DEFAULTS[key];
+                    });
                     setValues(nextValues);
                     setMessage("");
                     onPreviewValues(nextValues);
@@ -2813,7 +3004,7 @@ function BurstPanelPage({
         </button>
         {isExpanded ? (
           <div className="burst-card-detail">
-            <p>{effect.description}</p>
+            <p className="burst-effect-description"><span>效果描述</span>{effect.description || "暂无描述"}</p>
             <label>
               <span>迸发效果备注</span>
               <textarea
@@ -2859,6 +3050,7 @@ function BurstPanelPage({
 
 function App() {
   const [tab, setTab] = useState<"team" | "presets" | "settings">("team");
+  const [weather, setWeather] = useState<(typeof WEATHER_OPTIONS)[number]["value"]>("none");
   const [data, setData] = useState<AppState | null>(null);
   const [error, setError] = useState("");
   const [previewUiTokens, setPreviewUiTokens] = useState<UiTokenValues | null>(null);
@@ -2890,6 +3082,15 @@ function App() {
           <button className={tab === "settings" ? "active" : ""} onClick={() => setTab("settings")}>界面配置</button>
           <button onClick={() => void load()}>刷新</button>
         </nav>
+        {tab === "team" ? <section className="weather-panel">
+            <label>
+              <span className="ui-field-title">天气</span>
+              <select value={weather} onChange={(event) => setWeather(event.target.value as (typeof WEATHER_OPTIONS)[number]["value"])}>
+                {WEATHER_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+            </label>
+          </section>
+        : null}
       </header>
       {error ? <div className="error-banner">{error}</div> : null}
       <datalist id="pet-options">
@@ -2904,6 +3105,7 @@ function App() {
               elements={data.elements}
               configs={teamConfigs || data.configs}
               burstEffects={data.burstEffects}
+              weather={weather}
               onPresetsChanged={(presets) => setData({ ...data, presets })}
               onConfigsChanged={(configs) => setData({ ...data, configs })}
             />

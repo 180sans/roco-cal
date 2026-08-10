@@ -465,8 +465,9 @@ def list_burst_effects() -> dict[str, Any]:
             "description": skill.get("description", ""),
         })
 
+    from core.trait_library import load_trait_data_by_name
     for trait_name in ("生物电", "电流刺激"):
-        data = _load_json(DATA_DIR / "pets_trait_json" / f"{trait_name}.json", {})
+        data = load_trait_data_by_name(trait_name) or {}
         trait = data.get("特性", {}) if isinstance(data, dict) else {}
         items.append({
             "id": f"trait:{trait_name}",
