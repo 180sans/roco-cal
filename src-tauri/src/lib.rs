@@ -1,5 +1,11 @@
 use serde::Deserialize;
 use serde_json::Value;
+#[cfg(windows)]
+use std::ffi::{c_void, OsString};
+use std::fs::OpenOptions;
+use std::io::Write;
+#[cfg(windows)]
+use std::os::windows::ffi::{OsStrExt, OsStringExt};
 use std::path::PathBuf;
 use std::process::Command;
 use tauri::Manager;
@@ -9,6 +15,156 @@ struct PythonEnvelope {
     ok: bool,
     data: Option<Value>,
     error: Option<String>,
+}
+
+#[cfg(windows)]
+#[repr(C)]
+struct Guid {
+    data1: u32,
+    data2: u16,
+    data3: u16,
+    data4: [u8; 8],
+}
+
+#[cfg(windows)]
+const FOLDERID_ROAMING_APP_DATA: Guid = Guid {
+    data1: 0x3eb685db,
+    data2: 0x65f9,
+    data3: 0x4cf6,
+    data4: [0xa0, 0x3a, 0xe3, 0xef, 0x65, 0x72, 0x9f, 0x3d],
+};
+
+#[cfg(windows)]
+#[link(name = "shell32")]
+unsafe extern "system" {
+    fn SHGetKnownFolderPath(
+        folder_id: *const Guid,
+        flags: u32,
+        token: *mut c_void,
+        path: *mut *mut u16,
+    ) -> i32;
+}
+
+#[cfg(windows)]
+#[link(name = "ole32")]
+unsafe extern "system" {
+    fn CoTaskMemFree(memory: *const c_void);
+}
+
+#[cfg(windows)]
+#[link(name = "advapi32")]
+unsafe extern "system" {
+    fn OpenProcessToken(
+        process_handle: *mut c_void,
+        desired_access: u32,
+        token_handle: *mut *mut c_void,
+    ) -> i32;
+}
+
+#[cfg(windows)]
+#[link(name = "kernel32")]
+unsafe extern "system" {
+    fn CloseHandle(handle: *mut c_void) -> i32;
+    fn GetCurrentProcess() -> *mut c_void;
+}
+
+#[cfg(windows)]
+#[link(name = "userenv")]
+unsafe extern "system" {
+    fn GetUserProfileDirectoryW(token: *mut c_void, profile_dir: *mut u16, size: *mut u32) -> i32;
+}
+
+#[cfg(windows)]
+fn profile_dir_from_current_token() -> Result<PathBuf, String> {
+    const TOKEN_QUERY: u32 = 0x0008;
+
+    let mut token = std::ptr::null_mut();
+    if unsafe { OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token) } == 0 {
+        return Err(std::io::Error::last_os_error().to_string());
+    }
+
+    let mut size = 0;
+    let _ = unsafe { GetUserProfileDirectoryW(token, std::ptr::null_mut(), &mut size) };
+    if size == 0 {
+        let error = std::io::Error::last_os_error().to_string();
+        unsafe { CloseHandle(token) };
+        return Err(error);
+    }
+
+    let mut buffer = vec![0u16; size as usize];
+    let success = unsafe { GetUserProfileDirectoryW(token, buffer.as_mut_ptr(), &mut size) };
+    unsafe { CloseHandle(token) };
+    if success == 0 || size == 0 {
+        return Err(std::io::Error::last_os_error().to_string());
+    }
+
+    let length = buffer
+        .iter()
+        .position(|unit| *unit == 0)
+        .unwrap_or(size as usize);
+    Ok(PathBuf::from(OsString::from_wide(&buffer[..length])))
+}
+
+#[cfg(windows)]
+fn roaming_app_data_dir() -> Option<PathBuf> {
+    let mut raw_path = std::ptr::null_mut();
+    let result = unsafe {
+        SHGetKnownFolderPath(
+            &FOLDERID_ROAMING_APP_DATA,
+            0,
+            std::ptr::null_mut(),
+            &mut raw_path,
+        )
+    };
+    if result < 0 || raw_path.is_null() {
+        return None;
+    }
+
+    let mut length = 0;
+    unsafe {
+        while *raw_path.add(length) != 0 {
+            length += 1;
+        }
+    }
+    let path = unsafe { OsString::from_wide(std::slice::from_raw_parts(raw_path, length)) };
+    unsafe { CoTaskMemFree(raw_path.cast()) };
+    Some(PathBuf::from(path))
+}
+
+fn startup_log(message: &str) {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("rocodatebase-startup.log");
+    if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(path) {
+        let _ = writeln!(file, "{message}");
+    }
+}
+
+#[cfg(windows)]
+fn path_utf16(path: &std::path::Path) -> String {
+    path.as_os_str()
+        .encode_wide()
+        .map(|code_unit| format!("{code_unit:04X}"))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+#[cfg(windows)]
+fn environment_utf16(name: &str) -> String {
+    std::env::var_os(name)
+        .map(|value| {
+            value
+                .encode_wide()
+                .map(|code_unit| format!("{code_unit:04X}"))
+                .collect::<Vec<_>>()
+                .join(" ")
+        })
+        .unwrap_or_else(|| "<missing>".to_string())
+}
+
+fn current_process_user() -> String {
+    Command::new("whoami")
+        .output()
+        .map(|output| String::from_utf8_lossy(&output.stdout).trim().to_string())
+        .unwrap_or_else(|error| format!("<whoami failed: {error}>"))
 }
 
 fn resource_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
@@ -108,25 +264,30 @@ fn run_python_payload(
 }
 
 fn webview_data_dir(app: &tauri::AppHandle) -> PathBuf {
-    if let Ok(custom_dir) = std::env::var("ROCODATABASE_WEBVIEW_DATA_DIR") {
-        if !custom_dir.trim().is_empty() {
-            return PathBuf::from(custom_dir);
-        }
-    }
-
     app_data_dir(app).join("webview2")
 }
 
-fn app_data_dir(app: &tauri::AppHandle) -> PathBuf {
-    if let Ok(custom_dir) = std::env::var("ROCODATABASE_USER_DATA_DIR") {
-        if !custom_dir.trim().is_empty() {
-            return PathBuf::from(custom_dir);
-        }
+fn app_data_dir(_app: &tauri::AppHandle) -> PathBuf {
+    #[cfg(windows)]
+    if let Ok(profile_dir) = profile_dir_from_current_token() {
+        return profile_dir
+            .join("AppData")
+            .join("Roaming")
+            .join("com.sans.rocodatebase");
     }
 
-    app.path()
+    #[cfg(windows)]
+    if let Some(app_data) = roaming_app_data_dir() {
+        return app_data.join("com.sans.rocodatebase");
+    }
+
+    if let Some(app_data) = std::env::var_os("APPDATA") {
+        return PathBuf::from(app_data).join("com.sans.rocodatebase");
+    }
+
+    _app.path()
         .app_data_dir()
-        .unwrap_or_else(|_| PathBuf::from(".runtime-data"))
+        .expect("Windows app data directory is unavailable")
 }
 
 fn configured_window_size(app: &tauri::AppHandle) -> Option<(f64, f64)> {
@@ -250,13 +411,43 @@ fn save_picker_config(app: tauri::AppHandle, payload: Value) -> Result<Value, St
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    startup_log("run: starting Tauri");
+    startup_log(&format!("process: whoami={}", current_process_user()));
+    #[cfg(windows)]
+    {
+        startup_log(&format!(
+            "process: USERPROFILE_utf16={}, APPDATA_utf16={}, LOCALAPPDATA_utf16={}",
+            environment_utf16("USERPROFILE"),
+            environment_utf16("APPDATA"),
+            environment_utf16("LOCALAPPDATA")
+        ));
+        match profile_dir_from_current_token() {
+            Ok(path) => startup_log(&format!(
+                "process: token_profile_dir_utf16={}",
+                path_utf16(&path)
+            )),
+            Err(error) => startup_log(&format!("process: token_profile_dir failed: {error}")),
+        }
+    }
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            let data_dir = webview_data_dir(app.handle());
-            std::fs::create_dir_all(&data_dir)?;
-            std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", &data_dir);
-            std::fs::create_dir_all(app_data_dir(app.handle()))?;
+            startup_log("setup: entered");
+            let user_data_dir = app_data_dir(app.handle());
+            let webview_dir = webview_data_dir(app.handle());
+            startup_log(&format!(
+                "setup: user_data_dir={}, webview_dir={}",
+                user_data_dir.display(),
+                webview_dir.display()
+            ));
+            startup_log(&format!(
+                "setup: user_data_dir_utf16={}, webview_dir_utf16={}",
+                path_utf16(&user_data_dir),
+                path_utf16(&webview_dir)
+            ));
+            std::fs::create_dir_all(&user_data_dir)?;
+            std::fs::create_dir_all(&webview_dir)?;
+            startup_log("setup: data directories are available");
 
             let window_config = app
                 .config()
@@ -270,14 +461,32 @@ pub fn run() {
 
             let window_builder =
                 tauri::WebviewWindowBuilder::from_config(app.handle(), &window_config)?
-                    .data_directory(data_dir);
+                    .data_directory(webview_dir)
+                    .on_page_load(|_, payload| {
+                        startup_log(&format!(
+                            "page load: {:?} {}",
+                            payload.event(),
+                            payload.url()
+                        ));
+                    });
             let window_builder = if let Some((width, height)) = configured_window_size(app.handle())
             {
                 window_builder.inner_size(width, height)
             } else {
                 window_builder
             };
-            window_builder.build()?;
+            startup_log("setup: building main window");
+            let window = window_builder.build().map_err(|error| {
+                startup_log(&format!("setup: main window build failed: {error}"));
+                error
+            })?;
+            startup_log("setup: main window built");
+            window.on_window_event(|event| {
+                startup_log(&format!("window event: {event:?}"));
+            });
+            window.on_webview_event(|event| {
+                startup_log(&format!("webview event: {event:?}"));
+            });
 
             Ok(())
         })

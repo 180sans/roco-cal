@@ -2822,12 +2822,6 @@ function App() {
     void load();
   }, []);
 
-  useEffect(() => {
-    if (!data) return;
-    const values = uiTokenValues(data.configs);
-    void getCurrentWindow().setSize(new LogicalSize(values["window-width"], values["window-height"])).catch(() => undefined);
-  }, [data]);
-
   const teamConfigs = data && previewUiTokens
     ? { ...data.configs, ui_tokens: { ...(data.configs.ui_tokens || {}), ...previewUiTokens } }
     : data?.configs;

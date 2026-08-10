@@ -4,9 +4,11 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "prepare:python": "powershell -ExecutionPolicy Bypass -File scripts/prepare-python-runtime.ps1",
     "dev": "vite --host 127.0.0.1 --port 1420",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "diagnose:environment": "node scripts/diagnose-environment.mjs",
     "tauri": "tauri"
   },
   "dependencies": {
