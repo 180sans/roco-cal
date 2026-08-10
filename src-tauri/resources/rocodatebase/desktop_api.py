@@ -87,6 +87,7 @@ def _pet_summary(pet: dict[str, Any]) -> dict[str, Any]:
         "traitEffect": trait_effect or "",
         "evolutionStage": evolution.get("stage", "") if isinstance(evolution, dict) else "",
         "nextForms": evolution.get("next", []) if isinstance(evolution, dict) else [],
+        "evolutionChain": evolution.get("chain", []) if isinstance(evolution, dict) else [],
         "skillCount": len(skills) if isinstance(skills, list) else 0,
     }
 

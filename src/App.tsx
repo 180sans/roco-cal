@@ -283,6 +283,7 @@ type Pet = {
   isFinal?: boolean;
   evolutionStage?: string;
   nextForms?: string[];
+  evolutionChain?: string[];
   skillCount: number;
 };
 
@@ -1020,8 +1021,33 @@ function PickerModal({
       return !pet || petMatchesPickerFilters(pet, element, finalOnly);
     });
   const sourcePets = mode === "trait" ? traits : pets;
+  const petMatchesSearch = (pet: Pet) => {
+    const searchable = mode === "trait"
+      ? `${pet.id}${pet.name}${pet.traitName || ""}`
+      : `${pet.id}${pet.name}`;
+    return searchable.toLowerCase().includes(normalizedQuery);
+  };
+  const matchingEvolutionForms = new Set(
+    sourcePets
+      .filter((pet) => normalizedQuery && petMatchesSearch(pet))
+      .flatMap((pet) => [pet.label, ...(pet.evolutionChain || [])]),
+  );
+  let evolutionChainExpanded = true;
+  while (evolutionChainExpanded) {
+    evolutionChainExpanded = false;
+    for (const pet of sourcePets) {
+      const chainMembers = [pet.label, ...(pet.evolutionChain || [])];
+      if (!chainMembers.some((member) => matchingEvolutionForms.has(member))) continue;
+      for (const member of chainMembers) {
+        if (!matchingEvolutionForms.has(member)) {
+          matchingEvolutionForms.add(member);
+          evolutionChainExpanded = true;
+        }
+      }
+    }
+  }
   const filteredPets = sourcePets
-    .filter((pet) => (!normalizedQuery || `${pet.id}${pet.name}${pet.traitName || ""}${pet.traitEffect || ""}`.toLowerCase().includes(normalizedQuery)))
+    .filter((pet) => !normalizedQuery || petMatchesSearch(pet) || matchingEvolutionForms.has(pet.label))
     .filter((pet) => petMatchesPickerFilters(pet, element, finalOnly))
     .sort((a, b) => {
       const idA = Number(a.id) || Number.MAX_SAFE_INTEGER;
@@ -1031,7 +1057,7 @@ function PickerModal({
     });
   const currentSkillSource = skillTab === "pet" ? petSkills : allSkills;
   const filteredSkills = currentSkillSource
-    .filter((skill) => !normalizedQuery || `${skill.name}${skill.detail?.description || skill.description || ""}`.toLowerCase().includes(normalizedQuery))
+    .filter((skill) => !normalizedQuery || skill.name.toLowerCase().includes(normalizedQuery))
     .filter((skill) => {
       if (!element) return true;
       const detail = skill.detail || skill;
