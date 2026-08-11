@@ -23,7 +23,7 @@
                             "kind": "power_multiplier",
                             "filters": {
                                 "skill_effect": [
-                                    "false"
+                                    "no"
                                 ]
                             },
                             "value": 0.3

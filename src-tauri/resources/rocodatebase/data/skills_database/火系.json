@@ -5,7 +5,8 @@
     "element": "火",
     "type": "状态",
     "skill_power": null,
-    "description": "使敌方身上的灼烧翻倍，并触发1次灼烧伤害。"
+    "description": "使敌方身上的灼烧翻倍，并触发1次灼烧伤害。",
+    "effect": "normal"
   },
   {
     "name": "焚尽",
@@ -25,7 +26,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "炎打",
@@ -45,7 +47,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "炎枪",
@@ -53,7 +56,8 @@
     "element": "火",
     "type": "魔攻",
     "skill_power": 100,
-    "description": "对敌方精灵造成魔法伤害。"
+    "description": "对敌方精灵造成魔法伤害。",
+    "effect": "no"
   },
   {
     "name": "炙热波动",
@@ -65,7 +69,8 @@
     "triggered": {
       "mode": "response_status",
       "skill_power_mul": "2"
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "烈焰风暴",
@@ -73,7 +78,8 @@
     "element": "火",
     "type": "魔攻",
     "skill_power": 75,
-    "description": "造成魔伤，敌方获得6层灼烧。"
+    "description": "造成魔伤，敌方获得6层灼烧。",
+    "effect": "normal"
   },
   {
     "name": "热气",
@@ -81,7 +87,8 @@
     "element": "火",
     "type": "魔攻",
     "skill_power": 40,
-    "description": "对敌方精灵造成魔法伤害。"
+    "description": "对敌方精灵造成魔法伤害。",
+    "effect": "no"
   },
   {
     "name": "热身",
@@ -111,7 +118,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "焚毁",
@@ -131,7 +139,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "灼伤",
@@ -139,7 +148,8 @@
     "element": "火",
     "type": "物攻",
     "skill_power": 120,
-    "description": "对敌方精灵造成物理伤害。"
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
   },
   {
     "name": "焚烧烙印",
@@ -147,7 +157,8 @@
     "element": "火",
     "type": "状态",
     "skill_power": null,
-    "description": "驱散双方所有印记，每驱散1层，敌方获得5层灼烧。"
+    "description": "驱散双方所有印记，每驱散1层，敌方获得5层灼烧。",
+    "effect": "normal"
   },
   {
     "name": "燃尽",
@@ -160,7 +171,8 @@
       "mode": "enemy_hp_loss_5_percent",
       "skill_power_plus": "-5",
       "multiple": true
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "爆裂飞弹",
@@ -168,7 +180,8 @@
     "element": "火",
     "type": "魔攻",
     "skill_power": 160,
-    "description": "对敌方精灵造成魔法伤害。"
+    "description": "对敌方精灵造成魔法伤害。",
+    "effect": "no"
   },
   {
     "name": "闪燃",
@@ -180,7 +193,8 @@
     "triggered": {
       "mode": "response_status",
       "skill_power_mul": 4
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "阳火增辉",
@@ -193,7 +207,8 @@
       "mode": "after_defeat",
       "skill_power_mul": "2",
       "multiple": true
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "除厄",
@@ -201,7 +216,8 @@
     "element": "火",
     "type": "魔攻",
     "skill_power": 60,
-    "description": "造成魔伤，驱散自己的减益。"
+    "description": "造成魔伤，驱散自己的减益。",
+    "effect": "normal"
   },
   {
     "name": "炎息",
@@ -209,7 +225,8 @@
     "element": "火",
     "type": "物攻",
     "skill_power": 40,
-    "description": "对敌方精灵造成物理伤害。"
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
   },
   {
     "name": "火苗",
@@ -217,7 +234,8 @@
     "element": "火",
     "type": "物攻",
     "skill_power": 30,
-    "description": "造成物伤，自己回复1能量。"
+    "description": "造成物伤，自己回复1能量。",
+    "effect": "normal"
   },
   {
     "name": "双响炮",
@@ -226,7 +244,8 @@
     "type": "物攻",
     "skill_power": 25,
     "description": "造成物伤，2连击。",
-    "combo": 2
+    "combo": 2,
+    "effect": "normal"
   },
   {
     "name": "易燃物质",
@@ -235,7 +254,8 @@
     "type": "魔攻",
     "skill_power": 30,
     "description": "造成魔伤，2连击，每次连击使敌方获得2层灼烧。",
-    "combo": 2
+    "combo": 2,
+    "effect": "normal"
   },
   {
     "name": "吹火",
@@ -248,7 +268,8 @@
       "skill_power_plus": "20",
       "multiple": true,
       "mode": "usage"
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "天火",
@@ -256,7 +277,8 @@
     "element": "火",
     "type": "状态",
     "skill_power": null,
-    "description": "敌方获得10层灼烧，应对防御：改为获得30层。"
+    "description": "敌方获得10层灼烧，应对防御：改为获得30层。",
+    "effect": "normal"
   },
   {
     "name": "山火",
@@ -266,10 +288,11 @@
     "skill_power": 15,
     "description": "造成物伤，每使用1次其他火系技能，本技能威力永久翻倍。",
     "triggered": {
-      "mode": "usage_other_fire_skill",
+      "mode": "other_fire_skill_count",
       "skill_power_mul": "2",
       "multiple": true
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "引燃",
@@ -277,7 +300,8 @@
     "element": "火",
     "type": "状态",
     "skill_power": null,
-    "description": "敌方获得10层灼烧。"
+    "description": "敌方获得10层灼烧。",
+    "effect": "normal"
   },
   {
     "name": "怒火",
@@ -312,7 +336,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "持续高温",
@@ -332,7 +357,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "流星火雨",
@@ -345,7 +371,8 @@
       "mode": "after_defeat",
       "skill_power_plus": "75",
       "multiple": true
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "火爪",
@@ -353,7 +380,8 @@
     "element": "火",
     "type": "魔攻",
     "skill_power": 60,
-    "description": "对敌方精灵造成魔法伤害。"
+    "description": "对敌方精灵造成魔法伤害。",
+    "effect": "no"
   },
   {
     "name": "流火",
@@ -362,7 +390,8 @@
     "type": "魔攻",
     "skill_power": 15,
     "description": "造成魔伤，3连击。",
-    "combo": 3
+    "combo": 3,
+    "effect": "normal"
   },
   {
     "name": "淬火",
@@ -383,7 +412,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "火云车",
@@ -391,7 +421,8 @@
     "element": "火",
     "type": "物攻",
     "skill_power": 140,
-    "description": "对敌方精灵造成物理伤害。"
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
   },
   {
     "name": "火焰冲锋",
@@ -399,7 +430,8 @@
     "element": "火",
     "type": "物攻",
     "skill_power": 60,
-    "description": "对敌方精灵造成物理伤害。"
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
   },
   {
     "name": "火焰切割",
@@ -407,7 +439,8 @@
     "element": "火",
     "type": "物攻",
     "skill_power": 100,
-    "description": "对敌方精灵造成物理伤害。"
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
   },
   {
     "name": "火焰护盾",
@@ -416,7 +449,8 @@
     "type": "防御",
     "skill_power": null,
     "description": "减伤70%，应对攻击：敌方获得6层灼烧。",
-    "damage_reduction": "70%"
+    "damage_reduction": "70%",
+    "effect": "normal"
   },
   {
     "name": "火焰箭",
@@ -424,7 +458,8 @@
     "element": "火",
     "type": "物攻",
     "skill_power": 80,
-    "description": "对敌方精灵造成物理伤害。"
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
   },
   {
     "name": "高温回火",
@@ -432,7 +467,8 @@
     "element": "火",
     "type": "魔攻",
     "skill_power": 40,
-    "description": "造成魔伤，自己脱离。"
+    "description": "造成魔伤，自己脱离。",
+    "effect": "normal"
   },
   {
     "name": "花火",
@@ -440,7 +476,8 @@
     "type": "物攻",
     "description": "造成物伤，敌方获得4层灼烧。",
     "skill_power": 70,
-    "cost": 3
+    "cost": 3,
+    "effect": "normal"
   },
   {
     "name": "暖气",
@@ -460,7 +497,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "焚身",
@@ -468,7 +506,8 @@
     "type": "物攻",
     "description": "造成高额物理伤害，自己下回合获得眩晕。",
     "skill_power": 180,
-    "cost": 5
+    "cost": 5,
+    "effect": "normal"
   },
   {
     "name": "野火",
@@ -488,6 +527,7 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "choice"
   }
 ]

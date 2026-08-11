@@ -5,7 +5,8 @@
     "element": "武",
     "type": "物攻",
     "skill_power": 140,
-    "description": "对敌方精灵造成物理伤害。"
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
   },
   {
     "name": "斩断",
@@ -13,7 +14,8 @@
     "element": "武",
     "type": "物攻",
     "skill_power": 70,
-    "description": "造成物伤，应对状态：额外打断被应对技能。"
+    "description": "造成物伤，应对状态：额外打断被应对技能。",
+    "effect": "normal"
   },
   {
     "name": "防御反击",
@@ -34,7 +36,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "贯手",
@@ -42,7 +45,8 @@
     "element": "武",
     "type": "魔攻",
     "skill_power": 80,
-    "description": "对敌方精灵造成魔法伤害。"
+    "description": "对敌方精灵造成魔法伤害。",
+    "effect": "no"
   },
   {
     "name": "缠丝劲",
@@ -51,7 +55,8 @@
     "type": "物攻",
     "skill_power": 25,
     "description": "造成物伤，2连击。",
-    "combo": 2
+    "combo": 2,
+    "effect": "normal"
   },
   {
     "name": "硬门",
@@ -59,7 +64,8 @@
     "element": "武",
     "type": "防御",
     "skill_power": null,
-    "description": "应对攻击：打断被应对技能，并造成90威力物伤。"
+    "description": "应对攻击：打断被应对技能，并造成90威力物伤。",
+    "effect": "normal"
   },
   {
     "name": "破防",
@@ -84,7 +90,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "破绽",
@@ -129,7 +136,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "爆冲",
@@ -141,7 +149,8 @@
     "triggered": {
       "mode": "response_status",
       "skill_power_mul": "5"
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "气波",
@@ -149,7 +158,8 @@
     "element": "武",
     "type": "魔攻",
     "skill_power": 40,
-    "description": "对敌方精灵造成魔法伤害。"
+    "description": "对敌方精灵造成魔法伤害。",
+    "effect": "no"
   },
   {
     "name": "气沉丹田",
@@ -169,7 +179,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "无影脚",
@@ -181,7 +192,8 @@
     "triggered": {
       "mode": "response_status",
       "skill_power_mul": "2"
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "散手",
@@ -194,7 +206,8 @@
     "triggered": {
       "mode": "response_status",
       "combo": "6"
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "化劲",
@@ -214,7 +227,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "提气",
@@ -244,7 +258,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "技巧打击",
@@ -256,7 +271,8 @@
     "triggered": {
       "mode": "response_status",
       "skill_power_mul": "10"
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "截拳",
@@ -264,7 +280,8 @@
     "element": "武",
     "type": "物攻",
     "skill_power": 85,
-    "description": "造成物伤，应对状态：额外造成打断，回复该技能能耗的能量。"
+    "description": "造成物伤，应对状态：额外造成打断，回复该技能能耗的能量。",
+    "effect": "normal"
   },
   {
     "name": "影袭",
@@ -272,7 +289,8 @@
     "element": "武",
     "type": "物攻",
     "skill_power": 100,
-    "description": "对敌方精灵造成物理伤害。"
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
   },
   {
     "name": "崩拳",
@@ -292,7 +310,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "寸拳",
@@ -300,7 +319,8 @@
     "element": "武",
     "type": "物攻",
     "skill_power": 30,
-    "description": "造成物伤，自己回复1能量。"
+    "description": "造成物伤，自己回复1能量。",
+    "effect": "normal"
   },
   {
     "name": "回旋踢",
@@ -312,7 +332,8 @@
     "triggered": {
       "mode": "enemy_switch_in_this_turn",
       "skill_power_mul": "2"
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "听桥",
@@ -321,7 +342,8 @@
     "type": "防御",
     "skill_power": null,
     "description": "减伤60%，应对攻击：对敌方造成武系物理伤害，威力与被应对技能相等。",
-    "damage_reduction": "60%"
+    "damage_reduction": "60%",
+    "effect": "normal"
   },
   {
     "name": "叠势",
@@ -335,7 +357,8 @@
       "mode": "response_success",
       "combo_plus": "2",
       "multiple": true
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "反击拳",
@@ -348,7 +371,8 @@
     "triggered": {
       "mode": "secondhand",
       "combo": "3"
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "预备势",
@@ -383,7 +407,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "马步",
@@ -403,7 +428,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "choice"
   },
   {
     "name": "驱赶",
@@ -420,6 +446,7 @@
         "mode": "response_status",
         "skill_power_plus": "140"
       }
-    ]
+    ],
+    "effect": "choice"
   }
 ]

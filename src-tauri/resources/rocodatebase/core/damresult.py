@@ -486,6 +486,7 @@ def _effect_matches_skill_filters(
     current_skill_name,
     current_skill_element,
     current_skill_type,
+    current_skill_effect=None,
     owner_elements=None,
     current_advantage=None,
 ):
@@ -509,6 +510,12 @@ def _effect_matches_skill_filters(
 
     skill_types = filters.get("skill_types")
     if skill_types and current_skill_type not in skill_types:
+        return False
+
+    skill_effects = filters.get("skill_effect")
+    if isinstance(skill_effects, str):
+        skill_effects = [skill_effects]
+    if skill_effects and current_skill_effect not in skill_effects:
         return False
 
     if filters.get("skill_element") == "not_owner_element" and current_skill_element in (owner_elements or []):
@@ -580,6 +587,7 @@ def _collect_trait_modifiers(
     current_skill_name,
     current_skill_element,
     current_skill_type,
+    current_skill_effect=None,
     active_modes=None,
     manual_modes=None,
     skill_trigger_modes=None,
@@ -628,6 +636,7 @@ def _collect_trait_modifiers(
             current_skill_name=current_skill_name,
             current_skill_element=current_skill_element,
             current_skill_type=current_skill_type,
+            current_skill_effect=current_skill_effect,
             owner_elements=owner_elements,
             current_advantage=current_advantage,
         ):
@@ -746,6 +755,7 @@ def battle_damage(
     skill_data = skill_dataset.find_skill(skill_name)
     if skill_data is None:
         raise ValueError(f"未找到技能: {skill_name}")
+    skill_effect = skill_data.get("effect")
 
     resolved_cases = resolve_skill(
         skill_data,
@@ -863,6 +873,7 @@ def battle_damage(
             current_skill_name=skill_name,
             current_skill_element=skill_element,
             current_skill_type=current_skill_type_raw,
+            current_skill_effect=skill_effect,
             active_modes=active_modes,
             manual_modes=attacker_manual_modes,
             skill_trigger_modes=skill_trigger_modes,
@@ -875,6 +886,7 @@ def battle_damage(
             current_skill_name=skill_name,
             current_skill_element=skill_element,
             current_skill_type=current_skill_type_raw,
+            current_skill_effect=skill_effect,
             active_modes=active_modes,
             manual_modes=defender_manual_modes,
             skill_trigger_modes=skill_trigger_modes,

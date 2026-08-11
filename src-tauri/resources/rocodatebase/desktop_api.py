@@ -526,10 +526,11 @@ def skill_trigger_info(payload: dict[str, Any]) -> dict[str, Any]:
     stackable = [
         {
             "index": index,
-            "label": next((labels.get(key, key) for key in option if key not in {"multiple", "condition", "override"}), "叠加"),
+            "label": option.get("label") or next((labels.get(key, key) for key in option if key not in {"multiple", "condition", "override", "mode", "context", "skill_power_by_count", "label"}), "叠加"),
+            "max": len(option["skill_power_by_count"]) - 1 if isinstance(option.get("skill_power_by_count"), list) and option["skill_power_by_count"] else 10,
         }
         for index, option in enumerate(options)
-        if isinstance(option, dict) and bool(option.get("multiple", False))
+        if isinstance(option, dict) and (bool(option.get("multiple", False)) or bool(option.get("skill_power_by_count")))
     ]
     usage_mode_options = [
         {

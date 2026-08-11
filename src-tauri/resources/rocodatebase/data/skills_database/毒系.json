@@ -11,7 +11,8 @@
       "mode": "response_attack",
       "damage_reduction_plus": "0.1",
       "multiple": true
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "毒雾",
@@ -19,7 +20,8 @@
     "element": "毒",
     "type": "状态",
     "skill_power": null,
-    "description": "将敌方所有增益，转化成中毒。"
+    "description": "将敌方所有增益，转化成中毒。",
+    "effect": "normal"
   },
   {
     "name": "重金属粉尘",
@@ -27,7 +29,8 @@
     "element": "毒",
     "type": "状态",
     "skill_power": null,
-    "description": "携带的攻击技能获得附加中毒3，应对防御，改为获得附加中毒6。"
+    "description": "携带的攻击技能获得附加中毒3，应对防御，改为获得附加中毒6。",
+    "effect": "normal"
   },
   {
     "name": "连续毒针",
@@ -36,7 +39,8 @@
     "type": "物攻",
     "skill_power": 15,
     "description": "造成物伤，2连击，每次连击使敌方获得1层中毒。",
-    "combo": 2
+    "combo": 2,
+    "effect": "normal"
   },
   {
     "name": "落井下毒",
@@ -44,7 +48,8 @@
     "element": "毒",
     "type": "状态",
     "skill_power": null,
-    "description": "使敌方精灵减益的层数翻倍。"
+    "description": "使敌方精灵减益的层数翻倍。",
+    "effect": "normal"
   },
   {
     "name": "腐蚀酸液",
@@ -52,7 +57,8 @@
     "element": "毒",
     "type": "魔攻",
     "skill_power": 35,
-    "description": "造成魔伤，敌方获得2层中毒。"
+    "description": "造成魔伤，敌方获得2层中毒。",
+    "effect": "normal"
   },
   {
     "name": "腐化",
@@ -77,7 +83,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "瘴气喷射",
@@ -85,7 +92,8 @@
     "element": "毒",
     "type": "魔攻",
     "skill_power": 100,
-    "description": "对敌方精灵造成魔法伤害。"
+    "description": "对敌方精灵造成魔法伤害。",
+    "effect": "no"
   },
   {
     "name": "疫病吐息",
@@ -93,7 +101,8 @@
     "element": "毒",
     "type": "状态",
     "skill_power": null,
-    "description": "敌方获得1层中毒印记。"
+    "description": "敌方获得1层中毒印记。",
+    "effect": "normal"
   },
   {
     "name": "溃烂触碰",
@@ -101,7 +110,8 @@
     "element": "毒",
     "type": "物攻",
     "skill_power": 60,
-    "description": "对敌方精灵造成物理伤害。"
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
   },
   {
     "name": "毒针",
@@ -109,7 +119,8 @@
     "element": "毒",
     "type": "物攻",
     "skill_power": 20,
-    "description": "造成物伤，敌方获得1层中毒效果。"
+    "description": "造成物伤，敌方获得1层中毒效果。",
+    "effect": "normal"
   },
   {
     "name": "以毒攻毒",
@@ -129,7 +140,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "毒肽",
@@ -138,7 +150,8 @@
     "type": "防御",
     "skill_power": null,
     "description": "减伤70%，巧变：毒系状态技能，应对攻击。",
-    "damage_reduction": "70%"
+    "damage_reduction": "70%",
+    "effect": "normal"
   },
   {
     "name": "毒液渗透",
@@ -146,7 +159,8 @@
     "element": "毒",
     "type": "魔攻",
     "skill_power": 120,
-    "description": "造成魔伤，敌方每拥有1层中毒效果，本技能能耗-1，敌方获得1层中毒。"
+    "description": "造成魔伤，敌方每拥有1层中毒效果，本技能能耗-1，敌方获得1层中毒。",
+    "effect": "normal"
   },
   {
     "name": "毒泡泡",
@@ -154,7 +168,8 @@
     "element": "毒",
     "type": "魔攻",
     "skill_power": 40,
-    "description": "对敌方精灵造成魔法伤害。"
+    "description": "对敌方精灵造成魔法伤害。",
+    "effect": "no"
   },
   {
     "name": "毒沼",
@@ -162,7 +177,8 @@
     "element": "毒",
     "type": "物攻",
     "skill_power": 80,
-    "description": "对敌方精灵造成物理伤害。"
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
   },
   {
     "name": "毒孢子",
@@ -170,7 +186,8 @@
     "element": "毒",
     "type": "状态",
     "skill_power": null,
-    "description": "敌方获得5层中毒。"
+    "description": "敌方获得5层中毒。",
+    "effect": "normal"
   },
   {
     "name": "毒囊",
@@ -178,7 +195,8 @@
     "element": "毒",
     "type": "物攻",
     "skill_power": 25,
-    "description": "造成物伤，敌方获得2层中毒，应对状态：改为获得6层。"
+    "description": "造成物伤，敌方获得2层中毒，应对状态：改为获得6层。",
+    "effect": "normal"
   },
   {
     "name": "感染病",
@@ -186,7 +204,8 @@
     "element": "毒",
     "type": "魔攻",
     "skill_power": 110,
-    "description": "造成魔伤，若击败敌方则将中毒转化为印记。"
+    "description": "造成魔伤，若击败敌方则将中毒转化为印记。",
+    "effect": "normal"
   },
   {
     "name": "剧毒",
@@ -194,7 +213,8 @@
     "element": "毒",
     "type": "状态",
     "skill_power": null,
-    "description": "敌方获得3层中毒，应对防御：改为获得8层。"
+    "description": "敌方获得3层中毒，应对防御：改为获得8层。",
+    "effect": "normal"
   },
   {
     "name": "鸩毒",
@@ -211,7 +231,8 @@
         "mode": "response_status",
         "skill_power_plus": "40"
       }
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "溶解",
@@ -219,7 +240,8 @@
     "type": "防御",
     "description": "减伤90%，应对攻击：驱散敌方1种增益。",
     "skill_power": null,
-    "cost": 2
+    "cost": 2,
+    "effect": "normal"
   },
   {
     "name": "过敏原",
@@ -231,7 +253,8 @@
     "triggered": {
       "mode": "poison_effect",
       "combo_plus": "2"
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "毒誓",
@@ -239,6 +262,7 @@
     "type": "物攻",
     "description": "对敌方精灵造成物理伤害。",
     "skill_power": 120,
-    "cost": 4
+    "cost": 4,
+    "effect": "no"
   }
 ]

@@ -394,7 +394,7 @@ type ApplySkillBuffsResult = { skill_name: string; options: BuffOption[]; effect
 type SkillTriggerInfo = {
   skill_name: string;
   description: string;
-  stackable: Array<{ index: number; label: string }>;
+  stackable: Array<{ index: number; label: string; max?: number }>;
   usage_mode_options: Array<{ index: number; label: string }>;
 };
 
@@ -1934,7 +1934,7 @@ function TeamSkillCards({
                 <NumberInput
                   value={stackCount}
                   min={0}
-                  max={10}
+                  max={trigger.max ?? 10}
                   onChange={(nextStackCount) => {
                     const nextStacks = [...stacks];
                     nextStacks[trigger.index] = nextStackCount;

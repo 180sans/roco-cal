@@ -461,6 +461,13 @@ def resolve_skill(
 
     multiples = multiple if isinstance(multiple, list) else [multiple]
 
+    def count_for(option_index: int) -> int:
+        value = multiples[option_index] if option_index < len(multiples) else 0
+        try:
+            return max(0, int(value or 0))
+        except (TypeError, ValueError):
+            return 0
+
     def has_runtime_effect(effective: dict[str, Any]) -> bool:
         """Return whether a trigger changes a value used by battle calculation."""
         for trig_key in effective:
@@ -498,6 +505,7 @@ def resolve_skill(
     trigger_options = []
     usage_mode_options = []
     has_stacks = False
+    has_power_table = False
     stacked_modes = []
     for option_index, triggered_option in triggered_options:
         if use_override and isinstance(triggered_option.get("override"), dict):
@@ -508,6 +516,22 @@ def resolve_skill(
         else:
             effective = {key: value for key, value in triggered_option.items() if key != "override"}
 
+        # Some conditional skills choose their full power from a discrete table
+        # instead of adding an effect per stack.  The UI supplies the selected
+        # tier through ``multiple``; tier 0 is the normal/base situation.
+        power_by_count = effective.get("skill_power_by_count")
+        if isinstance(power_by_count, list) and power_by_count:
+            has_power_table = True
+            tier = min(count_for(option_index), len(power_by_count) - 1)
+            power = _normalize_runtime_value("skill_power", power_by_count[tier])
+            if power is not None:
+                stacked_case["skill_power"] = power
+            if tier > 0:
+                if isinstance(effective.get("mode"), str):
+                    stacked_modes.append(effective["mode"])
+                stacked_case["trigger_label"] = effective.get("label") or "档位"
+            continue
+
         # Some records only mark a trigger mode (for example, a cost change that
         # is not modeled by the calculator). Do not add an identical trigger case.
         if not has_runtime_effect(effective):
@@ -517,7 +541,7 @@ def resolve_skill(
             usage_mode_options.append((option_index, effective))
 
         is_multiple = bool(effective.get("multiple", False))
-        times = max(0, int(multiples[option_index] if option_index < len(multiples) else 0)) if is_multiple else 1
+        times = count_for(option_index) if is_multiple else 1
         if is_multiple:
             has_stacks = True
             stacked_case = apply_effects(stacked_case, effective, times)
@@ -543,7 +567,7 @@ def resolve_skill(
     if not trigger_options:
         return [stacked_case]
 
-    non_trigger_case = stacked_case if has_stacks else base
+    non_trigger_case = stacked_case if has_stacks or has_power_table else base
     triggered_cases = []
     for trigger_index, effective in enumerate(trigger_options):
         triggered_case = apply_effects(non_trigger_case, effective, 1)

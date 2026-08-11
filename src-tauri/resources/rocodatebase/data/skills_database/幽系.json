@@ -5,7 +5,8 @@
     "element": "幽",
     "type": "状态",
     "skill_power": null,
-    "description": "敌方下回合回复的能量-5，冷却2回合。"
+    "description": "敌方下回合回复的能量-5，冷却2回合。",
+    "effect": "normal"
   },
   {
     "name": "报复",
@@ -14,7 +15,8 @@
     "type": "防御",
     "skill_power": null,
     "description": "减伤70%，应对攻击：敌方失去3能量。",
-    "damage_reduction": "70%"
+    "damage_reduction": "70%",
+    "effect": "normal"
   },
   {
     "name": "降灵",
@@ -22,7 +24,8 @@
     "element": "幽",
     "type": "状态",
     "skill_power": null,
-    "description": "敌方获得1层降灵印记。"
+    "description": "敌方获得1层降灵印记。",
+    "effect": "normal"
   },
   {
     "name": "诡刺",
@@ -30,7 +33,8 @@
     "element": "幽",
     "type": "物攻",
     "skill_power": 40,
-    "description": "对敌方精灵造成物理伤害。"
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
   },
   {
     "name": "虚化",
@@ -51,7 +55,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "背袭",
@@ -63,7 +68,8 @@
     "triggered": {
       "mode": "enemy_energy_0",
       "damage_multiplier": "19"
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "灵媒",
@@ -71,7 +77,8 @@
     "element": "幽",
     "type": "魔攻",
     "skill_power": 100,
-    "description": "对敌方精灵造成魔法伤害。"
+    "description": "对敌方精灵造成魔法伤害。",
+    "effect": "no"
   },
   {
     "name": "灵光",
@@ -84,7 +91,8 @@
     "triggered": {
       "mode": "enemy_switch_in_this_turn",
       "combo_mul": "2"
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "撞鬼",
@@ -92,7 +100,8 @@
     "element": "幽",
     "type": "物攻",
     "skill_power": 120,
-    "description": "对敌方精灵造成物理伤害。"
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
   },
   {
     "name": "惊吓盒子",
@@ -100,7 +109,8 @@
     "element": "幽",
     "type": "物攻",
     "skill_power": 80,
-    "description": "造成物伤，应对状态：使敌方失去6能量。"
+    "description": "造成物伤，应对状态：使敌方失去6能量。",
+    "effect": "normal"
   },
   {
     "name": "勾魂",
@@ -108,7 +118,8 @@
     "element": "幽",
     "type": "状态",
     "skill_power": null,
-    "description": "偷取敌方3能量。"
+    "description": "偷取敌方3能量。",
+    "effect": "normal"
   },
   {
     "name": "恶作剧",
@@ -116,7 +127,8 @@
     "element": "幽",
     "type": "状态",
     "skill_power": null,
-    "description": "敌方失去3能量，应对防御：改为敌方失去6能量。"
+    "description": "敌方失去3能量，应对防御：改为敌方失去6能量。",
+    "effect": "normal"
   },
   {
     "name": "恐吓",
@@ -124,7 +136,8 @@
     "element": "幽",
     "type": "魔攻",
     "skill_power": 80,
-    "description": "对敌方精灵造成魔法伤害。"
+    "description": "对敌方精灵造成魔法伤害。",
+    "effect": "no"
   },
   {
     "name": "幽灵爆发",
@@ -132,7 +145,8 @@
     "element": "幽",
     "type": "魔攻",
     "skill_power": 140,
-    "description": "对敌方精灵造成魔法伤害。"
+    "description": "对敌方精灵造成魔法伤害。",
+    "effect": "no"
   },
   {
     "name": "幻象",
@@ -140,7 +154,8 @@
     "element": "幽",
     "type": "物攻",
     "skill_power": 60,
-    "description": "对敌方精灵造成物理伤害。"
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
   },
   {
     "name": "坟场搏击",
@@ -153,7 +168,8 @@
       "mode": "enemy_energy_stack",
       "power_multiplier": "-0.1",
       "multiple": true
-    }
+    },
+    "effect": "normal"
   },
   {
     "name": "嘲弄",
@@ -173,7 +189,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "午夜噪音",
@@ -182,7 +199,8 @@
     "type": "魔攻",
     "skill_power": 20,
     "description": "造成魔伤，5连击。",
-    "combo": 5
+    "combo": 5,
+    "effect": "normal"
   },
   {
     "name": "鬼火",
@@ -190,7 +208,8 @@
     "element": "幽",
     "type": "魔攻",
     "skill_power": 30,
-    "description": "造成魔伤，自己回复1能量。"
+    "description": "造成魔伤，自己回复1能量。",
+    "effect": "normal"
   },
   {
     "name": "魔镜",
@@ -210,7 +229,8 @@
           }
         ]
       }
-    ]
+    ],
+    "effect": "normal"
   },
   {
     "name": "吃独食",
@@ -218,6 +238,7 @@
     "type": "魔攻",
     "description": "造成魔伤，自己每使用过1次选择技能，敌方获得3层随机永久减益，使用后重置。",
     "skill_power": 80,
-    "cost": 3
+    "cost": 3,
+    "effect": "normal"
   }
 ]
