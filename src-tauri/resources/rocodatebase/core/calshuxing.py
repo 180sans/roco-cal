@@ -71,7 +71,37 @@ def calc_attr(
     elif personality_bonus is None:
         personality_bonus = 0
     # 属性基础值
-    base_attr = (race_value + iv / 2) / 100
+# 种族值部分
+    race_base = race_value / 100
+    
+    # 个体值部分
+    iv_base = (iv / 2) / 100
+    
+    if attr_name.lower() == "hp":
+        race_attr = level * (2 * race_base) + 50 * race_base
+        iv_attr = level * (2 * iv_base) + 50 * iv_base
+        final_attr = normal_round(race_attr) + normal_round(iv_attr) + level + 10
+    else:
+        race_attr = level * race_base + 50 * race_base
+        iv_attr = level * iv_base + 50 * iv_base
+        final_attr = normal_round(race_attr) + normal_round(iv_attr) + 10
+    
+    # 属性修正值
+    result = final_attr * (1 + personality_bonus) + ev
+    
+    result = normal_round(result)
+    
+    return result
+    """
+    return {
+        "属性名": attr_name,
+        "属性基础值": round(base_attr, 2),
+        "属性最终值": round(final_attr, 2),
+        "属性修正值": round(result, 2),
+        "努力值": ev,
+        "性格修正": f"{personality_bonus * 100:.1f}%"
+    }
+        base_attr = (race_value + iv / 2) / 100
 
     # 属性最终值
     final_attr = (
@@ -91,15 +121,6 @@ def calc_attr(
     result = normal_round(result)
     
     return  result
-    """
-    return {
-        "属性名": attr_name,
-        "属性基础值": round(base_attr, 2),
-        "属性最终值": round(final_attr, 2),
-        "属性修正值": round(result, 2),
-        "努力值": ev,
-        "性格修正": f"{personality_bonus * 100:.1f}%"
-    }
     """
 
 
