@@ -365,6 +365,11 @@ async fn calculate_battle(app: tauri::AppHandle, payload: Value) -> Result<Value
 }
 
 #[tauri::command]
+async fn calculate_willpower(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
+    run_python_payload_async(app, "calculate-willpower", payload).await
+}
+
+#[tauri::command]
 async fn apply_skill_buffs(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
     run_python_payload_async(app, "apply-skill-buffs", payload).await
 }
@@ -434,6 +439,7 @@ pub fn run() {
             list_traits,
             list_burst_effects,
             calculate_battle,
+            calculate_willpower,
             apply_skill_buffs,
             skill_trigger_info,
             save_preset,

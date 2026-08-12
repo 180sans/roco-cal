@@ -493,6 +493,55 @@ def calculate_battle(payload: dict[str, Any]) -> dict[str, Any]:
     return {"results": battle_damage(**_attacker_args(attacker), **_defender_args(defender), weather=weather)}
 
 
+def calculate_willpower(payload: dict[str, Any]) -> dict[str, Any]:
+    """Calculate only distinct relation/STAB cases, then reuse them for all 18 elements."""
+    from core.will_power import WILLPOWER_ELEMENTS, willpower_skill_cases
+    from core.calshuxing import calc_attr
+    from core.damresult import battle_damage, parse_personality, get_personality_bonus_for_attr
+    from core.ele_advantage import TypeChart
+    from core.find_pets import pets_dataset
+
+    attacker = payload.get("attacker") or {}
+    defender = payload.get("defender") or {}
+    weather = payload.get("weather") or "none"
+    attacker_data = pets_dataset.find(attacker.get("name"), devolution=attacker.get("devolution", 0), mega=attacker.get("mega", False))
+    defender_data = pets_dataset.find(defender.get("name"), devolution=defender.get("devolution", 0), mega=defender.get("mega", False))
+    attacker_args = _attacker_args(attacker)
+    personality = parse_personality(attacker.get("personality_bouns"), attacker.get("personality_down"))
+    iv = attacker.get("iv") or {}
+    trait_effects = (attacker_args.get("attacker_trait_runtime") or {}).get("resolved_effects", [])
+
+    def final_attack_value(attribute: str, buff_key: str) -> float:
+        value = calc_attr(attribute, attacker_data[attribute], iv.get(attribute) or 0, level=60, personality_bonus=get_personality_bonus_for_attr(personality, attribute))
+        # Passive/self trait stat buffs contribute to the type decision before damage is calculated.
+        trait_buff = sum(
+            float(effect.get("value", 0) or 0)
+            for effect in trait_effects
+            if isinstance(effect, dict)
+            and effect.get("kind") == "stat_buff"
+            and attribute in effect.get("stats", [])
+            and effect.get("target") in {"self", "all", "attacker"}
+        )
+        return value * (1 + (attacker.get(buff_key, 0) or 0) / 100 + trait_buff)
+
+    # Compare final offensive values. Equal values intentionally select magic.
+    atk = final_attack_value("atk", "phys_atk_buff")
+    mag = final_attack_value("mag", "mag_atk_buff")
+    attack_type = "atk" if atk > mag else "mag"
+    cases = willpower_skill_cases(attack_type)
+    cache: dict[tuple[float, bool], list[dict[str, Any]]] = {}
+    elements = []
+    for element in WILLPOWER_ELEMENTS:
+        advantage = TypeChart.calc([element], defender_data["elements"])
+        has_stab = element in attacker_data["elements"]
+        key = (advantage, has_stab)
+        if key not in cache:
+            skill_data = {"name": "愿力", "effect": "攻击", "resolved_cases": [{**case, "element": element} for case in cases]}
+            cache[key] = battle_damage(**attacker_args, **_defender_args(defender), weather=weather, skill_data_override=skill_data)
+        elements.append({"element": element, "advantage": advantage, "has_stab": has_stab, "results": cache[key]})
+    return {"attack_type": attack_type, "elements": elements}
+
+
 def apply_skill_buffs(payload: dict[str, Any]) -> dict[str, Any]:
     from core.damresult import resolve_effective_skill_combos
     from core.skill_finder import resolve_buff_options, skill_dataset
@@ -709,6 +758,7 @@ def main() -> int:
             "list-traits",
             "list-burst-effects",
             "calculate-battle",
+            "calculate-willpower",
             "apply-skill-buffs",
             "skill-trigger-info",
             "save-preset",
@@ -742,6 +792,8 @@ def main() -> int:
                 payload = list_burst_effects()
             elif args.command == "calculate-battle":
                 payload = calculate_battle(payload_arg)
+            elif args.command == "calculate-willpower":
+                payload = calculate_willpower(payload_arg)
             elif args.command == "apply-skill-buffs":
                 payload = apply_skill_buffs(payload_arg)
             elif args.command == "skill-trigger-info":

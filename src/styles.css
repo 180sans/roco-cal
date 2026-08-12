@@ -657,12 +657,28 @@ select {
 .bonus-tool-button.dedication { font-size: var(--dedication-button-font-size); height: var(--dedication-button-height); width: var(--dedication-button-width); }
 .bonus-tool-button.marks { font-size: var(--marks-button-font-size); height: var(--marks-button-height); width: var(--marks-button-width); }
 .bonus-tool-button.thunderstorm { font-size: var(--thunderstorm-button-font-size); height: var(--thunderstorm-button-height); width: var(--thunderstorm-button-width); }
+.bonus-tool-button.willpower { font-size: var(--dedication-button-font-size); height: var(--dedication-button-height); width: var(--dedication-button-width); }
 
 .team-bonus-toolbar button.active {
   background: #23785e;
   border-color: #1c614c;
   color: #fff;
 }
+
+.willpower-result-tabs {
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  padding: 0 0 5px;
+}
+
+.willpower-result-tabs button {
+  font-size: 11px;
+  min-width: 0;
+  padding: 4px 2px;
+}
+
+.willpower-result-tabs button.active { background: #23785e; border-color: #1c614c; color: #fff; }
 
 .bonus-tool-floating {
   background: #f8fdf9;

@@ -6,6 +6,17 @@ from typing import Any
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "battle_effects"
 
+# 愿力是系统技能而不是精灵技能，因此将其定义放在战斗效果模块中。
+WILLPOWER_ELEMENTS = ("普通", "草", "火", "水", "光", "地", "冰", "龙", "电", "毒", "虫", "武", "翼", "萌", "幽", "恶", "机械", "幻")
+
+
+def willpower_skill_cases(attack_type: str) -> list[dict[str, Any]]:
+    skill_type = "物攻" if attack_type == "atk" else "魔攻"
+    return [
+        {"case_label": "基础情况", "is_triggered": False, "skill_power": 80, "type": skill_type},
+        {"case_label": "应对状态", "is_triggered": True, "skill_power": 200, "type": skill_type},
+    ]
+
 
 @lru_cache(maxsize=None)
 def _load_category(name: str) -> list[dict[str, Any]]:

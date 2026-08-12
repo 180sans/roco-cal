@@ -739,7 +739,7 @@ def resolve_effective_skill_combos(
             if isinstance(condition, dict) and isinstance(condition.get("mode"), str)
         }
 
-    from core.battle_effects import manual_mark_modes, resolve_mark_modifiers
+    from core.will_power import manual_mark_modes, resolve_mark_modifiers
 
     skill_trigger_modes = {
         mode
@@ -861,7 +861,8 @@ def battle_damage(
     # 其他参数
     atk_lv=60,
     def_lv=60,
-    hp=None
+    hp=None,
+    skill_data_override=None,
 ):
     """
     对战伤害封装函数
@@ -877,16 +878,13 @@ def battle_damage(
     """
 
     # ========== 0. 查找并解析技能 ==========
-    skill_data = skill_dataset.find_skill(skill_name)
+    skill_data = skill_data_override or skill_dataset.find_skill(skill_name)
     if skill_data is None:
         raise ValueError(f"未找到技能: {skill_name}")
     skill_effect = skill_data.get("effect")
 
-    resolved_cases = resolve_skill(
-        skill_data,
-        multiple=multiple,
-        use_override=use_override,
-        usage_mode_choice=usage_mode_choice,
+    resolved_cases = skill_data.get("resolved_cases") or resolve_skill(
+        skill_data, multiple=multiple, use_override=use_override, usage_mode_choice=usage_mode_choice,
     )
 
     attacker_data = pets_dataset.find(attacker_name, devolution=attacker_devolution, mega=attacker_mega)
@@ -945,7 +943,7 @@ def battle_damage(
     hp_scenarios = generate_hp_scenarios(hp_iv_value, hp_personality_value)
 
     # ========== 5. 按技能情况与 (atk, def) 场景计算伤害 ==========
-    from core.battle_effects import manual_mark_modes, resolve_mark_modifiers
+    from core.will_power import manual_mark_modes, resolve_mark_modifiers
 
     def trait_manual_modes(runtime):
         if (
@@ -1079,7 +1077,7 @@ def battle_damage(
         power_multipliers.extend(attacker_trait_modifiers["power_multipliers"])
         power_multipliers.extend(defender_trait_modifiers["power_multipliers"])
         power_multipliers.extend(attacker_mark_modifiers["power_multipliers"])
-        from core.battle_effects import weather_power_multipliers
+        from core.will_power import weather_power_multipliers
         power_multipliers.extend(weather_power_multipliers(weather, skill_element))
 
         damage_multipliers = normalize_modifier_list(damage_multiplier)
@@ -1107,11 +1105,13 @@ def battle_damage(
         type_bonus = 0.25 if skill_element in attacker_elements else 0.0
 
         is_active_trigger = (
+            bool(skill_info.get("is_triggered"))
+            or
             "trigger_label" in skill_info
             or bool(active_modes)
             or bool(thunderstorm_unregistered_burst)
         )
-        case_label = skill_info.get("trigger_label") or ("触发情况" if is_active_trigger else "基础情况")
+        case_label = skill_info.get("case_label") or skill_info.get("trigger_label") or ("触发情况" if is_active_trigger else "基础情况")
 
         for atk_s, def_s in product(atk_scenarios, def_scenarios):
             atk = calc_attr(

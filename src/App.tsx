@@ -452,6 +452,8 @@ type BattleResult = {
   starfall?: { stacks: number; power: number; damage: number } | null;
   hp_results: Array<{ hp_label: string; hp: number; damage_percent: number }>;
 };
+type WillpowerElementResult = { element: string; advantage: number; has_stab: boolean; results: BattleResult[] };
+type WillpowerResponse = { attack_type: "atk" | "mag"; elements: WillpowerElementResult[] };
 
 type BattleContext = {
   attackerName: string;
@@ -1371,6 +1373,8 @@ function TeamBattlePage({
   const [leftMarkFields, setLeftMarkFields] = useState<MarkField[]>([]);
   const [rightMarkFields, setRightMarkFields] = useState<MarkField[]>([]);
   const [results, setResults] = useState<BattleResult[]>([]);
+  const [willpower, setWillpower] = useState<WillpowerResponse | null>(null);
+  const [selectedWillpowerElement, setSelectedWillpowerElement] = useState<string | null>(null);
   const [battleContext, setBattleContext] = useState<BattleContext | null>(null);
   const [error, setError] = useState("");
   const [buffOptions, setBuffOptions] = useState<BuffOption[]>([]);
@@ -1480,11 +1484,37 @@ function TeamBattlePage({
       const data = await invoke<{ results: BattleResult[] }>("calculate_battle", { payload: { attacker: { ...attacker, other_bonuses }, defender: { ...defender, other_bonuses: defender_other_bonuses }, weather } });
       setBattleContext(battleContextFromUnits(attacker, defender));
       setResults(data.results);
+      setWillpower(null);
     } catch (err) {
       setError(asError(err));
       setBattleContext(null);
       setResults([]);
     }
+  }
+
+  async function calculateWillpower() {
+    setError("");
+    try {
+      const attacker = leftAttacks ? leftSlots[leftIndex] : rightSlots[rightIndex];
+      const defender = leftAttacks ? rightSlots[rightIndex] : leftSlots[leftIndex];
+      const other_bonuses = leftAttacks ? leftOtherBonuses : rightOtherBonuses;
+      const defender_other_bonuses = leftAttacks ? rightOtherBonuses : leftOtherBonuses;
+      const data = await invoke<WillpowerResponse>("calculate_willpower", { payload: { attacker: { ...attacker, other_bonuses }, defender: { ...defender, other_bonuses: defender_other_bonuses }, weather } });
+      setBattleContext({ ...battleContextFromUnits(attacker, defender), skillName: "愿力" });
+      setWillpower(data);
+      const initial = data.elements[0];
+      setSelectedWillpowerElement(initial?.element || null);
+      setResults(initial?.results || []);
+    } catch (err) {
+      setError(asError(err));
+      setWillpower(null);
+      setResults([]);
+    }
+  }
+
+  function selectWillpowerElement(element: WillpowerElementResult) {
+    setSelectedWillpowerElement(element.element);
+    setResults(element.results);
   }
 
   async function applyBuff() {
@@ -1532,6 +1562,7 @@ function TeamBattlePage({
         <Roster className="team-left-roster" title="己方队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={leftSlots} activeIndex={leftIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("left", groupName)} onSelect={setLeftIndex} onPatchSlot={(partial) => patchSlot("left", leftIndex, partial)} onChoose={(index) => { setLeftIndex(index); setPetPicker({ side: "left", index }); }} onClear={(index) => setSlot("left", index, blankUnit())} />
         <Roster className="team-right-roster" title="敌方队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={rightSlots} activeIndex={rightIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("right", groupName)} onSelect={setRightIndex} onPatchSlot={(partial) => patchSlot("right", rightIndex, partial)} onChoose={(index) => { setRightIndex(index); setPetPicker({ side: "right", index }); }} onClear={(index) => setSlot("right", index, blankUnit())} />
         <section className="team-bonus-toolbar team-left-bonus-toolbar" aria-label="己方其他加成">
+          <button className="bonus-tool-button willpower" onClick={() => void calculateWillpower()}>愿力</button>
           {(["dedication", "marks", "thunderstorm"] as const).map((tool) => (
             <button key={tool} className={`bonus-tool-button ${tool}${bonusTool === tool && bonusSide === "left" ? " active" : ""}`} aria-pressed={bonusTool === tool && bonusSide === "left"} onClick={() => openBonusTool("left", tool)}>
               {{ dedication: "奉献", marks: "印记", thunderstorm: "雷暴" }[tool]}
@@ -1539,6 +1570,7 @@ function TeamBattlePage({
           ))}
         </section>
         <section className="team-bonus-toolbar team-right-bonus-toolbar" aria-label="敌方其他加成">
+          <button className="bonus-tool-button willpower" onClick={() => void calculateWillpower()}>愿力</button>
           {(["dedication", "marks", "thunderstorm"] as const).map((tool) => (
             <button key={tool} className={`bonus-tool-button ${tool}${bonusTool === tool && bonusSide === "right" ? " active" : ""}`} aria-pressed={bonusTool === tool && bonusSide === "right"} onClick={() => openBonusTool("right", tool)}>
               {{ dedication: "奉献", marks: "印记", thunderstorm: "雷暴" }[tool]}
@@ -1565,7 +1597,14 @@ function TeamBattlePage({
           onClose={() => setBonusTool(null)}
         />
       ) : null}
-      <ResultView results={results} error={error} context={battleContext} />
+      <ResultView
+        results={results}
+        error={error}
+        context={battleContext}
+        willpower={willpower}
+        selectedWillpowerElement={selectedWillpowerElement}
+        onSelectWillpowerElement={selectWillpowerElement}
+      />
       {petPicker ? (
         <PickerModal
           mode="pet"
@@ -2662,7 +2701,16 @@ function Roster({
   );
 }
 
-function ResultView({ results, error, context }: { results: BattleResult[]; error: string; context: BattleContext | null }) {
+function ResultView({
+  results, error, context, willpower, selectedWillpowerElement, onSelectWillpowerElement,
+}: {
+  results: BattleResult[];
+  error: string;
+  context: BattleContext | null;
+  willpower: WillpowerResponse | null;
+  selectedWillpowerElement: string | null;
+  onSelectWillpowerElement: (element: WillpowerElementResult) => void;
+}) {
   const [selected, setSelected] = useState<BattleResult | null>(null);
   const [visible, setVisible] = useState(false);
   const [position, setPosition] = useState({ x: 80, y: 88 });
@@ -2714,6 +2762,15 @@ function ResultView({ results, error, context }: { results: BattleResult[]; erro
         </div>
         <button onClick={() => setVisible(false)}>关闭</button>
       </header>
+      {willpower ? (
+        <div className="willpower-result-tabs" aria-label="愿力系别">
+          {willpower.elements.map((item) => (
+            <button key={item.element} className={selectedWillpowerElement === item.element ? "active" : ""} onClick={() => onSelectWillpowerElement(item)}>
+              {item.element}{item.has_stab ? "*" : ""} {item.advantage}x
+            </button>
+          ))}
+        </div>
+      ) : null}
       {grouped.map(([caseLabel, caseResults]) => {
         return (
           <section className="result-section" key={caseLabel}>
