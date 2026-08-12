@@ -98,6 +98,18 @@
     "type": "状态",
     "skill_power": null,
     "description": "自己获得连击数+2，应对防御：额外造成打断，且敌方下回合获得眩晕。",
+    "buff_options": [
+      {
+        "label": "自己连击 +2",
+        "effects": [
+          {
+            "target": "self",
+            "field": "combo_plus",
+            "value": 2
+          }
+        ]
+      }
+    ],
     "effect": "normal"
   },
   {

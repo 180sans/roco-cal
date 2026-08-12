@@ -602,6 +602,7 @@ def _collect_trait_modifiers(
         "damage_reductions": [],
         "damage_multipliers": [],
         "combo_plus": 0,
+        "combo_mul_delta": 0,
         "combo_fixed": None,
         "combo_fix_priority": -1,
         "usage_time_plus": 0,
@@ -677,6 +678,8 @@ def _collect_trait_modifiers(
             modifiers["damage_reductions"].append(value)
         elif kind in {"combo_bonus", "combo_plus"} and _targets_current_attacker(owner_side, target):
             modifiers["combo_plus"] += value
+        elif kind == "combo_mul" and _targets_current_attacker(owner_side, target):
+            modifiers["combo_mul_delta"] += value
         elif kind in {"usage_time_bonus", "usage_time_plus"} and _targets_current_attacker(owner_side, target):
             modifiers["usage_time_plus"] += value
         elif kind == "combo" and target == "all":
@@ -686,6 +689,128 @@ def _collect_trait_modifiers(
                 modifiers["combo_fix_priority"] = priority
 
     return modifiers
+
+
+def resolve_effective_skill_combos(
+    skill_name,
+    *,
+    multiple=0,
+    use_override=False,
+    usage_mode_choice=None,
+    combo_plus=0,
+    combo_mul=1,
+    attacker_name=None,
+    attacker_devolution=0,
+    attacker_mega=False,
+    attacker_trait_runtime=None,
+    attacker_mark_state=None,
+    defender_name=None,
+    defender_devolution=0,
+    defender_mega=False,
+    defender_trait_runtime=None,
+):
+    """Resolve combo counts with the same skill, trait, and mark rules as battle damage."""
+    skill_data = skill_dataset.find_skill(skill_name)
+    if skill_data is None:
+        raise ValueError(f"未找到技能: {skill_name}")
+    attacker_data = pets_dataset.find(attacker_name, devolution=attacker_devolution, mega=attacker_mega)
+    defender_data = pets_dataset.find(defender_name, devolution=defender_devolution, mega=defender_mega)
+    resolved_cases = resolve_skill(
+        skill_data,
+        multiple=multiple,
+        use_override=use_override,
+        usage_mode_choice=usage_mode_choice,
+    )
+    attacker_elements = attacker_data["elements"]
+    defender_elements = defender_data["elements"]
+    base_skill_type_raw = resolved_cases[0].get("type")
+    skill_effect = skill_data.get("effect")
+
+    def trait_manual_modes(runtime):
+        if (
+            not runtime
+            or not runtime.get("triggerable", runtime.get("template") == "special_condition")
+            or not runtime.get("triggered")
+        ):
+            return set()
+        return {
+            condition["mode"]
+            for condition in runtime.get("conditions", [])
+            if isinstance(condition, dict) and isinstance(condition.get("mode"), str)
+        }
+
+    from core.battle_effects import manual_mark_modes, resolve_mark_modifiers
+
+    skill_trigger_modes = {
+        mode
+        for case in resolved_cases
+        for mode in case.get("_trigger_modes", [])
+        if isinstance(mode, str)
+    }
+    attacker_manual_modes = manual_mark_modes(attacker_mark_state or {}) | trait_manual_modes(attacker_trait_runtime)
+    defender_manual_modes = trait_manual_modes(defender_trait_runtime)
+    combos = []
+    for skill_info in resolved_cases:
+        active_modes = set(skill_info.get("_trigger_modes", []))
+        current_skill_type = skill_info.get("type", base_skill_type_raw)
+        skill_element = _resolve_trait_skill_element(
+            attacker_trait_runtime,
+            owner_side="attacker",
+            current_skill_name=skill_name,
+            current_skill_element=skill_info.get("element"),
+            current_skill_type=current_skill_type,
+            owner_elements=attacker_elements,
+        )
+        advantage = TypeChart.calc(skill_element, defender_elements)
+        mini_advantage = skill_info.get("mini_advantage")
+        if mini_advantage is not None:
+            advantage = max(advantage, float(mini_advantage))
+        attacker_modifiers = _collect_trait_modifiers(
+            attacker_trait_runtime,
+            owner_side="attacker",
+            current_skill_name=skill_name,
+            current_skill_element=skill_element,
+            current_skill_type=current_skill_type,
+            current_skill_effect=skill_effect,
+            active_modes=active_modes,
+            manual_modes=attacker_manual_modes,
+            skill_trigger_modes=skill_trigger_modes,
+            owner_elements=attacker_elements,
+            current_advantage=advantage,
+        )
+        defender_modifiers = _collect_trait_modifiers(
+            defender_trait_runtime,
+            owner_side="defender",
+            current_skill_name=skill_name,
+            current_skill_element=skill_element,
+            current_skill_type=current_skill_type,
+            current_skill_effect=skill_effect,
+            active_modes=active_modes,
+            manual_modes=defender_manual_modes,
+            skill_trigger_modes=skill_trigger_modes,
+            owner_elements=defender_elements,
+            current_advantage=advantage,
+        )
+        mark_modifiers = resolve_mark_modifiers(
+            attacker_mark_state or {},
+            skill_name,
+            manual_modes=attacker_manual_modes,
+            active_skill_modes=active_modes,
+            skill_trigger_modes=skill_trigger_modes,
+        )
+        base_combo = normalize_count(skill_info.get("combo"))
+        combo_fix = max(
+            (attacker_modifiers, defender_modifiers),
+            key=lambda modifiers: modifiers["combo_fix_priority"],
+        )["combo_fixed"]
+        if combo_fix is not None:
+            combo = normalize_count(combo_fix)
+        else:
+            total_plus = combo_plus + attacker_modifiers["combo_plus"] + defender_modifiers["combo_plus"] + mark_modifiers["combo_plus"]
+            total_mul = combo_mul + attacker_modifiers["combo_mul_delta"] + defender_modifiers["combo_mul_delta"] + mark_modifiers["combo_mul_delta"]
+            combo = normalize_count(((base_combo if base_combo is not None else 1) + total_plus) * total_mul)
+        combos.append(combo if combo is not None else 1)
+    return combos
 
 
 def battle_damage(
@@ -901,7 +1026,18 @@ def battle_damage(
             skill_trigger_modes=skill_trigger_modes,
         )
 
-        combined_combo_plus = combo_plus + attacker_trait_modifiers["combo_plus"] + defender_trait_modifiers["combo_plus"]
+        combined_combo_plus = (
+            combo_plus
+            + attacker_trait_modifiers["combo_plus"]
+            + defender_trait_modifiers["combo_plus"]
+            + attacker_mark_modifiers["combo_plus"]
+        )
+        combined_combo_mul = (
+            combo_mul
+            + attacker_trait_modifiers["combo_mul_delta"]
+            + defender_trait_modifiers["combo_mul_delta"]
+            + attacker_mark_modifiers["combo_mul_delta"]
+        )
         combined_usage_time_plus = (
             usage_time_plus
             + attacker_trait_modifiers["usage_time_plus"]
@@ -914,9 +1050,9 @@ def battle_damage(
         )["combo_fixed"]
         if combo_fix is not None:
             combo = normalize_count(combo_fix)
-        elif combo is not None or combined_combo_plus or combo_mul != 1:
+        elif combo is not None or combined_combo_plus or combined_combo_mul != 1:
             base_combo = combo if combo is not None else 1
-            combo = normalize_count((base_combo + combined_combo_plus) * combo_mul)
+            combo = normalize_count((base_combo + combined_combo_plus) * combined_combo_mul)
             if combo == 1:
                 combo = None
 

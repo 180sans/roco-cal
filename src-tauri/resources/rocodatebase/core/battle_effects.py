@@ -66,7 +66,7 @@ def resolve_mark_modifiers(
     active_skill_modes: set[str],
     skill_trigger_modes: set[str],
 ) -> dict[str, Any]:
-    result = {"power_bonus": 0, "power_multipliers": []}
+    result = {"power_bonus": 0, "power_multipliers": [], "combo_plus": 0, "combo_mul_delta": 0}
     for mark in mark_effects():
         conditions = mark.get("conditions", [])
         if isinstance(conditions, list):
@@ -108,4 +108,8 @@ def resolve_mark_modifiers(
                 result["power_bonus"] += value
             elif effect.get("kind") == "power_multiplier":
                 result["power_multipliers"].append(value)
+            elif effect.get("kind") == "combo_plus":
+                result["combo_plus"] += value
+            elif effect.get("kind") == "combo_mul":
+                result["combo_mul_delta"] += value
     return result

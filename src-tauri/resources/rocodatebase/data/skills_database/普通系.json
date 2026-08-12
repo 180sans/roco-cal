@@ -92,6 +92,18 @@
     "type": "状态",
     "skill_power": null,
     "description": "敌方获得连击数-4。",
+    "buff_options": [
+      {
+        "label": "敌方连击 -4",
+        "effects": [
+          {
+            "target": "opponent",
+            "field": "combo_plus",
+            "value": -4
+          }
+        ]
+      }
+    ],
     "effect": "normal"
   },
   {
@@ -145,6 +157,18 @@
     "type": "状态",
     "skill_power": null,
     "description": "自己获得连击数+3。",
+    "buff_options": [
+      {
+        "label": "自己连击 +3",
+        "effects": [
+          {
+            "target": "self",
+            "field": "combo_plus",
+            "value": 3
+          }
+        ]
+      }
+    ],
     "effect": "normal"
   },
   {

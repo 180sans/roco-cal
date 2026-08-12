@@ -37,6 +37,18 @@
     "type": "物攻",
     "skill_power": 80,
     "description": "造成伤害，敌方获得连击数-3。",
+    "buff_options": [
+      {
+        "label": "敌方连击 -3",
+        "effects": [
+          {
+            "target": "opponent",
+            "field": "combo_plus",
+            "value": -3
+          }
+        ]
+      }
+    ],
     "effect": "normal"
   },
   {
@@ -202,6 +214,18 @@
     "skill_power": null,
     "description": "减伤80%，应对攻击：敌方获得连击数-3。",
     "damage_reduction": "80%",
+    "buff_options": [
+      {
+        "label": "敌方连击 -3",
+        "effects": [
+          {
+            "target": "opponent",
+            "field": "combo_plus",
+            "value": -3
+          }
+        ]
+      }
+    ],
     "effect": "normal"
   },
   {

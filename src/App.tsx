@@ -390,7 +390,7 @@ type BuffStateField = (typeof BUFF_STATE_FIELDS)[number];
 type BuffTarget = "self" | "opponent" | "both";
 type BuffEffect = { target: BuffTarget; field: BuffStateField; value: number };
 type BuffOption = { label: string; effects: BuffEffect[] };
-type ApplySkillBuffsResult = { skill_name: string; options: BuffOption[]; effects: BuffEffect[] };
+type ApplySkillBuffsResult = { skill_name: string; combo_count: number; options: BuffOption[]; effects: BuffEffect[] };
 type SkillTriggerInfo = {
   skill_name: string;
   description: string;
@@ -568,7 +568,7 @@ function blankTeamOtherBonuses(): TeamOtherBonuses {
 
 function applyBuffEffect(unit: UnitState, effect: BuffEffect): UnitState {
   const current = unit[effect.field];
-  const nextValue = effect.field === "combo_mul" ? current * effect.value : current + effect.value;
+  const nextValue = current + effect.value;
   return { ...unit, [effect.field]: nextValue } as UnitState;
 }
 
@@ -1378,6 +1378,9 @@ function TeamBattlePage({
   const [bonusTool, setBonusTool] = useState<BonusTool | null>(null);
   const [bonusSide, setBonusSide] = useState<"left" | "right">("left");
   const activeBuffUnit = leftAttacks ? leftSlots[leftIndex] : rightSlots[rightIndex];
+  const activeBuffOpponent = leftAttacks ? rightSlots[rightIndex] : leftSlots[leftIndex];
+  const activeBuffOtherBonuses = leftAttacks ? leftOtherBonuses : rightOtherBonuses;
+  const activeBuffOpponentBonuses = leftAttacks ? rightOtherBonuses : leftOtherBonuses;
   const activeBuffSkillName = activeBuffUnit?.current_skill || activeBuffUnit?.skills?.[0] || "";
 
   function resizeSlots(count: number) {
@@ -1391,6 +1394,25 @@ function TeamBattlePage({
     resizeSlots(teamSlotCount);
   }, [teamSlotCount]);
 
+  function normalizeBuffOptions(data: ApplySkillBuffsResult): BuffOption[] {
+    return (data.options || [])
+      .map((option, index) => ({
+        label: option.label || `Buff 选项 ${index + 1}`,
+        effects: (option.effects || []).filter(
+          (effect) => BUFF_STATE_FIELDS.includes(effect.field) && Number.isFinite(Number(effect.value)),
+        ),
+      }))
+      .filter((option) => option.effects.length > 0);
+  }
+
+  function currentBuffPayload() {
+    return {
+      skill_name: activeBuffSkillName,
+      attacker: { ...activeBuffUnit, other_bonuses: activeBuffOtherBonuses },
+      defender: { ...activeBuffOpponent, other_bonuses: activeBuffOpponentBonuses },
+    };
+  }
+
   useEffect(() => {
     let cancelled = false;
     setBuffOptions([]);
@@ -1398,25 +1420,28 @@ function TeamBattlePage({
     if (!activeBuffSkillName) return () => { cancelled = true; };
 
     void invoke<ApplySkillBuffsResult>("apply_skill_buffs", {
-      payload: { skill_name: activeBuffSkillName },
+      payload: currentBuffPayload(),
     })
       .then((data) => {
         if (cancelled || data.skill_name !== activeBuffSkillName) return;
-        const options = (data.options || [])
-          .map((option, index) => ({
-            label: option.label || `Buff 选项 ${index + 1}`,
-            effects: (option.effects || []).filter(
-              (effect) => BUFF_STATE_FIELDS.includes(effect.field) && Number.isFinite(Number(effect.value)),
-            ),
-          }))
-          .filter((option) => option.effects.length > 0);
-        setBuffOptions(options);
+        setBuffOptions(normalizeBuffOptions(data));
       })
       .catch((err) => {
         if (!cancelled) setError(asError(err));
       });
     return () => { cancelled = true; };
-  }, [activeBuffSkillName, leftAttacks, leftIndex, rightIndex]);
+  }, [
+    activeBuffSkillName,
+    activeBuffUnit.combo_plus,
+    activeBuffUnit.combo_mul,
+    activeBuffUnit.skill_trigger_stacks,
+    activeBuffOpponent,
+    activeBuffOtherBonuses,
+    activeBuffOpponentBonuses,
+    leftAttacks,
+    leftIndex,
+    rightIndex,
+  ]);
 
   function setSlot(side: "left" | "right", index: number, state: UnitState) {
     const setter = side === "left" ? setLeftSlots : setRightSlots;
@@ -1466,7 +1491,18 @@ function TeamBattlePage({
     setError("");
     const attackerSide = leftAttacks ? "left" : "right";
     const opponentSide = leftAttacks ? "right" : "left";
-    const selectedOption = buffOptions[selectedBuffOption];
+    let selectedOption: BuffOption | undefined;
+    try {
+      const data = await invoke<ApplySkillBuffsResult>("apply_skill_buffs", {
+        payload: currentBuffPayload(),
+      });
+      const latestOptions = normalizeBuffOptions(data);
+      setBuffOptions(latestOptions);
+      selectedOption = latestOptions[selectedBuffOption];
+    } catch (err) {
+      setError(asError(err));
+      return;
+    }
     if (!selectedOption) {
       setError(activeBuffSkillName ? "该技能没有可应用的 Buff" : "请先选择技能");
       return;

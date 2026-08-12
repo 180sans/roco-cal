@@ -129,6 +129,18 @@
     "skill_power": null,
     "description": "减伤70%，应对攻击：自己获得连击数+2。",
     "damage_reduction": "70%",
+    "buff_options": [
+      {
+        "label": "自己连击 +2",
+        "effects": [
+          {
+            "target": "self",
+            "field": "combo_plus",
+            "value": 2
+          }
+        ]
+      }
+    ],
     "effect": "normal"
   },
   {
@@ -200,6 +212,18 @@
     "type": "状态",
     "skill_power": null,
     "description": "获得连击数+100%。",
+    "buff_options": [
+      {
+        "label": "自己连击+100%。",
+        "effects": [
+          {
+            "target": "self",
+            "field": "combo_mul",
+            "value": 1
+          }
+        ]
+      }
+    ],
     "effect": "normal"
   },
   {

@@ -494,6 +494,7 @@ def calculate_battle(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def apply_skill_buffs(payload: dict[str, Any]) -> dict[str, Any]:
+    from core.damresult import resolve_effective_skill_combos
     from core.skill_finder import resolve_buff_options, skill_dataset
 
     skill_name = (payload.get("skill_name") or payload.get("skillName") or "").strip()
@@ -502,9 +503,42 @@ def apply_skill_buffs(payload: dict[str, Any]) -> dict[str, Any]:
     skill_data = skill_dataset.find_skill(skill_name)
     if skill_data is None:
         raise ValueError(f"未找到技能: {skill_name}")
-    options = resolve_buff_options(skill_data)
+    attacker_state = payload.get("attacker") if isinstance(payload.get("attacker"), dict) else None
+    defender_state = payload.get("defender") if isinstance(payload.get("defender"), dict) else None
+    if attacker_state and defender_state:
+        attacker_args = _attacker_args({**attacker_state, "current_skill": skill_name})
+        defender_args = _defender_args(defender_state)
+        combo_count = resolve_effective_skill_combos(
+            skill_name,
+            multiple=attacker_args["multiple"],
+            usage_mode_choice=attacker_args["usage_mode_choice"],
+            combo_plus=attacker_args["combo_plus"],
+            combo_mul=attacker_args["combo_mul"],
+            attacker_name=attacker_args["attacker_name"],
+            attacker_devolution=attacker_args["attacker_devolution"],
+            attacker_mega=attacker_args["attacker_mega"],
+            attacker_trait_runtime=attacker_args["attacker_trait_runtime"],
+            attacker_mark_state=attacker_args["attacker_mark_state"],
+            defender_name=defender_args["defender_name"],
+            defender_devolution=defender_args["defender_devolution"],
+            defender_mega=defender_args["defender_mega"],
+            defender_trait_runtime=defender_args["defender_trait_runtime"],
+        )[0]
+    else:
+        combo_count = 1
+
+    # Buff effects resolve once per hit. Combo multipliers are persistent
+    # multiplier deltas, so they apply once per skill use.
+    options = []
+    for option in resolve_buff_options(skill_data):
+        effects = [
+            {**effect, "value": effect["value"] if effect["field"] == "combo_mul" else effect["value"] * combo_count}
+            for effect in option["effects"]
+        ]
+        options.append({**option, "effects": effects})
     return {
         "skill_name": skill_name,
+        "combo_count": combo_count,
         "options": options,
         "effects": options[0]["effects"] if options else [],
     }
