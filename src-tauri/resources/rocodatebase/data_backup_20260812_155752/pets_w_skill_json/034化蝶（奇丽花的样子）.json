@@ -1,0 +1,227 @@
+{
+  "id": "034",
+  "name": "化蝶（奇丽花的样子）",
+  "other_name": [],
+  "elements": [
+    "虫",
+    "萌"
+  ],
+  "种族资质": 362,
+  "hp": 55,
+  "atk": 46,
+  "mag": 44,
+  "def": 62,
+  "res": 65,
+  "spd": 90,
+  "特性": "化茧",
+  "evolution": {
+    "stage": 3,
+    "chain": [
+      "032毛毛",
+      "033爬爬",
+      "034化蝶（奇丽花的样子）"
+    ],
+    "prev": [
+      "033爬爬"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "蛰针",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "虫茧",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（默认）Lv.2"
+    },
+    {
+      "skill_name": "捆缚",
+      "unlock_condition": "（默认）Lv.7"
+    },
+    {
+      "skill_name": "虫刺",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "生日蛋糕",
+      "unlock_condition": "（默认）Lv.17"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "（默认）Lv.21"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（默认）Lv.27"
+    },
+    {
+      "skill_name": "食腐",
+      "unlock_condition": "（默认）Lv.34"
+    },
+    {
+      "skill_name": "超级糖果",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "（默认）Lv.37"
+    },
+    {
+      "skill_name": "虫蛊",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "爆米花爆破",
+      "unlock_condition": "（默认）Lv.49"
+    },
+    {
+      "skill_name": "打鼾",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "徒长",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "泥浆铠甲",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "尾后针",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "飞吻",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "啮合传递",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "破罐破摔",
+      "unlock_condition": "[技能石]破罐破摔"
+    },
+    {
+      "skill_name": "反弹",
+      "unlock_condition": "[技能石]反弹"
+    },
+    {
+      "skill_name": "鸣叫",
+      "unlock_condition": "[技能石]鸣叫"
+    },
+    {
+      "skill_name": "闪击",
+      "unlock_condition": "[技能石]闪击"
+    },
+    {
+      "skill_name": "棘刺",
+      "unlock_condition": "[技能石]棘刺"
+    },
+    {
+      "skill_name": "激怒",
+      "unlock_condition": "[技能石]激怒"
+    },
+    {
+      "skill_name": "咆哮",
+      "unlock_condition": "[技能石]咆哮"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "退化",
+      "unlock_condition": "[技能石]退化"
+    },
+    {
+      "skill_name": "快速移动",
+      "unlock_condition": "[技能石]快速移动"
+    },
+    {
+      "skill_name": "应激反应",
+      "unlock_condition": "[技能石]应激反应"
+    },
+    {
+      "skill_name": "摇篮曲",
+      "unlock_condition": "[技能石]摇篮曲"
+    },
+    {
+      "skill_name": "操控",
+      "unlock_condition": "[技能石]操控"
+    },
+    {
+      "skill_name": "精神扰乱",
+      "unlock_condition": "[技能石]精神扰乱"
+    },
+    {
+      "skill_name": "嗜痛",
+      "unlock_condition": "[技能石]嗜痛"
+    }
+  ]
+}

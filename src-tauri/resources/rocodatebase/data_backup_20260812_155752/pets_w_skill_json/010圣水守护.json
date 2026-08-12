@@ -1,0 +1,207 @@
+{
+  "id": "010",
+  "name": "圣水守护",
+  "other_name": [],
+  "elements": [
+    "水"
+  ],
+  "种族资质": 667,
+  "hp": 125,
+  "atk": 67,
+  "mag": 141,
+  "def": 104,
+  "res": 145,
+  "spd": 85,
+  "特性": "浪潮",
+  "evolution": {
+    "stage": "mega",
+    "chain": [
+      "008水蓝蓝",
+      "009波波拉",
+      "010水灵",
+      "010圣水守护"
+    ],
+    "prev": [
+      "010水灵"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "拍击",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "甩水",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "气泡",
+      "unlock_condition": "（默认）Lv.8"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "水泡盾",
+      "unlock_condition": "（默认）Lv.12"
+    },
+    {
+      "skill_name": "水炮",
+      "unlock_condition": "（默认）Lv.17"
+    },
+    {
+      "skill_name": "洗礼",
+      "unlock_condition": "（默认）Lv.21"
+    },
+    {
+      "skill_name": "泡沫幻影",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "涌泉",
+      "unlock_condition": "（默认）Lv.30"
+    },
+    {
+      "skill_name": "落雨",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "潮汐",
+      "unlock_condition": "（默认）Lv.42"
+    },
+    {
+      "skill_name": "天洪",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水弹枪",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "淤泥表皮",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽翼庇护",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "虚化",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "寒风吹",
+      "unlock_condition": "[技能石]寒风吹"
+    },
+    {
+      "skill_name": "冷风",
+      "unlock_condition": "[技能石]冷风"
+    },
+    {
+      "skill_name": "速冻",
+      "unlock_condition": "[技能石]速冻"
+    },
+    {
+      "skill_name": "冰天雪地",
+      "unlock_condition": "[技能石]冰天雪地"
+    },
+    {
+      "skill_name": "冰墙",
+      "unlock_condition": "[技能石]冰墙"
+    },
+    {
+      "skill_name": "多维击打",
+      "unlock_condition": "[技能石]多维击打"
+    },
+    {
+      "skill_name": "魔能爆",
+      "unlock_condition": "[技能石]魔能爆"
+    },
+    {
+      "skill_name": "突袭",
+      "unlock_condition": "[技能石]突袭"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "有效预防",
+      "unlock_condition": "[技能石]有效预防"
+    },
+    {
+      "skill_name": "水波术",
+      "unlock_condition": "[技能石]水波术"
+    },
+    {
+      "skill_name": "嗜痛",
+      "unlock_condition": "[技能石]嗜痛"
+    },
+    {
+      "skill_name": "吓退",
+      "unlock_condition": "[技能石]吓退"
+    }
+  ]
+}

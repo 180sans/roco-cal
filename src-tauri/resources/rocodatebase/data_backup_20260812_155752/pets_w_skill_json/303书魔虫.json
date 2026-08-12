@@ -1,0 +1,203 @@
+{
+  "id": "303",
+  "name": "书魔虫",
+  "other_name": [],
+  "elements": [
+    "普通"
+  ],
+  "种族资质": 383,
+  "hp": 67,
+  "atk": 69,
+  "mag": 69,
+  "def": 48,
+  "res": 73,
+  "spd": 57,
+  "特性": "图书守卫者",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "303书魔虫",
+      "304书卷守护",
+      "305古卷执政官",
+      "306古卷匣魔像"
+    ],
+    "prev": [],
+    "next": [
+      "304书卷守护"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "粒子对撞",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "先发制人",
+      "unlock_condition": "（默认）Lv.12"
+    },
+    {
+      "skill_name": "许愿星",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.24"
+    },
+    {
+      "skill_name": "能量刃",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "垂死反击",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "吞噬",
+      "unlock_condition": "（默认）Lv.41"
+    },
+    {
+      "skill_name": "连续爪击",
+      "unlock_condition": "（默认）Lv.43"
+    },
+    {
+      "skill_name": "突袭",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水泡盾",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "淤泥表皮",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "虚化",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "无畏之心",
+      "unlock_condition": "[技能石]无畏之心"
+    },
+    {
+      "skill_name": "湮灭",
+      "unlock_condition": "[技能石]湮灭"
+    },
+    {
+      "skill_name": "蓄能轰击",
+      "unlock_condition": "[技能石]蓄能轰击"
+    },
+    {
+      "skill_name": "血气",
+      "unlock_condition": "[技能石]血气"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "[技能石]休息回复"
+    },
+    {
+      "skill_name": "嗜痛",
+      "unlock_condition": "[技能石]嗜痛"
+    },
+    {
+      "skill_name": "吓退",
+      "unlock_condition": "[技能石]吓退"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "伺机而动",
+      "unlock_condition": "[技能石]伺机而动"
+    },
+    {
+      "skill_name": "大爆炸",
+      "unlock_condition": "[技能石]大爆炸"
+    },
+    {
+      "skill_name": "魔能爆",
+      "unlock_condition": "[技能石]魔能爆"
+    },
+    {
+      "skill_name": "彗星",
+      "unlock_condition": "[技能石]彗星"
+    },
+    {
+      "skill_name": "斩断",
+      "unlock_condition": "[技能石]斩断"
+    }
+  ]
+}

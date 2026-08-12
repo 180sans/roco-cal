@@ -14,6 +14,14 @@
   "res": 116,
   "spd": 100,
   "特性": "安眠",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "440睡铃雪影娃娃"
+    ],
+    "prev": [],
+    "next": []
+  },
   "skills": [
     {
       "skill_name": "花香",
@@ -191,13 +199,5 @@
       "skill_name": "复写",
       "unlock_condition": "[技能石]复写"
     }
-  ],
-  "evolution": {
-    "stage": 1,
-    "chain": [
-      "440睡铃雪影娃娃"
-    ],
-    "prev": [],
-    "next": []
-  }
+  ]
 }

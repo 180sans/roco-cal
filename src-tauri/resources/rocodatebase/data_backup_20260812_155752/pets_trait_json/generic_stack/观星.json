@@ -1,0 +1,35 @@
+{
+    "特性": {
+        "名称": "观星",
+        "效果": "敌方每有1层星陨印记，自己的地系技能威力+20%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "falling_star_mark_count",
+                    "context": {
+                        "subject": "enemy",
+                        "timing": "current"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "敌方星陨印记层数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "power_multiplier",
+                            "filters": {
+                                "skill_elements": [
+                                    "地"
+                                ]
+                            },
+                            "value_per_stack": 0.2
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

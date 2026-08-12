@@ -1,0 +1,241 @@
+{
+  "id": "040",
+  "name": "晶石蜗（莲花刚玉的样子）",
+  "other_name": [],
+  "elements": [
+    "光",
+    "地"
+  ],
+  "种族资质": 585,
+  "hp": 94,
+  "atk": 97,
+  "mag": 101,
+  "def": 137,
+  "res": 91,
+  "spd": 65,
+  "特性": "偏振",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "039矿晶虫",
+      "040晶石蜗（莲花刚玉的样子）",
+      "040钻石蜗（莲花刚玉的样子）"
+    ],
+    "prev": [
+      "039矿晶虫"
+    ],
+    "next": [
+      "040钻石蜗（莲花刚玉的样子）"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "脉冲光线",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "淤泥表皮",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "泥浆",
+      "unlock_condition": "（默认）Lv.12"
+    },
+    {
+      "skill_name": "漫反射",
+      "unlock_condition": "（默认）Lv.17"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（默认）Lv.25"
+    },
+    {
+      "skill_name": "蓄势待发",
+      "unlock_condition": "（默认）Lv.26"
+    },
+    {
+      "skill_name": "壁垒",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（默认）Lv.34"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "镜像反射",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "音波弹",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "闪光冲击",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "地刺",
+      "unlock_condition": "（默认）Lv.49"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "酶浓度调整",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水泡盾",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "折线冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "泥巴喷射",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "尾后针",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风墙",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "虚化",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "遁地",
+      "unlock_condition": "[技能石]遁地"
+    },
+    {
+      "skill_name": "震击",
+      "unlock_condition": "[技能石]震击"
+    },
+    {
+      "skill_name": "天光",
+      "unlock_condition": "[技能石]天光"
+    },
+    {
+      "skill_name": "破罐破摔",
+      "unlock_condition": "[技能石]破罐破摔"
+    },
+    {
+      "skill_name": "月光合奏",
+      "unlock_condition": "[技能石]月光合奏"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "[技能石]蜡质膜"
+    },
+    {
+      "skill_name": "捧杀",
+      "unlock_condition": "[技能石]捧杀"
+    },
+    {
+      "skill_name": "后发制人",
+      "unlock_condition": "[技能石]后发制人"
+    },
+    {
+      "skill_name": "逆袭",
+      "unlock_condition": "[技能石]逆袭"
+    },
+    {
+      "skill_name": "偷袭",
+      "unlock_condition": "[技能石]偷袭"
+    },
+    {
+      "skill_name": "耀眼",
+      "unlock_condition": "[技能石]耀眼"
+    },
+    {
+      "skill_name": "锐利眼神",
+      "unlock_condition": "[技能石]锐利眼神"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "有效预防",
+      "unlock_condition": "[技能石]有效预防"
+    },
+    {
+      "skill_name": "血气",
+      "unlock_condition": "[技能石]血气"
+    },
+    {
+      "skill_name": "嗜痛",
+      "unlock_condition": "[技能石]嗜痛"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "[技能石]防御"
+    },
+    {
+      "skill_name": "刺盾",
+      "unlock_condition": "[技能石]刺盾"
+    },
+    {
+      "skill_name": "点亮",
+      "unlock_condition": "[技能石]点亮"
+    },
+    {
+      "skill_name": "缓一缓",
+      "unlock_condition": "[技能石]缓一缓"
+    }
+  ]
+}

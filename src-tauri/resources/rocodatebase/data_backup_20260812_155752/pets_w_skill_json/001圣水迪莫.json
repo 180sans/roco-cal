@@ -1,0 +1,245 @@
+{
+  "id": "001",
+  "name": "圣水迪莫",
+  "other_name": [],
+  "elements": [
+    "光",
+    "水"
+  ],
+  "种族资质": 598,
+  "hp": 120,
+  "atk": 80,
+  "mag": 80,
+  "def": 113,
+  "res": 113,
+  "spd": 92,
+  "特性": "净化",
+  "skills": [
+    {
+      "skill_name": "猛烈撞击",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "闪光",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "（默认）Lv.7"
+    },
+    {
+      "skill_name": "光球",
+      "unlock_condition": "（默认）Lv.9"
+    },
+    {
+      "skill_name": "火焰箭",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "棘突",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "潮涌",
+      "unlock_condition": "（默认）Lv.19"
+    },
+    {
+      "skill_name": "超导",
+      "unlock_condition": "（默认）Lv.22"
+    },
+    {
+      "skill_name": "闪光冲击",
+      "unlock_condition": "（默认）Lv.27"
+    },
+    {
+      "skill_name": "漫反射",
+      "unlock_condition": "（默认）Lv.30"
+    },
+    {
+      "skill_name": "冰爪",
+      "unlock_condition": "（默认）Lv.32"
+    },
+    {
+      "skill_name": "热砂",
+      "unlock_condition": "（默认）Lv.34"
+    },
+    {
+      "skill_name": "念力膨胀",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "放晴",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "过曝",
+      "unlock_condition": "（默认）Lv.42"
+    },
+    {
+      "skill_name": "光刃",
+      "unlock_condition": "（默认）Lv.47"
+    },
+    {
+      "skill_name": "折射",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰冲锋",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "折线冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冷风",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "鹰爪",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "幻象",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "气泡",
+      "unlock_condition": "[技能石]气泡"
+    },
+    {
+      "skill_name": "天洪",
+      "unlock_condition": "[技能石]天洪"
+    },
+    {
+      "skill_name": "润泽",
+      "unlock_condition": "[技能石]润泽"
+    },
+    {
+      "skill_name": "炎打",
+      "unlock_condition": "[技能石]炎打"
+    },
+    {
+      "skill_name": "闪燃",
+      "unlock_condition": "[技能石]闪燃"
+    },
+    {
+      "skill_name": "怒火",
+      "unlock_condition": "[技能石]怒火"
+    },
+    {
+      "skill_name": "藤绞",
+      "unlock_condition": "[技能石]藤绞"
+    },
+    {
+      "skill_name": "抽枝",
+      "unlock_condition": "[技能石]抽枝"
+    },
+    {
+      "skill_name": "氧输送",
+      "unlock_condition": "[技能石]氧输送"
+    },
+    {
+      "skill_name": "电弧",
+      "unlock_condition": "[技能石]电弧"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "[技能石]跺地"
+    },
+    {
+      "skill_name": "坍缩",
+      "unlock_condition": "[技能石]坍缩"
+    },
+    {
+      "skill_name": "寒风吹",
+      "unlock_condition": "[技能石]寒风吹"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "有效预防",
+      "unlock_condition": "[技能石]有效预防"
+    },
+    {
+      "skill_name": "恐吓",
+      "unlock_condition": "[技能石]恐吓"
+    }
+  ],
+  "evolution": {
+    "stage": "mega",
+    "chain": [
+      "001迪莫",
+      "001圣光迪莫",
+      "001圣草迪莫",
+      "001圣火迪莫",
+      "001圣水迪莫"
+    ],
+    "prev": [
+      "001迪莫"
+    ],
+    "next": []
+  }
+}

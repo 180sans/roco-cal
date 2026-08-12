@@ -1,0 +1,216 @@
+{
+  "id": "218",
+  "name": "烈火守护",
+  "other_name": [
+    "教练"
+  ],
+  "elements": [
+    "火"
+  ],
+  "种族资质": 564,
+  "hp": 105,
+  "atk": 117,
+  "mag": 49,
+  "def": 135,
+  "res": 93,
+  "spd": 65,
+  "特性": "蒸汽膨胀",
+  "evolution": {
+    "stage": 3,
+    "chain": [
+      "216火尾瓦特",
+      "217火尾战士",
+      "218烈火守护"
+    ],
+    "prev": [
+      "217火尾战士"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "火焰冲锋",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "双响炮",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.7"
+    },
+    {
+      "skill_name": "旋转突击",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "怒火",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "山火",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "热身运动",
+      "unlock_condition": "（默认）Lv.24"
+    },
+    {
+      "skill_name": "火云车",
+      "unlock_condition": "（默认）Lv.31"
+    },
+    {
+      "skill_name": "热身",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "闪燃",
+      "unlock_condition": "（默认）Lv.39"
+    },
+    {
+      "skill_name": "偷袭",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "猛烈撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰箭",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冰爪",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "贯手",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "寸拳",
+      "unlock_condition": "[技能石]寸拳"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "[技能石]反击拳"
+    },
+    {
+      "skill_name": "斩断",
+      "unlock_condition": "[技能石]斩断"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "[技能石]化劲"
+    },
+    {
+      "skill_name": "彼岸之手",
+      "unlock_condition": "[技能石]彼岸之手"
+    },
+    {
+      "skill_name": "撕裂",
+      "unlock_condition": "[技能石]撕裂"
+    },
+    {
+      "skill_name": "伪造账单",
+      "unlock_condition": "[技能石]伪造账单"
+    },
+    {
+      "skill_name": "落石",
+      "unlock_condition": "[技能石]落石"
+    },
+    {
+      "skill_name": "先发制人",
+      "unlock_condition": "[技能石]先发制人"
+    },
+    {
+      "skill_name": "连续爪击",
+      "unlock_condition": "[技能石]连续爪击"
+    },
+    {
+      "skill_name": "锐利眼神",
+      "unlock_condition": "[技能石]锐利眼神"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "快速移动",
+      "unlock_condition": "[技能石]快速移动"
+    },
+    {
+      "skill_name": "有效预防",
+      "unlock_condition": "[技能石]有效预防"
+    },
+    {
+      "skill_name": "撕咬",
+      "unlock_condition": "[技能石]撕咬"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+    "特性": {
+        "名称": "挺起胸脯",
+        "效果": "携带的能耗为1的技能，威力+50%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "skill_cost_1",
+                    "context": {
+                        "subject": "self",
+                        "timing": "action"
+                    },
+                    "stack": {
+                        "enabled": false,
+                        "input": false,
+                        "permanent": true,
+                        "hint": ""
+                    },
+                    "effects": [
+                        {
+                            "kind": "power_multiplier",
+                            "value": 0.5
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

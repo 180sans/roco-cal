@@ -1,0 +1,248 @@
+[
+  {
+    "name": "二律背反",
+    "cost": 4,
+    "element": "幻",
+    "type": "状态",
+    "skill_power": null,
+    "description": "敌方获得3层星陨，应对防御：额外使敌方星陨层数翻倍。",
+    "effect": "normal"
+  },
+  {
+    "name": "念力膨胀",
+    "cost": 2,
+    "element": "幻",
+    "type": "物攻",
+    "skill_power": 80,
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
+  },
+  {
+    "name": "针状物",
+    "cost": 3,
+    "element": "幻",
+    "type": "魔攻",
+    "skill_power": 30,
+    "description": "造成魔伤，3连击。",
+    "combo": 3,
+    "effect": "normal"
+  },
+  {
+    "name": "超维投射",
+    "cost": 4,
+    "element": "幻",
+    "type": "状态",
+    "skill_power": null,
+    "description": "敌方获得4层星陨。",
+    "effect": "normal"
+  },
+  {
+    "name": "超新星馈赠",
+    "cost": 2,
+    "element": "幻",
+    "type": "状态",
+    "skill_power": null,
+    "description": "敌方获得2层星陨印记，每使用1次，赋予的星陨印记层数+1。",
+    "effect": "normal"
+  },
+  {
+    "name": "粒子对撞",
+    "cost": 0,
+    "element": "幻",
+    "type": "物攻",
+    "skill_power": 40,
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
+  },
+  {
+    "name": "空间压迫",
+    "cost": 3,
+    "element": "幻",
+    "type": "物攻",
+    "skill_power": 70,
+    "description": "造成物伤，敌方获得1层星陨。",
+    "effect": "normal"
+  },
+  {
+    "name": "星链",
+    "cost": 3,
+    "element": "幻",
+    "type": "状态",
+    "skill_power": null,
+    "description": "2连击，每次连击赋予敌方一层星陨。",
+    "combo": 2,
+    "effect": "normal"
+  },
+  {
+    "name": "星轨裂变",
+    "cost": 1,
+    "element": "幻",
+    "type": "状态",
+    "skill_power": null,
+    "description": "敌方获得2层星陨。",
+    "effect": "normal"
+  },
+  {
+    "name": "星云漩涡",
+    "cost": 1,
+    "element": "幻",
+    "type": "物攻",
+    "skill_power": 60,
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
+  },
+  {
+    "name": "心灵洞悉",
+    "cost": 7,
+    "element": "幻",
+    "type": "状态",
+    "skill_power": null,
+    "description": "敌方获得星陨印记，获得层数等于敌方印记层数。",
+    "effect": "normal"
+  },
+  {
+    "name": "偷师",
+    "cost": 0,
+    "element": "幻",
+    "type": "物攻",
+    "skill_power": 30,
+    "description": "造成物伤，自己回复1能量。",
+    "effect": "normal"
+  },
+  {
+    "name": "天体吸积",
+    "cost": 4,
+    "element": "幻",
+    "type": "物攻",
+    "skill_power": 20,
+    "description": "造成物伤，敌方每有1层印记，本次共计威力+20。",
+    "triggered": {
+      "mode": "mark_effect_stack",
+      "skill_power_plus": "20",
+      "multiple": true
+    },
+    "effect": "normal"
+  },
+  {
+    "name": "大爆炸",
+    "cost": 3,
+    "element": "幻",
+    "type": "魔攻",
+    "skill_power": 100,
+    "description": "对敌方精灵造成魔法伤害。",
+    "effect": "no"
+  },
+  {
+    "name": "多维击打",
+    "cost": 4,
+    "element": "幻",
+    "type": "魔攻",
+    "skill_power": 15,
+    "description": "造成魔伤，1连击，敌方每有1层星陨，本次技能连击数+1。",
+    "combo": 1,
+    "triggered": {
+      "mode": "starfall_effect_stack",
+      "combo_plus": "1",
+      "multiple": true
+    },
+    "effect": "normal"
+  },
+  {
+    "name": "坍缩",
+    "cost": 3,
+    "element": "幻",
+    "type": "魔攻",
+    "skill_power": 85,
+    "description": "造成魔伤，若击败敌方，自己获得魔攻+70%。",
+    "buff_options": [
+      {
+        "label": "自己魔攻 +70%",
+        "effects": [
+          {
+            "target": "self",
+            "field": "mag_atk_buff",
+            "value": 70
+          }
+        ]
+      }
+    ],
+    "effect": "normal"
+  },
+  {
+    "name": "四维降解",
+    "cost": 7,
+    "element": "幻",
+    "type": "魔攻",
+    "skill_power": 100,
+    "description": "造成魔伤，敌方每有1层印记，本技能能耗-1。",
+    "effect": "normal"
+  },
+  {
+    "name": "叠加态",
+    "cost": 1,
+    "element": "幻",
+    "type": "状态",
+    "skill_power": null,
+    "description": "自己获得随机16层属性增益，巧变：幻系攻击技能。",
+    "effect": "normal"
+  },
+  {
+    "name": "双星",
+    "cost": 3,
+    "element": "幻",
+    "type": "物攻",
+    "skill_power": 100,
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
+  },
+  {
+    "name": "冥想",
+    "cost": 3,
+    "element": "幻",
+    "type": "防御",
+    "skill_power": null,
+    "description": "减伤80%，应对攻击：敌方获得2层星陨。",
+    "damage_reduction": "80%",
+    "effect": "normal"
+  },
+  {
+    "name": "错乱",
+    "cost": 2,
+    "element": "幻",
+    "type": "魔攻",
+    "skill_power": 65,
+    "description": "造成魔伤，应对状态：敌方获得3层星陨印记。",
+    "effect": "normal"
+  },
+  {
+    "name": "薄纱环",
+    "element": "幻",
+    "type": "状态",
+    "description": "选择：对手随机获得1种负面印记或自己随机获得1种正面印记。",
+    "skill_power": null,
+    "cost": 3,
+    "effect": "choice"
+  },
+  {
+    "name": "星痕",
+    "element": "幻",
+    "type": "魔攻",
+    "description": "造成魔伤，若对手有印记，本次技能威力+40。",
+    "skill_power": 90,
+    "cost": 3,
+    "triggered": {
+      "mode": "mark_effect",
+      "skill_power_plus": "40"
+    },
+    "effect": "normal"
+  },
+  {
+    "name": "许愿池",
+    "element": "幻",
+    "type": "魔攻",
+    "description": "造成魔伤，双方已有的印记层数+1。",
+    "skill_power": 55,
+    "cost": 4,
+    "effect": "normal"
+  }
+]

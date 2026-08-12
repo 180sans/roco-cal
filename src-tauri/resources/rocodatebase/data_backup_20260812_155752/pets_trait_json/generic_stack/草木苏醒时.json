@@ -1,0 +1,34 @@
+{
+    "特性": {
+        "名称": "草木苏醒时",
+        "效果": "每回复1能量，物攻和魔攻永久+20%，攻击后重置。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "energy_recovery",
+                    "context": {
+                        "subject": "self",
+                        "timing": "after"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "回复能量点数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values_per_stack": {
+                                "atk": 0.2,
+                                "mag": 0.2
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

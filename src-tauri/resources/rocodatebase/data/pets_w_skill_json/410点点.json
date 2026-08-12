@@ -13,6 +13,17 @@
   "res": 94,
   "spd": 80,
   "特性": "迎宾",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "410点点",
+      "411珀尔鼬"
+    ],
+    "prev": [],
+    "next": [
+      "411珀尔鼬"
+    ]
+  },
   "skills": [
     {
       "skill_name": "反弹",
@@ -198,16 +209,5 @@
       "skill_name": "可爱",
       "unlock_condition": "[技能石]可爱"
     }
-  ],
-  "evolution": {
-    "stage": 1,
-    "chain": [
-      "410点点",
-      "411珀尔鼬"
-    ],
-    "prev": [],
-    "next": [
-      "411珀尔鼬"
-    ]
-  }
+  ]
 }

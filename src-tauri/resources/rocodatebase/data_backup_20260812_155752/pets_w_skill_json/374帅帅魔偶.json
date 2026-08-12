@@ -1,0 +1,261 @@
+{
+  "id": "374",
+  "name": "帅帅魔偶",
+  "other_name": [],
+  "elements": [
+    "幻"
+  ],
+  "种族资质": 636,
+  "hp": 97,
+  "atk": 104,
+  "mag": 111,
+  "def": 86,
+  "res": 133,
+  "spd": 105,
+  "特性": "盲从",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "373牵线木偶",
+      "374帅帅魔偶"
+    ],
+    "prev": [
+      "373牵线木偶"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "偷师",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "空间压迫",
+      "unlock_condition": "（默认）Lv.3"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "（默认）Lv.7"
+    },
+    {
+      "skill_name": "针状物",
+      "unlock_condition": "（默认）Lv.12"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "（默认）Lv.18"
+    },
+    {
+      "skill_name": "坍缩",
+      "unlock_condition": "（默认）Lv.24"
+    },
+    {
+      "skill_name": "星轨裂变",
+      "unlock_condition": "（默认）Lv.28"
+    },
+    {
+      "skill_name": "叠加态",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "天体吸积",
+      "unlock_condition": "（默认）Lv.43"
+    },
+    {
+      "skill_name": "应激反应",
+      "unlock_condition": "（默认）Lv.47"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "徒长",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "泥浆铠甲",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "啮合传递",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "念力膨胀",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "[技能石]花香"
+    },
+    {
+      "skill_name": "顶端优势",
+      "unlock_condition": "[技能石]顶端优势"
+    },
+    {
+      "skill_name": "藤绞",
+      "unlock_condition": "[技能石]藤绞"
+    },
+    {
+      "skill_name": "花炮",
+      "unlock_condition": "[技能石]花炮"
+    },
+    {
+      "skill_name": "孢子",
+      "unlock_condition": "[技能石]孢子"
+    },
+    {
+      "skill_name": "芳香诱引",
+      "unlock_condition": "[技能石]芳香诱引"
+    },
+    {
+      "skill_name": "电弧",
+      "unlock_condition": "[技能石]电弧"
+    },
+    {
+      "skill_name": "超导",
+      "unlock_condition": "[技能石]超导"
+    },
+    {
+      "skill_name": "过载回路",
+      "unlock_condition": "[技能石]过载回路"
+    },
+    {
+      "skill_name": "快速移动",
+      "unlock_condition": "[技能石]快速移动"
+    },
+    {
+      "skill_name": "精神扰乱",
+      "unlock_condition": "[技能石]精神扰乱"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "[技能石]防反"
+    },
+    {
+      "skill_name": "嗜痛",
+      "unlock_condition": "[技能石]嗜痛"
+    },
+    {
+      "skill_name": "心灵洞悉",
+      "unlock_condition": "[技能石]心灵洞悉"
+    },
+    {
+      "skill_name": "二律背反",
+      "unlock_condition": "[技能石]二律背反"
+    },
+    {
+      "skill_name": "超新星馈赠",
+      "unlock_condition": "[技能石]超新星馈赠"
+    },
+    {
+      "skill_name": "星链",
+      "unlock_condition": "[技能石]星链"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "[技能石]魔法增效"
+    },
+    {
+      "skill_name": "薄纱环",
+      "unlock_condition": "[技能石]薄纱环"
+    }
+  ]
+}

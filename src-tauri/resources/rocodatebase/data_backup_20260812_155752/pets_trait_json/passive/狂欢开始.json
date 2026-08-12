@@ -1,0 +1,35 @@
+{
+    "特性": {
+        "名称": "狂欢开始",
+        "效果": "在场时，背包里会变化出随机精灵，随机精灵只能与本精灵相互更换。本精灵受到的克制伤害+25%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "advantage_hit",
+                    "context": {
+                        "subject": "attacker",
+                        "timing": "default"
+                    },
+                    "passive": true,
+                    "stack": {
+                        "enabled": false,
+                        "input": false,
+                        "permanent": false,
+                        "hint": ""
+                    },
+                    "effects": [
+                        {
+                            "kind": "damage_multiplier",
+                            "target": "enemy",
+                            "filters": {
+                                "advantage_gte": 2
+                            },
+                            "value": 0.25
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

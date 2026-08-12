@@ -13,6 +13,17 @@
   "res": 51,
   "spd": 100,
   "特性": "诅咒",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "430卡波",
+      "431卡拉波斯"
+    ],
+    "prev": [
+      "430卡波"
+    ],
+    "next": []
+  },
   "skills": [
     {
       "skill_name": "防御",
@@ -194,16 +205,5 @@
       "skill_name": "极限撕裂",
       "unlock_condition": "[技能石]极限撕裂"
     }
-  ],
-  "evolution": {
-    "stage": 2,
-    "chain": [
-      "430卡波",
-      "431卡拉波斯"
-    ],
-    "prev": [
-      "430卡波"
-    ],
-    "next": []
-  }
+  ]
 }

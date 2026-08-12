@@ -1,0 +1,33 @@
+﻿{
+  "特性": {
+    "名称": "贪得无厌",
+    "效果": "入场时获得50%吸血，每过量回复5%生命转化为10%物攻。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "over_heal_5",
+                    "context": {
+                        "subject": "self",
+                        "timing": "after_heal"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "过量恢复"
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values_per_stack": {
+                                "atk": 0.1
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+  }
+}

@@ -14,6 +14,17 @@
   "res": 170,
   "spd": 60,
   "特性": "上锁",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "379叮叮卯",
+      "380飞飞钥"
+    ],
+    "prev": [
+      "379叮叮卯"
+    ],
+    "next": []
+  },
   "skills": [
     {
       "skill_name": "虫网",
@@ -199,16 +210,5 @@
       "skill_name": "六自由度",
       "unlock_condition": "[技能石]六自由度"
     }
-  ],
-  "evolution": {
-    "stage": 2,
-    "chain": [
-      "379叮叮卯",
-      "380飞飞钥"
-    ],
-    "prev": [
-      "379叮叮卯"
-    ],
-    "next": []
-  }
+  ]
 }

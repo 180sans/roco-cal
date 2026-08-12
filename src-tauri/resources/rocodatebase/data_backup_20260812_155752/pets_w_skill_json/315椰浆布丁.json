@@ -1,0 +1,228 @@
+{
+  "id": "315",
+  "name": "椰浆布丁",
+  "other_name": [
+    "冰布丁"
+  ],
+  "elements": [
+    "水",
+    "冰"
+  ],
+  "种族资质": 562,
+  "hp": 133,
+  "atk": 34,
+  "mag": 89,
+  "def": 81,
+  "res": 105,
+  "spd": 120,
+  "特性": "吉利丁片",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "313果冻",
+      "315椰浆布丁"
+    ],
+    "prev": [
+      "313果冻"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "水弹",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "洗礼",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "落星",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（默认）Lv.9"
+    },
+    {
+      "skill_name": "泡沫幻影",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "肥皂泡",
+      "unlock_condition": "（默认）Lv.27"
+    },
+    {
+      "skill_name": "潮涌",
+      "unlock_condition": "（默认）Lv.32"
+    },
+    {
+      "skill_name": "水刃",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "霜冻",
+      "unlock_condition": "（默认）Lv.45"
+    },
+    {
+      "skill_name": "冰蛋壳",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "冷风",
+      "unlock_condition": "（默认）Lv.49"
+    },
+    {
+      "skill_name": "寒风吹",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水弹枪",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "淤泥表皮",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冰爪",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽翼庇护",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "虚化",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "天洪",
+      "unlock_condition": "[技能石]天洪"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "[技能石]蓄水"
+    },
+    {
+      "skill_name": "水环",
+      "unlock_condition": "[技能石]水环"
+    },
+    {
+      "skill_name": "水炮",
+      "unlock_condition": "[技能石]水炮"
+    },
+    {
+      "skill_name": "打雪仗",
+      "unlock_condition": "[技能石]打雪仗"
+    },
+    {
+      "skill_name": "水幕冲击",
+      "unlock_condition": "[技能石]水幕冲击"
+    },
+    {
+      "skill_name": "魔能爆",
+      "unlock_condition": "[技能石]魔能爆"
+    },
+    {
+      "skill_name": "破罐破摔",
+      "unlock_condition": "[技能石]破罐破摔"
+    },
+    {
+      "skill_name": "捧杀",
+      "unlock_condition": "[技能石]捧杀"
+    },
+    {
+      "skill_name": "许愿星",
+      "unlock_condition": "[技能石]许愿星"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "[技能石]魔法增效"
+    },
+    {
+      "skill_name": "突袭",
+      "unlock_condition": "[技能石]突袭"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "[技能石]力量增效"
+    },
+    {
+      "skill_name": "血气",
+      "unlock_condition": "[技能石]血气"
+    },
+    {
+      "skill_name": "阻断",
+      "unlock_condition": "[技能石]阻断"
+    },
+    {
+      "skill_name": "冰墙",
+      "unlock_condition": "[技能石]冰墙"
+    },
+    {
+      "skill_name": "可爱",
+      "unlock_condition": "[技能石]可爱"
+    }
+  ]
+}

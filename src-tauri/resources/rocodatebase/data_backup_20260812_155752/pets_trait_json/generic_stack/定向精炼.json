@@ -1,0 +1,36 @@
+{
+    "特性": {
+        "名称": "定向精炼",
+        "效果": "己方精灵每使用1次防御技能，自己入场时机械系和地系技能威力+10%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "defense_skill_count",
+                    "context": {
+                        "subject": "ally_team",
+                        "timing": "entrance"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "己方防御技能使用次数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "power_multiplier",
+                            "filters": {
+                                "skill_elements": [
+                                    "机械",
+                                    "地"
+                                ]
+                            },
+                            "value_per_stack": 0.1
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

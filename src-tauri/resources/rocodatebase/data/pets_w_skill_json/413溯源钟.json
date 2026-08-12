@@ -14,6 +14,17 @@
   "res": 116,
   "spd": 95,
   "特性": "整点报时",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "412不咕钟",
+      "413溯源钟"
+    ],
+    "prev": [
+      "412不咕钟"
+    ],
+    "next": []
+  },
   "skills": [
     {
       "skill_name": "针状物",
@@ -211,16 +222,5 @@
       "skill_name": "取念",
       "unlock_condition": "[技能石]取念"
     }
-  ],
-  "evolution": {
-    "stage": 2,
-    "chain": [
-      "412不咕钟",
-      "413溯源钟"
-    ],
-    "prev": [
-      "412不咕钟"
-    ],
-    "next": []
-  }
+  ]
 }

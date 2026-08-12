@@ -1,0 +1,16 @@
+{
+  "特性": {
+    "名称": "石天平",
+    "效果": "若使用技能能耗高于敌方，回合结束敌方失去能耗之差的能量。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "未识别为当前项目关心的伤害或防御类结构化效果",
+      "ignored_text": "若使用技能能耗高于敌方，回合结束敌方失去能耗之差的能量。"
+    }
+  }
+}

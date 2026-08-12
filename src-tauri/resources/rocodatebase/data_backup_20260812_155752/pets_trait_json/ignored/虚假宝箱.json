@@ -1,0 +1,36 @@
+{
+    "特性": {
+        "名称": "虚假宝箱",
+        "效果": "自己力竭时，敌方获得攻防+20%。",
+        "battle_effect": {
+            "affects_battle": false,
+            "effect_groups": [
+                {
+                    "mode": "fainted",
+                    "context": {
+                        "subject": "self",
+                        "timing": "after_faint"
+                    },
+                    "stack": {
+                        "enabled": false,
+                        "input": false,
+                        "permanent": false,
+                        "hint": ""
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "opponent",
+                            "values": {
+                                "atk": 0.2,
+                                "mag": 0.2,
+                                "def": 0.2,
+                                "res": 0.2
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

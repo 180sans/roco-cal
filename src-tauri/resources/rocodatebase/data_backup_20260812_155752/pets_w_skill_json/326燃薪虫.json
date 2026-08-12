@@ -1,0 +1,214 @@
+{
+  "id": "326",
+  "name": "燃薪虫",
+  "other_name": [],
+  "elements": [
+    "火",
+    "草"
+  ],
+  "种族资质": 579,
+  "hp": 135,
+  "atk": 120,
+  "mag": 48,
+  "def": 103,
+  "res": 73,
+  "spd": 100,
+  "特性": "煤渣草",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "325柴渣虫",
+      "326燃薪虫"
+    ],
+    "prev": [
+      "325柴渣虫"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "种子弹",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "火焰冲锋",
+      "unlock_condition": "（默认）Lv.2"
+    },
+    {
+      "skill_name": "高温回火",
+      "unlock_condition": "（默认）Lv.3"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "灼伤",
+      "unlock_condition": "（默认）Lv.22"
+    },
+    {
+      "skill_name": "充分燃烧",
+      "unlock_condition": "（默认）Lv.27"
+    },
+    {
+      "skill_name": "纤维化",
+      "unlock_condition": "（默认）Lv.34"
+    },
+    {
+      "skill_name": "藤绞",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "酶浓度调整",
+      "unlock_condition": "（默认）Lv.37"
+    },
+    {
+      "skill_name": "炙热波动",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "抽枝",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "荆棘爪",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰箭",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水弹枪",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "淤泥表皮",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽翼庇护",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "虚化",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "淬火",
+      "unlock_condition": "[技能石]淬火"
+    },
+    {
+      "skill_name": "报复",
+      "unlock_condition": "[技能石]报复"
+    },
+    {
+      "skill_name": "移花接木",
+      "unlock_condition": "[技能石]移花接木"
+    },
+    {
+      "skill_name": "顶端优势",
+      "unlock_condition": "[技能石]顶端优势"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "倾泻",
+      "unlock_condition": "[技能石]倾泻"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "[技能石]力量增效"
+    },
+    {
+      "skill_name": "诡刺",
+      "unlock_condition": "[技能石]诡刺"
+    },
+    {
+      "skill_name": "见招拆招",
+      "unlock_condition": "[技能石]见招拆招"
+    },
+    {
+      "skill_name": "嗜痛",
+      "unlock_condition": "[技能石]嗜痛"
+    },
+    {
+      "skill_name": "血气",
+      "unlock_condition": "[技能石]血气"
+    },
+    {
+      "skill_name": "无畏之心",
+      "unlock_condition": "[技能石]无畏之心"
+    },
+    {
+      "skill_name": "山火",
+      "unlock_condition": "[技能石]山火"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "[技能石]蜡质膜"
+    },
+    {
+      "skill_name": "花火",
+      "unlock_condition": "[技能石]花火"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "completed": true,
+  "base_pet_count": 588,
+  "patch_pet_template_count": 4,
+  "patch_skill_file_count": 4,
+  "generated_patch_pet_count": 4,
+  "output_pet_count": 592,
+  "base_trait_count": 222,
+  "patch_trait_count": 3,
+  "output_trait_count": 225,
+  "duplicate_traits": [],
+  "evolution_count_repairs": [],
+  "skipped_files": [],
+  "skipped_pets": [],
+  "skipped_chains": [],
+  "warnings": []
+}

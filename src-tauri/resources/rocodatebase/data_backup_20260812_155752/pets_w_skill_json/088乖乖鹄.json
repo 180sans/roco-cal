@@ -1,0 +1,180 @@
+{
+  "id": "088",
+  "name": "乖乖鹄",
+  "other_name": [],
+  "elements": [
+    "翼",
+    "水"
+  ],
+  "种族资质": 394,
+  "hp": 75,
+  "atk": 57,
+  "mag": 52,
+  "def": 83,
+  "res": 58,
+  "spd": 69,
+  "特性": "洁癖",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "088乖乖鹄",
+      "089蓝珠天鹅",
+      "090翠顶夫人",
+      "091黑羽夫人"
+    ],
+    "prev": [],
+    "next": [
+      "089蓝珠天鹅"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "鸣叫",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "飞羽",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.9"
+    },
+    {
+      "skill_name": "潮涌",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.21"
+    },
+    {
+      "skill_name": "先发制人",
+      "unlock_condition": "（默认）Lv.28"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "风隐",
+      "unlock_condition": "（默认）Lv.42"
+    },
+    {
+      "skill_name": "翼击",
+      "unlock_condition": "（默认）Lv.43"
+    },
+    {
+      "skill_name": "风墙",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "龙卷风",
+      "unlock_condition": "（默认）Lv.45"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水泡盾",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "淤泥表皮",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽翼庇护",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "虚化",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "水弹",
+      "unlock_condition": "[技能石]水弹"
+    },
+    {
+      "skill_name": "俯冲猛击",
+      "unlock_condition": "[技能石]俯冲猛击"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "[技能石]休息回复"
+    },
+    {
+      "skill_name": "聒噪",
+      "unlock_condition": "[技能石]聒噪"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "嗜痛",
+      "unlock_condition": "[技能石]嗜痛"
+    },
+    {
+      "skill_name": "血气",
+      "unlock_condition": "[技能石]血气"
+    },
+    {
+      "skill_name": "无畏之心",
+      "unlock_condition": "[技能石]无畏之心"
+    }
+  ]
+}

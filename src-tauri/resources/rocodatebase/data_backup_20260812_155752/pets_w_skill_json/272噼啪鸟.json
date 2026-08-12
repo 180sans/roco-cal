@@ -1,0 +1,235 @@
+{
+  "id": "272",
+  "name": "噼啪鸟",
+  "other_name": [],
+  "elements": [
+    "电",
+    "翼"
+  ],
+  "种族资质": 618,
+  "hp": 78,
+  "atk": 116,
+  "mag": 109,
+  "def": 85,
+  "res": 85,
+  "spd": 145,
+  "特性": "连续负荷",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "272噼啪鸟"
+    ],
+    "prev": [],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "电弧",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "交叉闪电",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "过载回路",
+      "unlock_condition": "（默认）Lv.3"
+    },
+    {
+      "skill_name": "扇风",
+      "unlock_condition": "（默认）Lv.9"
+    },
+    {
+      "skill_name": "增程电池",
+      "unlock_condition": "（默认）Lv.12"
+    },
+    {
+      "skill_name": "回旋风暴",
+      "unlock_condition": "（默认）Lv.17"
+    },
+    {
+      "skill_name": "暴风眼",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "天旋地转",
+      "unlock_condition": "（默认）Lv.25"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（默认）Lv.28"
+    },
+    {
+      "skill_name": "引雷",
+      "unlock_condition": "（默认）Lv.34"
+    },
+    {
+      "skill_name": "翼击",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "羽刃",
+      "unlock_condition": "（默认）Lv.39"
+    },
+    {
+      "skill_name": "强制重启",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "龙卷风",
+      "unlock_condition": "（默认）Lv.47"
+    },
+    {
+      "skill_name": "拍击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰冲锋",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "触电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "幻象",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "闪击",
+      "unlock_condition": "[技能石]闪击"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "[技能石]力量增效"
+    },
+    {
+      "skill_name": "轴承支撑",
+      "unlock_condition": "[技能石]轴承支撑"
+    },
+    {
+      "skill_name": "杠杆置换",
+      "unlock_condition": "[技能石]杠杆置换"
+    },
+    {
+      "skill_name": "啮合传递",
+      "unlock_condition": "[技能石]啮合传递"
+    },
+    {
+      "skill_name": "绵里藏针",
+      "unlock_condition": "[技能石]绵里藏针"
+    },
+    {
+      "skill_name": "龙之利爪",
+      "unlock_condition": "[技能石]龙之利爪"
+    },
+    {
+      "skill_name": "倾泻",
+      "unlock_condition": "[技能石]倾泻"
+    },
+    {
+      "skill_name": "疾风刺",
+      "unlock_condition": "[技能石]疾风刺"
+    },
+    {
+      "skill_name": "阻断",
+      "unlock_condition": "[技能石]阻断"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "[技能石]麻痹"
+    },
+    {
+      "skill_name": "精神扰乱",
+      "unlock_condition": "[技能石]精神扰乱"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "[技能石]防御"
+    },
+    {
+      "skill_name": "超导加速",
+      "unlock_condition": "[技能石]超导加速"
+    },
+    {
+      "skill_name": "踏雷",
+      "unlock_condition": "[技能石]踏雷"
+    },
+    {
+      "skill_name": "惊雷",
+      "unlock_condition": "[技能石]惊雷"
+    },
+    {
+      "skill_name": "远行",
+      "unlock_condition": "[技能石]远行"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "特性": {
+    "名称": "预警",
+    "效果": "若敌方技能足够击败自己，回合开始时自己获得速度+50。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "仅包含速度修正，不影响当前伤害或防御计算",
+      "ignored_text": "若敌方技能足够击败自己，回合开始时自己获得速度+50。"
+    }
+  }
+}

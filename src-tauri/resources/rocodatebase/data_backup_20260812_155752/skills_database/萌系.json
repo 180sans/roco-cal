@@ -1,0 +1,276 @@
+[
+  {
+    "name": "击鼓传花",
+    "cost": 3,
+    "element": "萌",
+    "type": "状态",
+    "skill_power": null,
+    "description": "自己脱离，下个入场精灵继承自己增益。",
+    "effect": "normal"
+  },
+  {
+    "name": "破罐破摔",
+    "cost": 3,
+    "element": "萌",
+    "type": "魔攻",
+    "skill_power": 80,
+    "description": "造成魔伤，自己有减益时，本次技能威力+60。",
+    "triggered": {
+      "mode": "self_debuff",
+      "skill_power_plus": "60"
+    },
+    "effect": "normal"
+  },
+  {
+    "name": "飞吻",
+    "cost": 2,
+    "element": "萌",
+    "type": "魔攻",
+    "skill_power": 80,
+    "description": "对敌方精灵造成魔法伤害。",
+    "effect": "no"
+  },
+  {
+    "name": "鞭打",
+    "cost": 0,
+    "element": "萌",
+    "type": "物攻",
+    "skill_power": 40,
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
+  },
+  {
+    "name": "超级糖果",
+    "cost": 3,
+    "element": "萌",
+    "type": "物攻",
+    "skill_power": 100,
+    "description": "造成物伤，自己获得萌化：本次技能威力+60。",
+    "triggered": {
+      "mode": "self_moe_effect",
+      "skill_power_plus": "60"
+    },
+    "effect": "normal"
+  },
+  {
+    "name": "赤子之心",
+    "cost": 2,
+    "element": "萌",
+    "type": "状态",
+    "skill_power": null,
+    "description": "自己获得萌化：全技能能耗永久-3。",
+    "effect": "normal"
+  },
+  {
+    "name": "示弱",
+    "cost": 1,
+    "element": "萌",
+    "type": "状态",
+    "skill_power": null,
+    "description": "自己获得萌化：速度永久+150。",
+    "effect": "normal"
+  },
+  {
+    "name": "碰爪",
+    "cost": 1,
+    "element": "萌",
+    "type": "物攻",
+    "skill_power": 60,
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
+  },
+  {
+    "name": "砂糖弹球",
+    "cost": 2,
+    "element": "萌",
+    "type": "物攻",
+    "skill_power": null,
+    "description": "造成物伤，双方体重差越大，本次技能威力越高。",
+    "effect": "normal"
+  },
+  {
+    "name": "加油",
+    "cost": 4,
+    "element": "萌",
+    "type": "状态",
+    "skill_power": null,
+    "description": "自己获得1层萌芽印记。",
+    "effect": "normal"
+  },
+  {
+    "name": "生日蛋糕",
+    "cost": 4,
+    "element": "萌",
+    "type": "状态",
+    "skill_power": null,
+    "description": "驱除自己的减益，自己的增益翻倍。",
+    "effect": "normal"
+  },
+  {
+    "name": "甜心续航",
+    "cost": 3,
+    "element": "萌",
+    "type": "状态",
+    "skill_power": null,
+    "description": "自己和敌方获得萌化：回复40%生命和0能量。",
+    "effect": "normal"
+  },
+  {
+    "name": "爆米花爆破",
+    "cost": 5,
+    "element": "萌",
+    "type": "物攻",
+    "skill_power": 140,
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
+  },
+  {
+    "name": "月光合奏",
+    "cost": 3,
+    "element": "萌",
+    "type": "物攻",
+    "skill_power": 30,
+    "description": "造成物伤，1连击，双方携带的所有精灵每有1层萌化，本次技能连击数+1。",
+    "combo": 1,
+    "triggered": {
+      "mode": "team_moe_effect_stack",
+      "combo_plus": "1",
+      "multiple": true
+    },
+    "effect": "normal"
+  },
+  {
+    "name": "撒娇",
+    "cost": 3,
+    "element": "萌",
+    "type": "魔攻",
+    "skill_power": 30,
+    "description": "造成魔伤，3连击，自己获得萌化：威力永久+20。",
+    "combo": 3,
+    "buff_options": [
+      {
+        "label": "自己威力 +20",
+        "effects": [
+          {
+            "target": "self",
+            "field": "power_bonus",
+            "value": 20
+          }
+        ]
+      }
+    ],
+    "effect": "normal"
+  },
+  {
+    "name": "捧杀",
+    "cost": 4,
+    "element": "萌",
+    "type": "防御",
+    "skill_power": null,
+    "description": "减伤90%，应对攻击：敌方获得1层萌化。",
+    "damage_reduction": "90%",
+    "effect": "normal"
+  },
+  {
+    "name": "反弹",
+    "cost": 4,
+    "element": "萌",
+    "type": "状态",
+    "skill_power": null,
+    "description": "将自己的萌化转移给敌方。",
+    "effect": "normal"
+  },
+  {
+    "name": "魅惑",
+    "cost": 1,
+    "element": "萌",
+    "type": "魔攻",
+    "skill_power": 60,
+    "description": "对敌方精灵造成魔法伤害。",
+    "effect": "no"
+  },
+  {
+    "name": "拆礼物",
+    "element": "萌",
+    "type": "物攻",
+    "description": "造成物伤，若敌方有萌化，本次技能威力+100。",
+    "skill_power": 50,
+    "cost": 3,
+    "triggered": {
+      "mode": "enemy_moe_effect",
+      "skill_power_plus": "100"
+    },
+    "effect": "normal"
+  },
+  {
+    "name": "委屈",
+    "element": "萌",
+    "type": "防御",
+    "description": "减伤70%，应对攻击：自己获得1层萌芽印记。",
+    "skill_power": null,
+    "cost": 4,
+    "effect": "normal"
+  },
+  {
+    "name": "可爱",
+    "element": "萌",
+    "type": "魔攻",
+    "description": "对敌方精灵造成魔法伤害。",
+    "skill_power": 100,
+    "cost": 3,
+    "effect": "no"
+  },
+  {
+    "name": "转圈圈",
+    "element": "萌",
+    "type": "魔攻",
+    "description": "造成魔伤，若敌方本回合更换精灵，本次攻击使敌方获得萌化。",
+    "skill_power": 85,
+    "cost": 3,
+    "effect": "normal"
+  },
+  {
+    "name": "蹦跶",
+    "element": "萌",
+    "type": "魔攻",
+    "description": "造成魔伤，自己有减益时本技能能耗-1，选择：自己获得萌化或解除萌化。",
+    "skill_power": 110,
+    "cost": 3,
+    "effect": "choice"
+  },
+  {
+    "name": "耍赖",
+    "element": "萌",
+    "type": "状态",
+    "description": "自己获得双攻永久+10%，2连击。自己有减益时，本次技能连击数+1。",
+    "skill_power": null,
+    "cost": 2,
+    "buff_options": [
+      {
+        "label": "自己物攻 +10% / 自己魔攻 +10% / 自己连击 +1",
+        "effects": [
+          {
+            "target": "self",
+            "field": "phys_atk_buff",
+            "value": 10
+          },
+          {
+            "target": "self",
+            "field": "mag_atk_buff",
+            "value": 10
+          }
+        ]
+      }
+    ],
+    "effect": "normal"
+  },
+  {
+    "name": "做好事",
+    "element": "萌",
+    "type": "魔攻",
+    "description": "造成魔伤，自己每使用过1次选择技能，自己获得3层随机永久增益，使用后重置。",
+    "skill_power": 80,
+    "cost": 3,
+    "effect": "normal"
+  }
+]

@@ -1,0 +1,221 @@
+{
+  "id": "214",
+  "name": "矮脚爬爬",
+  "other_name": [],
+  "elements": [
+    "虫"
+  ],
+  "种族资质": 556,
+  "hp": 80,
+  "atk": 118,
+  "mag": 109,
+  "def": 86,
+  "res": 71,
+  "spd": 92,
+  "特性": "振奋虫心",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "214矮脚爬爬",
+      "215恶魔红钻"
+    ],
+    "prev": [],
+    "next": [
+      "215恶魔红钻"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "蝙蝠",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "锐利眼神",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "飞断",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "尾后针",
+      "unlock_condition": "（默认）Lv.4"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.8"
+    },
+    {
+      "skill_name": "网缚",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "力量吞噬",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "极限撕裂",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "以重制重",
+      "unlock_condition": "（默认）Lv.28"
+    },
+    {
+      "skill_name": "草虫冲击",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "虫茧",
+      "unlock_condition": "（默认）Lv.30"
+    },
+    {
+      "skill_name": "虫击",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "灾厄",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰冲锋",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冷风",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "鹰爪",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "幻象",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "诋毁",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "寸拳",
+      "unlock_condition": "[技能石]寸拳"
+    },
+    {
+      "skill_name": "斩断",
+      "unlock_condition": "[技能石]斩断"
+    },
+    {
+      "skill_name": "提气",
+      "unlock_condition": "[技能石]提气"
+    },
+    {
+      "skill_name": "毒针",
+      "unlock_condition": "[技能石]毒针"
+    },
+    {
+      "skill_name": "破绽",
+      "unlock_condition": "[技能石]破绽"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "[技能石]力量增效"
+    },
+    {
+      "skill_name": "偷袭",
+      "unlock_condition": "[技能石]偷袭"
+    },
+    {
+      "skill_name": "跌落",
+      "unlock_condition": "[技能石]跌落"
+    },
+    {
+      "skill_name": "当头棒喝",
+      "unlock_condition": "[技能石]当头棒喝"
+    },
+    {
+      "skill_name": "暗箱操作",
+      "unlock_condition": "[技能石]暗箱操作"
+    },
+    {
+      "skill_name": "伪造账单",
+      "unlock_condition": "[技能石]伪造账单"
+    },
+    {
+      "skill_name": "蛰针",
+      "unlock_condition": "[技能石]蛰针"
+    },
+    {
+      "skill_name": "有效预防",
+      "unlock_condition": "[技能石]有效预防"
+    },
+    {
+      "skill_name": "下注",
+      "unlock_condition": "[技能石]下注"
+    },
+    {
+      "skill_name": "毒誓",
+      "unlock_condition": "[技能石]毒誓"
+    }
+  ]
+}

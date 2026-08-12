@@ -1,0 +1,242 @@
+{
+  "id": "236",
+  "name": "圣代甜甜（蓝莓草莓口味）",
+  "other_name": [],
+  "elements": [
+    "冰"
+  ],
+  "种族资质": 608,
+  "hp": 113,
+  "atk": 109,
+  "mag": 100,
+  "def": 90,
+  "res": 96,
+  "spd": 100,
+  "特性": "加个雪球",
+  "evolution": {
+    "stage": 3,
+    "chain": [
+      "234脆筒甜甜",
+      "235香草甜甜",
+      "236圣代甜甜（蓝莓草莓口味）"
+    ],
+    "prev": [
+      "235香草甜甜"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "风吹雪",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "寒风吹",
+      "unlock_condition": "（默认）Lv.8"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "（默认）Lv.9"
+    },
+    {
+      "skill_name": "暴风雪",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "雾气环绕",
+      "unlock_condition": "（默认）Lv.17"
+    },
+    {
+      "skill_name": "冰晶坠",
+      "unlock_condition": "（默认）Lv.22"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.26"
+    },
+    {
+      "skill_name": "旋转突击",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "霜天",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "碎冰冰",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "冰点",
+      "unlock_condition": "（默认）Lv.37"
+    },
+    {
+      "skill_name": "冰锋横扫",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "冰雹",
+      "unlock_condition": "（默认）Lv.45"
+    },
+    {
+      "skill_name": "极寒领域",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "荆棘爪",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火爪",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "肥皂泡",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冰爪",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "磁干扰",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "尾后针",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "贯手",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "飞吻",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "黑手",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "针状物",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "恐吓",
+      "unlock_condition": "[技能石]恐吓"
+    },
+    {
+      "skill_name": "幽灵爆发",
+      "unlock_condition": "[技能石]幽灵爆发"
+    },
+    {
+      "skill_name": "诡刺",
+      "unlock_condition": "[技能石]诡刺"
+    },
+    {
+      "skill_name": "惊吓盒子",
+      "unlock_condition": "[技能石]惊吓盒子"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "[技能石]勾魂"
+    },
+    {
+      "skill_name": "破罐破摔",
+      "unlock_condition": "[技能石]破罐破摔"
+    },
+    {
+      "skill_name": "超级糖果",
+      "unlock_condition": "[技能石]超级糖果"
+    },
+    {
+      "skill_name": "生日蛋糕",
+      "unlock_condition": "[技能石]生日蛋糕"
+    },
+    {
+      "skill_name": "双星",
+      "unlock_condition": "[技能石]双星"
+    },
+    {
+      "skill_name": "坍缩",
+      "unlock_condition": "[技能石]坍缩"
+    },
+    {
+      "skill_name": "倾泻",
+      "unlock_condition": "[技能石]倾泻"
+    },
+    {
+      "skill_name": "阻断",
+      "unlock_condition": "[技能石]阻断"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "精神扰乱",
+      "unlock_condition": "[技能石]精神扰乱"
+    },
+    {
+      "skill_name": "冰冻光线",
+      "unlock_condition": "[技能石]冰冻光线"
+    },
+    {
+      "skill_name": "寒潮",
+      "unlock_condition": "[技能石]寒潮"
+    },
+    {
+      "skill_name": "吹散",
+      "unlock_condition": "[技能石]吹散"
+    },
+    {
+      "skill_name": "打喷嚏",
+      "unlock_condition": "[技能石]打喷嚏"
+    }
+  ]
+}

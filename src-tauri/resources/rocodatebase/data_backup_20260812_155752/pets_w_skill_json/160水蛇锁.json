@@ -1,0 +1,233 @@
+{
+  "id": "160",
+  "name": "水蛇锁",
+  "other_name": [],
+  "elements": [
+    "水",
+    "武"
+  ],
+  "种族资质": 505,
+  "hp": 84,
+  "atk": 88,
+  "mag": 83,
+  "def": 83,
+  "res": 83,
+  "spd": 84,
+  "特性": "思维之盾",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "159水滴蛇",
+      "160水蛇锁",
+      "161游蛇魔使"
+    ],
+    "prev": [
+      "159水滴蛇"
+    ],
+    "next": [
+      "161游蛇魔使"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "潮涌",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "影袭",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.12"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（默认）Lv.17"
+    },
+    {
+      "skill_name": "水幕冲击",
+      "unlock_condition": "（默认）Lv.27"
+    },
+    {
+      "skill_name": "破防",
+      "unlock_condition": "（默认）Lv.28"
+    },
+    {
+      "skill_name": "叠势",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "提气",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "打湿",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "打鼾",
+      "unlock_condition": "（默认）Lv.37"
+    },
+    {
+      "skill_name": "预备势",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "涌泉",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "落雨",
+      "unlock_condition": "（默认）Lv.49"
+    },
+    {
+      "skill_name": "听桥",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "徒长",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水弹枪",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "泥浆铠甲",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "贯手",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "啮合传递",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "润泽",
+      "unlock_condition": "[技能石]润泽"
+    },
+    {
+      "skill_name": "盐水浴",
+      "unlock_condition": "[技能石]盐水浴"
+    },
+    {
+      "skill_name": "一拳",
+      "unlock_condition": "[技能石]一拳"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "[技能石]魔法增效"
+    },
+    {
+      "skill_name": "恐吓",
+      "unlock_condition": "[技能石]恐吓"
+    },
+    {
+      "skill_name": "坟场搏击",
+      "unlock_condition": "[技能石]坟场搏击"
+    },
+    {
+      "skill_name": "降灵",
+      "unlock_condition": "[技能石]降灵"
+    },
+    {
+      "skill_name": "恶作剧",
+      "unlock_condition": "[技能石]恶作剧"
+    },
+    {
+      "skill_name": "见招拆招",
+      "unlock_condition": "[技能石]见招拆招"
+    },
+    {
+      "skill_name": "鼓劲",
+      "unlock_condition": "[技能石]鼓劲"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "摇篮曲",
+      "unlock_condition": "[技能石]摇篮曲"
+    },
+    {
+      "skill_name": "嗜痛",
+      "unlock_condition": "[技能石]嗜痛"
+    },
+    {
+      "skill_name": "泡沫幻影",
+      "unlock_condition": "[技能石]泡沫幻影"
+    },
+    {
+      "skill_name": "水波术",
+      "unlock_condition": "[技能石]水波术"
+    },
+    {
+      "skill_name": "叠浪",
+      "unlock_condition": "[技能石]叠浪"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+    "特性": {
+        "名称": "圣火骑士",
+        "效果": "应对成功后，下次攻击威力翻倍。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "success_handle",
+                    "context": {
+                        "subject": "self",
+                        "timing": "after_handle"
+                    },
+                    "stack": {
+                        "enabled": false,
+                        "input": false,
+                        "permanent": false,
+                        "hint": ""
+                    },
+                    "effects": [
+                        {
+                            "kind": "power_multiplier",
+                            "value": 1.0
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,174 @@
+{
+  "id": "375",
+  "name": "学院呱呱",
+  "other_name": {},
+  "elements": [
+    "武"
+  ],
+  "种族资质": 614,
+  "hp": 132,
+  "atk": 99,
+  "mag": 99,
+  "def": 92,
+  "res": 92,
+  "spd": 100,
+  "特性": "留学生",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "375学院呱呱"
+    ],
+    "prev": [],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "下注",
+      "unlock_condition": "[技能石]下注"
+    },
+    {
+      "skill_name": "丰收",
+      "unlock_condition": "[技能石]丰收"
+    },
+    {
+      "skill_name": "六自由度",
+      "unlock_condition": "[技能石]六自由度"
+    },
+    {
+      "skill_name": "养分回流",
+      "unlock_condition": "[技能石]养分回流"
+    },
+    {
+      "skill_name": "友谊满溢",
+      "unlock_condition": "[技能石]友谊满溢"
+    },
+    {
+      "skill_name": "叠浪",
+      "unlock_condition": "[技能石]叠浪"
+    },
+    {
+      "skill_name": "可爱",
+      "unlock_condition": "[技能石]可爱"
+    },
+    {
+      "skill_name": "吹散",
+      "unlock_condition": "[技能石]吹散"
+    },
+    {
+      "skill_name": "困兽",
+      "unlock_condition": "[技能石]困兽"
+    },
+    {
+      "skill_name": "急中生智",
+      "unlock_condition": "[技能石]急中生智"
+    },
+    {
+      "skill_name": "打喷嚏",
+      "unlock_condition": "[技能石]打喷嚏"
+    },
+    {
+      "skill_name": "扬尘",
+      "unlock_condition": "[技能石]扬尘"
+    },
+    {
+      "skill_name": "拆礼物",
+      "unlock_condition": "[技能石]拆礼物"
+    },
+    {
+      "skill_name": "拟寄生",
+      "unlock_condition": "[技能石]拟寄生"
+    },
+    {
+      "skill_name": "撒花",
+      "unlock_condition": "[技能石]撒花"
+    },
+    {
+      "skill_name": "星痕",
+      "unlock_condition": "[技能石]星痕"
+    },
+    {
+      "skill_name": "毒誓",
+      "unlock_condition": "[技能石]毒誓"
+    },
+    {
+      "skill_name": "沉溺",
+      "unlock_condition": "[技能石]沉溺"
+    },
+    {
+      "skill_name": "沙石阵",
+      "unlock_condition": "[技能石]沙石阵"
+    },
+    {
+      "skill_name": "焚身",
+      "unlock_condition": "[技能石]焚身"
+    },
+    {
+      "skill_name": "甜蜜陷阱",
+      "unlock_condition": "[技能石]甜蜜陷阱"
+    },
+    {
+      "skill_name": "纺纱",
+      "unlock_condition": "[技能石]纺纱"
+    },
+    {
+      "skill_name": "绞轮",
+      "unlock_condition": "[技能石]绞轮"
+    },
+    {
+      "skill_name": "花火",
+      "unlock_condition": "[技能石]花火"
+    },
+    {
+      "skill_name": "血契",
+      "unlock_condition": "[技能石]血契"
+    },
+    {
+      "skill_name": "许愿池",
+      "unlock_condition": "[技能石]许愿池"
+    },
+    {
+      "skill_name": "试飞",
+      "unlock_condition": "[技能石]试飞"
+    },
+    {
+      "skill_name": "蹦跶",
+      "unlock_condition": "[技能石]蹦跶"
+    },
+    {
+      "skill_name": "转圈圈",
+      "unlock_condition": "[技能石]转圈圈"
+    },
+    {
+      "skill_name": "过敏原",
+      "unlock_condition": "[技能石]过敏原"
+    },
+    {
+      "skill_name": "远行",
+      "unlock_condition": "[技能石]远行"
+    },
+    {
+      "skill_name": "透镜实验",
+      "unlock_condition": "[技能石]透镜实验"
+    },
+    {
+      "skill_name": "通电",
+      "unlock_condition": "[技能石]通电"
+    },
+    {
+      "skill_name": "锁芯",
+      "unlock_condition": "[技能石]锁芯"
+    },
+    {
+      "skill_name": "限时特惠",
+      "unlock_condition": "[技能石]限时特惠"
+    },
+    {
+      "skill_name": "雪原狩猎",
+      "unlock_condition": "[技能石]雪原狩猎"
+    },
+    {
+      "skill_name": "驱赶",
+      "unlock_condition": "[技能石]驱赶"
+    }
+  ]
+}

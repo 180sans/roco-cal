@@ -14,6 +14,14 @@
   "res": 83,
   "spd": 120,
   "特性": "与星星同行",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "409星云旅者"
+    ],
+    "prev": [],
+    "next": []
+  },
   "skills": [
     {
       "skill_name": "鸣叫",
@@ -191,13 +199,5 @@
       "skill_name": "超维投射",
       "unlock_condition": "[技能石]超维投射"
     }
-  ],
-  "evolution": {
-    "stage": 1,
-    "chain": [
-      "409星云旅者"
-    ],
-    "prev": [],
-    "next": []
-  }
+  ]
 }

@@ -1,0 +1,37 @@
+{
+    "特性": {
+        "名称": "裁决",
+        "效果": "造成克制伤害后，获得攻防速+20%，回复2能量，首个技能替换为光系愿力冲击。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "advantage_damage",
+                    "context": {
+                        "subject": "self",
+                        "timing": "usage"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "造成克制伤害次数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values_per_stack": {
+                                "atk": 0.2,
+                                "mag": 0.2,
+                                "def": 0.2,
+                                "res": 0.2,
+                                "spd": 0.2
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,453 @@
+[
+  {
+    "name": "丰饶",
+    "cost": 3,
+    "element": "草",
+    "type": "状态",
+    "skill_power": null,
+    "description": "自己获得物攻和魔攻+140%。",
+    "buff_options": [
+      {
+        "label": "自己物攻 +140% / 自己魔攻 +140%",
+        "effects": [
+          {
+            "target": "self",
+            "field": "phys_atk_buff",
+            "value": 140
+          },
+          {
+            "target": "self",
+            "field": "mag_atk_buff",
+            "value": 140
+          }
+        ]
+      }
+    ],
+    "effect": "normal"
+  },
+  {
+    "name": "种皮爆裂",
+    "cost": 1,
+    "element": "草",
+    "type": "物攻",
+    "skill_power": 25,
+    "description": "造成物伤，2连击。",
+    "combo": 2,
+    "effect": "normal"
+  },
+  {
+    "name": "顶端优势",
+    "cost": 3,
+    "element": "草",
+    "type": "物攻",
+    "skill_power": 100,
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
+  },
+  {
+    "name": "针刺射击",
+    "cost": 3,
+    "element": "草",
+    "type": "物攻",
+    "skill_power": 80,
+    "description": "造成物伤，若敌方本回合更换精灵，自己回复7点能量。",
+    "effect": "normal"
+  },
+  {
+    "name": "酶浓度调整",
+    "cost": 3,
+    "element": "草",
+    "type": "防御",
+    "skill_power": null,
+    "description": "减伤90%，应对攻击：自己回复20%生命。",
+    "damage_reduction": "90%",
+    "effect": "normal"
+  },
+  {
+    "name": "蜡质膜",
+    "cost": 2,
+    "element": "草",
+    "type": "防御",
+    "skill_power": null,
+    "description": "减伤80%，应对攻击：回复3能量。",
+    "damage_reduction": "80%",
+    "effect": "normal"
+  },
+  {
+    "name": "藤绞",
+    "cost": 4,
+    "element": "草",
+    "type": "物攻",
+    "skill_power": 80,
+    "description": "造成物伤，自己回复5能量。",
+    "effect": "normal"
+  },
+  {
+    "name": "荆棘爪",
+    "cost": 2,
+    "element": "草",
+    "type": "物攻",
+    "skill_power": 80,
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
+  },
+  {
+    "name": "芳香诱引",
+    "cost": 2,
+    "element": "草",
+    "type": "状态",
+    "skill_power": null,
+    "description": "自己获得连击数+2，应对防御：额外造成打断，且敌方下回合获得眩晕。",
+    "buff_options": [
+      {
+        "label": "自己连击 +2",
+        "effects": [
+          {
+            "target": "self",
+            "field": "combo_plus",
+            "value": 2
+          }
+        ]
+      }
+    ],
+    "effect": "normal"
+  },
+  {
+    "name": "花香",
+    "cost": 1,
+    "element": "草",
+    "type": "魔攻",
+    "skill_power": 60,
+    "description": "对敌方精灵造成魔法伤害。",
+    "effect": "no"
+  },
+  {
+    "name": "花炮",
+    "cost": 2,
+    "element": "草",
+    "type": "状态",
+    "skill_power": null,
+    "description": "2连击，每次连击自己获得魔攻+60%。",
+    "combo": 2,
+    "buff_options": [
+      {
+        "label": "自己魔攻 +60%",
+        "effects": [
+          {
+            "target": "self",
+            "field": "mag_atk_buff",
+            "value": 60
+          }
+        ]
+      }
+    ],
+    "effect": "normal"
+  },
+  {
+    "name": "聚盐",
+    "cost": 3,
+    "element": "草",
+    "type": "状态",
+    "skill_power": null,
+    "description": "2连击，每次连击自己回复8%生命，使用后本技能连击数永久+1。",
+    "combo": 2,
+    "effect": "normal"
+  },
+  {
+    "name": "纤维化",
+    "cost": 2,
+    "element": "草",
+    "type": "防御",
+    "skill_power": null,
+    "description": "减伤80%，应对攻击：自己获得物防+70%。",
+    "damage_reduction": "80%",
+    "buff_options": [
+      {
+        "label": "自己物防 +70%",
+        "effects": [
+          {
+            "target": "self",
+            "field": "phys_def_buff",
+            "value": 70
+          }
+        ]
+      }
+    ],
+    "effect": "normal"
+  },
+  {
+    "name": "筛管奔流",
+    "cost": 3,
+    "element": "草",
+    "type": "物攻",
+    "skill_power": 80,
+    "description": "造成物伤，自己生命大于80%时，本次技能威力+75。",
+    "triggered": {
+      "mode": "self_hp_gt_80",
+      "skill_power_plus": "75"
+    },
+    "effect": "normal"
+  },
+  {
+    "name": "移花接木",
+    "cost": 2,
+    "element": "草",
+    "type": "状态",
+    "skill_power": null,
+    "description": "自己回复15%生命，随后脱离。",
+    "effect": "normal"
+  },
+  {
+    "name": "种子弹",
+    "cost": 0,
+    "element": "草",
+    "type": "物攻",
+    "skill_power": 30,
+    "description": "造成物伤，自己回复1能量。",
+    "effect": "normal"
+  },
+  {
+    "name": "仙人掌刺击",
+    "cost": 6,
+    "element": "草",
+    "type": "物攻",
+    "skill_power": 150,
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
+  },
+  {
+    "name": "盛开",
+    "cost": 1,
+    "element": "草",
+    "type": "状态",
+    "skill_power": null,
+    "description": "自己获得技能威力+30，应对防御：改为威力+60。",
+    "buff_options": [
+      {
+        "label": "自己威力 +30",
+        "effects": [
+          {
+            "target": "self",
+            "field": "power_bonus",
+            "value": 30
+          }
+        ]
+      },
+      {
+        "label": "应对后自己威力 +60",
+        "effects": [
+          {
+            "target": "self",
+            "field": "power_bonus",
+            "value": 60
+          }
+        ]
+      }
+    ],
+    "effect": "normal"
+  },
+  {
+    "name": "汲取",
+    "cost": 1,
+    "element": "草",
+    "type": "魔攻",
+    "skill_power": 30,
+    "description": "造成魔伤，并吸血100%。",
+    "effect": "normal"
+  },
+  {
+    "name": "氧输送",
+    "cost": 2,
+    "element": "草",
+    "type": "状态",
+    "skill_power": null,
+    "description": "自己回复4能量，并获得魔攻+70%。",
+    "buff_options": [
+      {
+        "label": "自己魔攻 +70%",
+        "effects": [
+          {
+            "target": "self",
+            "field": "mag_atk_buff",
+            "value": 70
+          }
+        ]
+      }
+    ],
+    "effect": "normal"
+  },
+  {
+    "name": "棘突",
+    "cost": 3,
+    "element": "草",
+    "type": "魔攻",
+    "skill_power": 100,
+    "description": "对敌方精灵造成魔法伤害。",
+    "effect": "no"
+  },
+  {
+    "name": "根吸收",
+    "cost": 2,
+    "element": "草",
+    "type": "状态",
+    "skill_power": null,
+    "description": "自己回复15%生命和4能量。",
+    "effect": "normal"
+  },
+  {
+    "name": "抽枝",
+    "cost": 4,
+    "element": "草",
+    "type": "物攻",
+    "skill_power": 90,
+    "description": "造成物伤，应对状态：自己回复50%生命和5能量。",
+    "effect": "normal"
+  },
+  {
+    "name": "徒长",
+    "cost": 2,
+    "element": "草",
+    "type": "状态",
+    "skill_power": null,
+    "description": "自己回复10能量。",
+    "effect": "normal"
+  },
+  {
+    "name": "富养化",
+    "cost": 3,
+    "element": "草",
+    "type": "状态",
+    "skill_power": null,
+    "description": "为场下每个精灵回复3能量。",
+    "effect": "normal"
+  },
+  {
+    "name": "孢子爆散",
+    "cost": 3,
+    "element": "草",
+    "type": "物攻",
+    "skill_power": 30,
+    "description": "造成物伤，1连击，每次使用后，本技能连击数永久+2。",
+    "combo": 1,
+    "triggered": {
+      "mode": "usage",
+      "combo_plus": "2",
+      "multiple": true
+    },
+    "effect": "normal"
+  },
+  {
+    "name": "孢子",
+    "cost": 3,
+    "element": "草",
+    "type": "状态",
+    "skill_power": null,
+    "description": "赋予敌方寄生。",
+    "effect": "normal"
+  },
+  {
+    "name": "叶绿光束",
+    "cost": 4,
+    "element": "草",
+    "type": "魔攻",
+    "skill_power": 120,
+    "description": "对敌方精灵造成魔法伤害。",
+    "effect": "no"
+  },
+  {
+    "name": "刺藤",
+    "cost": 3,
+    "element": "草",
+    "type": "物攻",
+    "skill_power": 45,
+    "description": "造成物伤，2连击。",
+    "combo": 2,
+    "effect": "normal"
+  },
+  {
+    "name": "光能聚集",
+    "cost": 7,
+    "element": "草",
+    "type": "魔攻",
+    "skill_power": 100,
+    "description": "造成魔伤，每次使用其他草系技能后，本技能威力永久+60。",
+    "triggered": {
+      "mode": "usage_other_grass_skill",
+      "skill_power_plus": "60",
+      "multiple": true
+    },
+    "effect": "normal"
+  },
+  {
+    "name": "光合作用",
+    "cost": 4,
+    "element": "草",
+    "type": "状态",
+    "skill_power": null,
+    "description": "自己获得1层光合印记。",
+    "effect": "normal"
+  },
+  {
+    "name": "飞叶",
+    "cost": 0,
+    "element": "草",
+    "type": "物攻",
+    "skill_power": 40,
+    "description": "对敌方精灵造成物理伤害。",
+    "effect": "no"
+  },
+  {
+    "name": "养分回流",
+    "element": "草",
+    "type": "魔攻",
+    "description": "造成魔伤，为场下所有精灵回复1能量。",
+    "skill_power": 75,
+    "cost": 3,
+    "effect": "normal"
+  },
+  {
+    "name": "甜蜜陷阱",
+    "element": "草",
+    "type": "魔攻",
+    "description": "造成魔伤，自己每有1能量，本次技能威力+10。",
+    "skill_power": 50,
+    "cost": 4,
+    "triggered": {
+      "mode": "self_energy_stack",
+      "skill_power_plus": "10",
+      "multiple": true
+    },
+    "effect": "normal"
+  },
+  {
+    "name": "撒花",
+    "element": "草",
+    "type": "魔攻",
+    "description": "造成魔伤，选择：自己生命大于80%时威力+50或应对状态时自己回复35%生命。",
+    "skill_power": 95,
+    "cost": 4,
+    "triggered": {
+      "mode": "self_hp_gt_80",
+      "skill_power_plus": "50"
+    },
+    "effect": "choice"
+  },
+  {
+    "name": "丰收",
+    "element": "草",
+    "type": "物攻",
+    "description": "造成物伤，自己回复20%生命。",
+    "skill_power": 85,
+    "cost": 5,
+    "effect": "normal"
+  },
+  {
+    "name": "补觉",
+    "element": "草",
+    "type": "状态",
+    "description": "选择：自己回复25%生命或回复8能量。",
+    "skill_power": null,
+    "cost": 2,
+    "effect": "choice"
+  }
+]

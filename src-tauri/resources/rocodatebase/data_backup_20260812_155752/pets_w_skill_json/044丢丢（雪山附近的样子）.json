@@ -1,0 +1,211 @@
+{
+  "id": "044",
+  "name": "丢丢（雪山附近的样子）",
+  "other_name": [],
+  "elements": [
+    "草",
+    "冰"
+  ],
+  "种族资质": 268,
+  "hp": 46,
+  "atk": 41,
+  "mag": 8,
+  "def": 48,
+  "res": 44,
+  "spd": 81,
+  "特性": "诈死",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "044丢丢（雪山附近的样子）",
+      "045卡卡虫（雪山附近的样子）",
+      "046卡瓦重（雪山附近的样子）"
+    ],
+    "prev": [],
+    "next": [
+      "045卡卡虫（雪山附近的样子）"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "冰锥",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "筛管奔流",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "冰捆缚",
+      "unlock_condition": "（默认）Lv.3"
+    },
+    {
+      "skill_name": "顶端优势",
+      "unlock_condition": "（默认）Lv.4"
+    },
+    {
+      "skill_name": "丰饶",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "暴风雪",
+      "unlock_condition": "（默认）Lv.17"
+    },
+    {
+      "skill_name": "速冻",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "天旋地转",
+      "unlock_condition": "（默认）Lv.26"
+    },
+    {
+      "skill_name": "盛开",
+      "unlock_condition": "（默认）Lv.28"
+    },
+    {
+      "skill_name": "孢子爆散",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "冰雹",
+      "unlock_condition": "（默认）Lv.34"
+    },
+    {
+      "skill_name": "抽枝",
+      "unlock_condition": "（默认）Lv.37"
+    },
+    {
+      "skill_name": "冬至",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "猛烈撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "荆棘爪",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰冲锋",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冰爪",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "[技能石]防御"
+    },
+    {
+      "skill_name": "尾后针",
+      "unlock_condition": "[技能石]尾后针"
+    },
+    {
+      "skill_name": "虫击",
+      "unlock_condition": "[技能石]虫击"
+    },
+    {
+      "skill_name": "虫群智慧",
+      "unlock_condition": "[技能石]虫群智慧"
+    },
+    {
+      "skill_name": "魔爪",
+      "unlock_condition": "[技能石]魔爪"
+    },
+    {
+      "skill_name": "垂死反击",
+      "unlock_condition": "[技能石]垂死反击"
+    },
+    {
+      "skill_name": "连续爪击",
+      "unlock_condition": "[技能石]连续爪击"
+    },
+    {
+      "skill_name": "热身运动",
+      "unlock_condition": "[技能石]热身运动"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "摇篮曲",
+      "unlock_condition": "[技能石]摇篮曲"
+    },
+    {
+      "skill_name": "富养化",
+      "unlock_condition": "[技能石]富养化"
+    },
+    {
+      "skill_name": "冰晶坠",
+      "unlock_condition": "[技能石]冰晶坠"
+    }
+  ]
+}

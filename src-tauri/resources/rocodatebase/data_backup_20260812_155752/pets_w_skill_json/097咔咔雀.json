@@ -1,0 +1,237 @@
+{
+  "id": "097",
+  "name": "咔咔雀",
+  "other_name": [],
+  "elements": [
+    "翼",
+    "普通"
+  ],
+  "种族资质": 505,
+  "hp": 78,
+  "atk": 91,
+  "mag": 88,
+  "def": 81,
+  "res": 71,
+  "spd": 96,
+  "特性": "咔咔冲刺",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "096咔咔羽毛",
+      "097咔咔雀",
+      "098咔咔鸟"
+    ],
+    "prev": [
+      "096咔咔羽毛"
+    ],
+    "next": [
+      "098咔咔鸟"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "啄击",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "（默认）Lv.5"
+    },
+    {
+      "skill_name": "猛烈撞击",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "音波弹",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "暴风眼",
+      "unlock_condition": "（默认）Lv.27"
+    },
+    {
+      "skill_name": "旋转突击",
+      "unlock_condition": "（默认）Lv.28"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "疾风刺",
+      "unlock_condition": "（默认）Lv.34"
+    },
+    {
+      "skill_name": "快速移动",
+      "unlock_condition": "（默认）Lv.39"
+    },
+    {
+      "skill_name": "回旋风暴",
+      "unlock_condition": "（默认）Lv.41"
+    },
+    {
+      "skill_name": "翼击",
+      "unlock_condition": "（默认）Lv.47"
+    },
+    {
+      "skill_name": "羽刃",
+      "unlock_condition": "（默认）Lv.49"
+    },
+    {
+      "skill_name": "追打",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "荆棘爪",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰冲锋",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冰爪",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "伺机而动",
+      "unlock_condition": "[技能石]伺机而动"
+    },
+    {
+      "skill_name": "三连破",
+      "unlock_condition": "[技能石]三连破"
+    },
+    {
+      "skill_name": "热身运动",
+      "unlock_condition": "[技能石]热身运动"
+    },
+    {
+      "skill_name": "乘胜追击",
+      "unlock_condition": "[技能石]乘胜追击"
+    },
+    {
+      "skill_name": "埋伏",
+      "unlock_condition": "[技能石]埋伏"
+    },
+    {
+      "skill_name": "连续爪击",
+      "unlock_condition": "[技能石]连续爪击"
+    },
+    {
+      "skill_name": "龙卷风",
+      "unlock_condition": "[技能石]龙卷风"
+    },
+    {
+      "skill_name": "应激反应",
+      "unlock_condition": "[技能石]应激反应"
+    },
+    {
+      "skill_name": "能量炮",
+      "unlock_condition": "[技能石]能量炮"
+    },
+    {
+      "skill_name": "聚盐",
+      "unlock_condition": "[技能石]聚盐"
+    },
+    {
+      "skill_name": "刺藤",
+      "unlock_condition": "[技能石]刺藤"
+    },
+    {
+      "skill_name": "叶绿光束",
+      "unlock_condition": "[技能石]叶绿光束"
+    },
+    {
+      "skill_name": "抽枝",
+      "unlock_condition": "[技能石]抽枝"
+    },
+    {
+      "skill_name": "花炮",
+      "unlock_condition": "[技能石]花炮"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "[技能石]碰爪"
+    },
+    {
+      "skill_name": "飞吻",
+      "unlock_condition": "[技能石]飞吻"
+    },
+    {
+      "skill_name": "飞箭",
+      "unlock_condition": "[技能石]飞箭"
+    },
+    {
+      "skill_name": "试飞",
+      "unlock_condition": "[技能石]试飞"
+    }
+  ]
+}

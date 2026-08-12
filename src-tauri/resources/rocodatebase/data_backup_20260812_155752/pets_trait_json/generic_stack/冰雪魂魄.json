@@ -1,0 +1,35 @@
+{
+    "特性": {
+        "名称": "冰雪魂魄",
+        "效果": "天气为暴风雪时，敌方队伍中的精灵每有1层冻结，冰系技能威力+10%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "blizzard",
+                    "context": {
+                        "subject": "weather",
+                        "timing": "current"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "敌方队伍冻结层数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "power_multiplier",
+                            "filters": {
+                                "skill_elements": [
+                                    "冰"
+                                ]
+                            },
+                            "value_per_stack": 0.1
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,214 @@
+{
+  "id": "380",
+  "name": "飞飞钥",
+  "other_name": [],
+  "elements": [
+    "机械",
+    "虫"
+  ],
+  "种族资质": 628,
+  "hp": 146,
+  "atk": 57,
+  "mag": 101,
+  "def": 94,
+  "res": 170,
+  "spd": 60,
+  "特性": "上锁",
+  "skills": [
+    {
+      "skill_name": "虫网",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "虫群智慧",
+      "unlock_condition": "（默认）Lv.2"
+    },
+    {
+      "skill_name": "杠杆置换",
+      "unlock_condition": "（默认）Lv.9"
+    },
+    {
+      "skill_name": "虫鸣",
+      "unlock_condition": "（默认）Lv.17"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.19"
+    },
+    {
+      "skill_name": "磁暴",
+      "unlock_condition": "（默认）Lv.26"
+    },
+    {
+      "skill_name": "虫茧",
+      "unlock_condition": "（默认）Lv.28"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "锁芯",
+      "unlock_condition": "（默认）Lv.41"
+    },
+    {
+      "skill_name": "联动装置",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "虫结阵",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "振翅",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "拍击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "徒长",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "泥浆铠甲",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "念力膨胀",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "翼击",
+      "unlock_condition": "[技能石]翼击"
+    },
+    {
+      "skill_name": "风隐",
+      "unlock_condition": "[技能石]风隐"
+    },
+    {
+      "skill_name": "飞羽",
+      "unlock_condition": "[技能石]飞羽"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "[技能石]休息回复"
+    },
+    {
+      "skill_name": "倾泻",
+      "unlock_condition": "[技能石]倾泻"
+    },
+    {
+      "skill_name": "精神扰乱",
+      "unlock_condition": "[技能石]精神扰乱"
+    },
+    {
+      "skill_name": "咆哮",
+      "unlock_condition": "[技能石]咆哮"
+    },
+    {
+      "skill_name": "摇篮曲",
+      "unlock_condition": "[技能石]摇篮曲"
+    },
+    {
+      "skill_name": "能量守恒",
+      "unlock_condition": "[技能石]能量守恒"
+    },
+    {
+      "skill_name": "吓退",
+      "unlock_condition": "[技能石]吓退"
+    },
+    {
+      "skill_name": "无畏之心",
+      "unlock_condition": "[技能石]无畏之心"
+    },
+    {
+      "skill_name": "消毒法",
+      "unlock_condition": "[技能石]消毒法"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "拟寄生",
+      "unlock_condition": "[技能石]拟寄生"
+    },
+    {
+      "skill_name": "六自由度",
+      "unlock_condition": "[技能石]六自由度"
+    }
+  ],
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "379叮叮卯",
+      "380飞飞钥"
+    ],
+    "prev": [
+      "379叮叮卯"
+    ],
+    "next": []
+  }
+}

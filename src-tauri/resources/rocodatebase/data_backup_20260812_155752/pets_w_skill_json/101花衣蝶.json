@@ -1,0 +1,235 @@
+{
+  "id": "101",
+  "name": "花衣蝶",
+  "other_name": [],
+  "elements": [
+    "虫",
+    "草"
+  ],
+  "种族资质": 539,
+  "hp": 122,
+  "atk": 67,
+  "mag": 72,
+  "def": 84,
+  "res": 94,
+  "spd": 100,
+  "特性": "花精灵",
+  "evolution": {
+    "stage": 3,
+    "chain": [
+      "099小草虫",
+      "100草衣虫",
+      "101花衣蝶"
+    ],
+    "prev": [
+      "100草衣虫"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "啃咬",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "虫茧",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "飞叶",
+      "unlock_condition": "（默认）Lv.5"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（默认）Lv.8"
+    },
+    {
+      "skill_name": "抓挠",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "虫群智慧",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "虫结阵",
+      "unlock_condition": "（默认）Lv.22"
+    },
+    {
+      "skill_name": "汲取",
+      "unlock_condition": "（默认）Lv.24"
+    },
+    {
+      "skill_name": "孢子",
+      "unlock_condition": "（默认）Lv.31"
+    },
+    {
+      "skill_name": "飞断",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "花炮",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "（默认）Lv.41"
+    },
+    {
+      "skill_name": "芳香诱引",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "网缚",
+      "unlock_condition": "（默认）Lv.49"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "荆棘爪",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "泥浆铠甲",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "尾后针",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "啮合传递",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "虫群",
+      "unlock_condition": "[技能石]虫群"
+    },
+    {
+      "skill_name": "捆缚",
+      "unlock_condition": "[技能石]捆缚"
+    },
+    {
+      "skill_name": "移花接木",
+      "unlock_condition": "[技能石]移花接木"
+    },
+    {
+      "skill_name": "食腐",
+      "unlock_condition": "[技能石]食腐"
+    },
+    {
+      "skill_name": "双星",
+      "unlock_condition": "[技能石]双星"
+    },
+    {
+      "skill_name": "四维降解",
+      "unlock_condition": "[技能石]四维降解"
+    },
+    {
+      "skill_name": "星轨裂变",
+      "unlock_condition": "[技能石]星轨裂变"
+    },
+    {
+      "skill_name": "二律背反",
+      "unlock_condition": "[技能石]二律背反"
+    },
+    {
+      "skill_name": "彗星",
+      "unlock_condition": "[技能石]彗星"
+    },
+    {
+      "skill_name": "虫鸣",
+      "unlock_condition": "[技能石]虫鸣"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "快速移动",
+      "unlock_condition": "[技能石]快速移动"
+    },
+    {
+      "skill_name": "应激反应",
+      "unlock_condition": "[技能石]应激反应"
+    },
+    {
+      "skill_name": "精神扰乱",
+      "unlock_condition": "[技能石]精神扰乱"
+    },
+    {
+      "skill_name": "无畏之心",
+      "unlock_condition": "[技能石]无畏之心"
+    },
+    {
+      "skill_name": "振翅",
+      "unlock_condition": "[技能石]振翅"
+    },
+    {
+      "skill_name": "薄纱环",
+      "unlock_condition": "[技能石]薄纱环"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+    "特性": {
+        "名称": "渗透",
+        "效果": "己方精灵每使用1次武系或地系技能，自己入场时获得攻防+5%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "warrior_or_earth_skill_count",
+                    "context": {
+                        "subject": "ally_team",
+                        "timing": "entrance"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "己方武系或地系技能使用次数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values_per_stack": {
+                                "atk": 0.05,
+                                "mag": 0.05,
+                                "def": 0.05,
+                                "res": 0.05
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

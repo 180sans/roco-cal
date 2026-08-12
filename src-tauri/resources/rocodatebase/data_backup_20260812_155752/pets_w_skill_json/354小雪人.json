@@ -1,0 +1,229 @@
+{
+  "id": "354",
+  "name": "小雪人",
+  "other_name": [],
+  "elements": [
+    "冰"
+  ],
+  "种族资质": 509,
+  "hp": 101,
+  "atk": 85,
+  "mag": 80,
+  "def": 78,
+  "res": 105,
+  "spd": 60,
+  "特性": "大雪球",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "354小雪人",
+      "355雪怪"
+    ],
+    "prev": [],
+    "next": [
+      "355雪怪"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "冰锥",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "寒风吹",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "丢冰块",
+      "unlock_condition": "（默认）Lv.4"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "碎冰冰",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（默认）Lv.17"
+    },
+    {
+      "skill_name": "雪球",
+      "unlock_condition": "（默认）Lv.21"
+    },
+    {
+      "skill_name": "阻断",
+      "unlock_condition": "（默认）Lv.27"
+    },
+    {
+      "skill_name": "冷凝",
+      "unlock_condition": "（默认）Lv.30"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "滚雪球",
+      "unlock_condition": "（默认）Lv.37"
+    },
+    {
+      "skill_name": "雾气环绕",
+      "unlock_condition": "（默认）Lv.39"
+    },
+    {
+      "skill_name": "瞬间零度",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "寒潮",
+      "unlock_condition": "（默认）Lv.47"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰冲锋",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冰爪",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "贯手",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "金属噪音",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "寸拳",
+      "unlock_condition": "[技能石]寸拳"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "[技能石]反击拳"
+    },
+    {
+      "skill_name": "崩拳",
+      "unlock_condition": "[技能石]崩拳"
+    },
+    {
+      "skill_name": "截拳",
+      "unlock_condition": "[技能石]截拳"
+    },
+    {
+      "skill_name": "诋毁",
+      "unlock_condition": "[技能石]诋毁"
+    },
+    {
+      "skill_name": "黑手",
+      "unlock_condition": "[技能石]黑手"
+    },
+    {
+      "skill_name": "跌落",
+      "unlock_condition": "[技能石]跌落"
+    },
+    {
+      "skill_name": "力量吞噬",
+      "unlock_condition": "[技能石]力量吞噬"
+    },
+    {
+      "skill_name": "恐吓",
+      "unlock_condition": "[技能石]恐吓"
+    },
+    {
+      "skill_name": "撞鬼",
+      "unlock_condition": "[技能石]撞鬼"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "吞噬",
+      "unlock_condition": "[技能石]吞噬"
+    },
+    {
+      "skill_name": "打鼾",
+      "unlock_condition": "[技能石]打鼾"
+    },
+    {
+      "skill_name": "应激反应",
+      "unlock_condition": "[技能石]应激反应"
+    },
+    {
+      "skill_name": "提气",
+      "unlock_condition": "[技能石]提气"
+    },
+    {
+      "skill_name": "冰墙",
+      "unlock_condition": "[技能石]冰墙"
+    },
+    {
+      "skill_name": "雪原狩猎",
+      "unlock_condition": "[技能石]雪原狩猎"
+    }
+  ]
+}

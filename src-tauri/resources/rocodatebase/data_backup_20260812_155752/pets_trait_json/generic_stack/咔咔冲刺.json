@@ -1,0 +1,30 @@
+{
+    "特性": {
+        "名称": "咔咔冲刺",
+        "效果": "若先于敌方行动，行动后获得连击数+1。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "firsthand",
+                    "context": {
+                        "subject": "self",
+                        "timing": "usage"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "先于敌方行动的触发次数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "combo_plus",
+                            "value_per_stack": 1
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

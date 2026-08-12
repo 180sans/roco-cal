@@ -1,0 +1,35 @@
+{
+    "特性": {
+        "名称": "游弋",
+        "效果": "蓄力时可以使用任一携带技能，且获得双防+100%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "charging",
+                    "context": {
+                        "subject": "self",
+                        "timing": "current"
+                    },
+                    "stack": {
+                        "enabled": false,
+                        "input": false,
+                        "permanent": false,
+                        "hint": ""
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values": {
+                                "def": 1.0,
+                                "res": 1.0
+                            }
+                        }
+                    ]
+                }
+            ],
+            "mega": true
+        }
+    }
+}

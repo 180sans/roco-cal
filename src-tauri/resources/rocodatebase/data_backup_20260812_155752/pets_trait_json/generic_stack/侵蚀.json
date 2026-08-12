@@ -1,0 +1,30 @@
+{
+    "特性": {
+        "名称": "侵蚀",
+        "效果": "敌方每有1层中毒效果，自己获得连击数+1。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "poison_effect_count",
+                    "context": {
+                        "subject": "enemy",
+                        "timing": "current"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "敌方中毒层数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "combo_plus",
+                            "value_per_stack": 1
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

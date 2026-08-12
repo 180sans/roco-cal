@@ -1,0 +1,222 @@
+{
+  "id": "204",
+  "name": "伊兰龙",
+  "other_name": [],
+  "elements": [
+    "龙"
+  ],
+  "种族资质": 651,
+  "hp": 112,
+  "atk": 91,
+  "mag": 190,
+  "def": 69,
+  "res": 99,
+  "spd": 90,
+  "特性": "游弋",
+  "evolution": {
+    "stage": "mega",
+    "chain": [
+      "203伊雷龙",
+      "204伊兰亚龙",
+      "204伊兰龙"
+    ],
+    "prev": [
+      "204伊兰亚龙"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "绵里藏针",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "角击",
+      "unlock_condition": "（默认）Lv.4"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "架势",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（默认）Lv.25"
+    },
+    {
+      "skill_name": "龙吟",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "湮灭",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "龙威",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "怨力打击",
+      "unlock_condition": "（默认）Lv.39"
+    },
+    {
+      "skill_name": "应激反应",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "龙息环爆",
+      "unlock_condition": "（默认）Lv.42"
+    },
+    {
+      "skill_name": "突袭",
+      "unlock_condition": "（默认）Lv.43"
+    },
+    {
+      "skill_name": "拍击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "荆棘爪",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火爪",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "肥皂泡",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冷风",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "龙吼",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "触电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "尾后针",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "贯手",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "黑手",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "针状物",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "大爆炸",
+      "unlock_condition": "[技能石]大爆炸"
+    },
+    {
+      "skill_name": "坍缩",
+      "unlock_condition": "[技能石]坍缩"
+    },
+    {
+      "skill_name": "粒子对撞",
+      "unlock_condition": "[技能石]粒子对撞"
+    },
+    {
+      "skill_name": "星轨裂变",
+      "unlock_condition": "[技能石]星轨裂变"
+    },
+    {
+      "skill_name": "超导",
+      "unlock_condition": "[技能石]超导"
+    },
+    {
+      "skill_name": "强制重启",
+      "unlock_condition": "[技能石]强制重启"
+    },
+    {
+      "skill_name": "过载回路",
+      "unlock_condition": "[技能石]过载回路"
+    },
+    {
+      "skill_name": "叶绿光束",
+      "unlock_condition": "[技能石]叶绿光束"
+    },
+    {
+      "skill_name": "氧输送",
+      "unlock_condition": "[技能石]氧输送"
+    },
+    {
+      "skill_name": "移花接木",
+      "unlock_condition": "[技能石]移花接木"
+    },
+    {
+      "skill_name": "阻断",
+      "unlock_condition": "[技能石]阻断"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "精神扰乱",
+      "unlock_condition": "[技能石]精神扰乱"
+    },
+    {
+      "skill_name": "叠加态",
+      "unlock_condition": "[技能石]叠加态"
+    },
+    {
+      "skill_name": "守护咒",
+      "unlock_condition": "[技能石]守护咒"
+    },
+    {
+      "skill_name": "撒花",
+      "unlock_condition": "[技能石]撒花"
+    },
+    {
+      "skill_name": "龙守望",
+      "unlock_condition": "[技能石]龙守望"
+    }
+  ]
+}

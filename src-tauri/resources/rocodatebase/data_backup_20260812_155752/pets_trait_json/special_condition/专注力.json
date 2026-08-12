@@ -1,0 +1,33 @@
+{
+    "特性": {
+        "名称": "专注力",
+        "效果": "入场首回合，获得物攻+100%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "first_turn",
+                    "context": {
+                        "subject": "self",
+                        "timing": "turn_start"
+                    },
+                    "stack": {
+                        "enabled": false,
+                        "input": false,
+                        "permanent": false,
+                        "hint": ""
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values": {
+                                "atk": 1.0
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

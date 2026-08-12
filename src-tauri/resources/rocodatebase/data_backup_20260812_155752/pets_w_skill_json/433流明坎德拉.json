@@ -1,0 +1,226 @@
+{
+  "id": "433",
+  "name": "流明坎德拉",
+  "other_name": [],
+  "elements": [
+    "火",
+    "光"
+  ],
+  "种族资质": 674,
+  "hp": 111,
+  "atk": 109,
+  "mag": 118,
+  "def": 108,
+  "res": 123,
+  "spd": 105,
+  "特性": "光度换算",
+  "skills": [
+    {
+      "skill_name": "双响炮",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "闪光",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.4"
+    },
+    {
+      "skill_name": "闪光冲击",
+      "unlock_condition": "（默认）Lv.8"
+    },
+    {
+      "skill_name": "炎枪",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（默认）Lv.19"
+    },
+    {
+      "skill_name": "漫反射",
+      "unlock_condition": "（默认）Lv.24"
+    },
+    {
+      "skill_name": "天光",
+      "unlock_condition": "（默认）Lv.32"
+    },
+    {
+      "skill_name": "火焰切割",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "光之矛",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "点亮",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（默认）Lv.42"
+    },
+    {
+      "skill_name": "闪燃",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "淬火",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "透镜实验",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "拍击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰箭",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水弹枪",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "虚化",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "镜像反射",
+      "unlock_condition": "[技能石]镜像反射"
+    },
+    {
+      "skill_name": "虚假破产",
+      "unlock_condition": "[技能石]虚假破产"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "[技能石]贪婪"
+    },
+    {
+      "skill_name": "黑手",
+      "unlock_condition": "[技能石]黑手"
+    },
+    {
+      "skill_name": "伺机而动",
+      "unlock_condition": "[技能石]伺机而动"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "[技能石]休息回复"
+    },
+    {
+      "skill_name": "许愿星",
+      "unlock_condition": "[技能石]许愿星"
+    },
+    {
+      "skill_name": "能量刃",
+      "unlock_condition": "[技能石]能量刃"
+    },
+    {
+      "skill_name": "突袭",
+      "unlock_condition": "[技能石]突袭"
+    },
+    {
+      "skill_name": "连续爪击",
+      "unlock_condition": "[技能石]连续爪击"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "[技能石]防反"
+    },
+    {
+      "skill_name": "暖气",
+      "unlock_condition": "[技能石]暖气"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "困兽",
+      "unlock_condition": "[技能石]困兽"
+    },
+    {
+      "skill_name": "血契",
+      "unlock_condition": "[技能石]血契"
+    },
+    {
+      "skill_name": "焚身",
+      "unlock_condition": "[技能石]焚身"
+    }
+  ],
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "432守夜烛",
+      "433流明坎德拉"
+    ],
+    "prev": [
+      "432守夜烛"
+    ],
+    "next": []
+  }
+}

@@ -1,0 +1,220 @@
+{
+  "id": "296",
+  "name": "毛头小蛛",
+  "other_name": [],
+  "elements": [
+    "虫",
+    "地"
+  ],
+  "种族资质": 452,
+  "hp": 85,
+  "atk": 80,
+  "mag": 27,
+  "def": 93,
+  "res": 79,
+  "spd": 88,
+  "特性": "扫拖一体",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "296毛头小蛛",
+      "297捕尘长绒",
+      "298食尘短绒"
+    ],
+    "prev": [],
+    "next": [
+      "297捕尘长绒",
+      "298食尘短绒"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "网缚",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "贮藏",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "尾后针",
+      "unlock_condition": "（默认）Lv.9"
+    },
+    {
+      "skill_name": "食腐",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "虫鸣",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "沙涌",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "壁垒",
+      "unlock_condition": "（默认）Lv.30"
+    },
+    {
+      "skill_name": "石锁",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "虫群过境",
+      "unlock_condition": "（默认）Lv.37"
+    },
+    {
+      "skill_name": "虫结阵",
+      "unlock_condition": "（默认）Lv.39"
+    },
+    {
+      "skill_name": "岩土暴击",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "翅刃",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水泡盾",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风墙",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "虚化",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "不动如山",
+      "unlock_condition": "[技能石]不动如山"
+    },
+    {
+      "skill_name": "淤泥表皮",
+      "unlock_condition": "[技能石]淤泥表皮"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "[技能石]掩护"
+    },
+    {
+      "skill_name": "幻象",
+      "unlock_condition": "[技能石]幻象"
+    },
+    {
+      "skill_name": "报复",
+      "unlock_condition": "[技能石]报复"
+    },
+    {
+      "skill_name": "三连破",
+      "unlock_condition": "[技能石]三连破"
+    },
+    {
+      "skill_name": "地刺",
+      "unlock_condition": "[技能石]地刺"
+    },
+    {
+      "skill_name": "倾泻",
+      "unlock_condition": "[技能石]倾泻"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "棘刺",
+      "unlock_condition": "[技能石]棘刺"
+    },
+    {
+      "skill_name": "热身运动",
+      "unlock_condition": "[技能石]热身运动"
+    },
+    {
+      "skill_name": "遁地",
+      "unlock_condition": "[技能石]遁地"
+    },
+    {
+      "skill_name": "地震",
+      "unlock_condition": "[技能石]地震"
+    },
+    {
+      "skill_name": "飞断",
+      "unlock_condition": "[技能石]飞断"
+    },
+    {
+      "skill_name": "入梦",
+      "unlock_condition": "[技能石]入梦"
+    },
+    {
+      "skill_name": "振翅",
+      "unlock_condition": "[技能石]振翅"
+    }
+  ]
+}

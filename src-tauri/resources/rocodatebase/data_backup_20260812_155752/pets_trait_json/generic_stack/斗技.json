@@ -1,0 +1,30 @@
+{
+    "特性": {
+        "名称": "斗技",
+        "效果": "应对成功后，获得全技能威力永久+30。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "handle_success_count",
+                    "context": {
+                        "subject": "self",
+                        "timing": "after_handle"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": true,
+                        "hint": "应对成功次数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "power_bonus",
+                            "value_per_stack": 30
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,212 @@
+{
+  "id": "016",
+  "name": "铃兰羊",
+  "other_name": [],
+  "elements": [
+    "幽"
+  ],
+  "种族资质": 466,
+  "hp": 89,
+  "atk": 89,
+  "mag": 39,
+  "def": 96,
+  "res": 65,
+  "spd": 88,
+  "特性": "碰瓷",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "015锥尾羊",
+      "016铃兰羊",
+      "017花影羚羊"
+    ],
+    "prev": [
+      "015锥尾羊"
+    ],
+    "next": [
+      "017花影羚羊"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "幻象",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "（默认）Lv.8"
+    },
+    {
+      "skill_name": "虚假破产",
+      "unlock_condition": "（默认）Lv.12"
+    },
+    {
+      "skill_name": "降灵",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "撕咬",
+      "unlock_condition": "（默认）Lv.24"
+    },
+    {
+      "skill_name": "力量吞噬",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "见招拆招",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "恶作剧",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "极限撕裂",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "恶意逃离",
+      "unlock_condition": "（默认）Lv.39"
+    },
+    {
+      "skill_name": "坟场搏击",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "徒长",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰箭",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "泥浆铠甲",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "诋毁",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "啮合传递",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "隐藏条款",
+      "unlock_condition": "[技能石]隐藏条款"
+    },
+    {
+      "skill_name": "暗箱操作",
+      "unlock_condition": "[技能石]暗箱操作"
+    },
+    {
+      "skill_name": "欺诈契约",
+      "unlock_condition": "[技能石]欺诈契约"
+    },
+    {
+      "skill_name": "富养化",
+      "unlock_condition": "[技能石]富养化"
+    },
+    {
+      "skill_name": "移花接木",
+      "unlock_condition": "[技能石]移花接木"
+    },
+    {
+      "skill_name": "芳香诱引",
+      "unlock_condition": "[技能石]芳香诱引"
+    },
+    {
+      "skill_name": "聒噪",
+      "unlock_condition": "[技能石]聒噪"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "应激反应",
+      "unlock_condition": "[技能石]应激反应"
+    },
+    {
+      "skill_name": "报复",
+      "unlock_condition": "[技能石]报复"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "[技能石]防御"
+    },
+    {
+      "skill_name": "伪造账单",
+      "unlock_condition": "[技能石]伪造账单"
+    },
+    {
+      "skill_name": "纺纱",
+      "unlock_condition": "[技能石]纺纱"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "特性": {
+    "名称": "吟游之弦",
+    "效果": "赋予的印记不会替换其他印记，而是同时生效。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "未识别为当前项目关心的伤害或防御类结构化效果",
+      "ignored_text": "赋予的印记不会替换其他印记，而是同时生效。"
+    }
+  }
+}

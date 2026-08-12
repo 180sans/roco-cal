@@ -1,0 +1,34 @@
+{
+    "特性": {
+        "名称": "扫荡",
+        "效果": "敌方每使用1次「聚能」技能或更换精灵，自己入场时获得魔攻+20%和魔防+10%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "switch_or_collect_energy_count",
+                    "context": {
+                        "subject": "enemy_team",
+                        "timing": "entrance"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "敌方使用「聚能」技能或更换精灵次数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values_per_stack": {
+                                "mag": 0.2,
+                                "res": 0.1
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

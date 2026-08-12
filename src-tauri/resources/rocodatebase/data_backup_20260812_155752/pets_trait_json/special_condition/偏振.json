@@ -1,0 +1,30 @@
+{
+    "特性": {
+        "名称": "偏振",
+        "效果": "受到自己携带技能系别的攻击伤害-40%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "same_skill_as_attack",
+                    "context": {
+                        "subject": "self",
+                        "timing": "carried"
+                    },
+                    "stack": {
+                        "enabled": false,
+                        "input": false,
+                        "permanent": false,
+                        "hint": ""
+                    },
+                    "effects": [
+                        {
+                            "kind": "damage_reduction",
+                            "value": 0.4
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,226 @@
+{
+  "id": "024",
+  "name": "石肤蜥",
+  "other_name": [],
+  "elements": [
+    "地"
+  ],
+  "种族资质": 369,
+  "hp": 69,
+  "atk": 61,
+  "mag": 60,
+  "def": 72,
+  "res": 50,
+  "spd": 57,
+  "特性": "刺肤",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "024石肤蜥",
+      "025石刺蜥",
+      "026石冠王蜥"
+    ],
+    "prev": [],
+    "next": [
+      "025石刺蜥"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "泥巴喷射",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "石肤术",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "音波弹",
+      "unlock_condition": "（默认）Lv.8"
+    },
+    {
+      "skill_name": "钧势",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "落石",
+      "unlock_condition": "（默认）Lv.12"
+    },
+    {
+      "skill_name": "硬化",
+      "unlock_condition": "（默认）Lv.21"
+    },
+    {
+      "skill_name": "陨石",
+      "unlock_condition": "（默认）Lv.30"
+    },
+    {
+      "skill_name": "石锁",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "遁地",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "冲撞",
+      "unlock_condition": "（默认）Lv.37"
+    },
+    {
+      "skill_name": "岩土暴击",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "血气",
+      "unlock_condition": "（默认）Lv.41"
+    },
+    {
+      "skill_name": "地陷",
+      "unlock_condition": "（默认）Lv.47"
+    },
+    {
+      "skill_name": "刺盾",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水泡盾",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风墙",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "虚化",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "不动如山",
+      "unlock_condition": "[技能石]不动如山"
+    },
+    {
+      "skill_name": "腐蚀酸液",
+      "unlock_condition": "[技能石]腐蚀酸液"
+    },
+    {
+      "skill_name": "瘴气喷射",
+      "unlock_condition": "[技能石]瘴气喷射"
+    },
+    {
+      "skill_name": "腐化",
+      "unlock_condition": "[技能石]腐化"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "[技能石]碰爪"
+    },
+    {
+      "skill_name": "砂糖弹球",
+      "unlock_condition": "[技能石]砂糖弹球"
+    },
+    {
+      "skill_name": "捧杀",
+      "unlock_condition": "[技能石]捧杀"
+    },
+    {
+      "skill_name": "后发制人",
+      "unlock_condition": "[技能石]后发制人"
+    },
+    {
+      "skill_name": "地刺",
+      "unlock_condition": "[技能石]地刺"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "棘刺",
+      "unlock_condition": "[技能石]棘刺"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "[技能石]防反"
+    },
+    {
+      "skill_name": "嗜痛",
+      "unlock_condition": "[技能石]嗜痛"
+    },
+    {
+      "skill_name": "无畏之心",
+      "unlock_condition": "[技能石]无畏之心"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "[技能石]力量增效"
+    },
+    {
+      "skill_name": "溶解",
+      "unlock_condition": "[技能石]溶解"
+    }
+  ]
+}

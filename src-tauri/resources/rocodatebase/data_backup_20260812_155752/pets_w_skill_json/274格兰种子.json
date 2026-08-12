@@ -1,0 +1,214 @@
+{
+  "id": "274",
+  "name": "格兰种子",
+  "other_name": [],
+  "elements": [
+    "草"
+  ],
+  "种族资质": 321,
+  "hp": 65,
+  "atk": 31,
+  "mag": 74,
+  "def": 48,
+  "res": 67,
+  "spd": 36,
+  "特性": "生长",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "274格兰种子",
+      "275格兰花",
+      "276格兰球"
+    ],
+    "prev": [],
+    "next": [
+      "275格兰花"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "藤绞",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "棘突",
+      "unlock_condition": "（默认）Lv.5"
+    },
+    {
+      "skill_name": "根吸收",
+      "unlock_condition": "（默认）Lv.12"
+    },
+    {
+      "skill_name": "倾泻",
+      "unlock_condition": "（默认）Lv.28"
+    },
+    {
+      "skill_name": "孢子",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "叶绿光束",
+      "unlock_condition": "（默认）Lv.34"
+    },
+    {
+      "skill_name": "花炮",
+      "unlock_condition": "（默认）Lv.37"
+    },
+    {
+      "skill_name": "光能聚集",
+      "unlock_condition": "（默认）Lv.41"
+    },
+    {
+      "skill_name": "盛开",
+      "unlock_condition": "（默认）Lv.42"
+    },
+    {
+      "skill_name": "阻断",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "抽枝",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "拍击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "荆棘爪",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火爪",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "肥皂泡",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冷风",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "磁干扰",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "尾后针",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "贯手",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "黑手",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "针状物",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "腐蚀酸液",
+      "unlock_condition": "[技能石]腐蚀酸液"
+    },
+    {
+      "skill_name": "瘴气喷射",
+      "unlock_condition": "[技能石]瘴气喷射"
+    },
+    {
+      "skill_name": "鸩毒",
+      "unlock_condition": "[技能石]鸩毒"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "[技能石]毒孢子"
+    },
+    {
+      "skill_name": "脉冲光线",
+      "unlock_condition": "[技能石]脉冲光线"
+    },
+    {
+      "skill_name": "漫反射",
+      "unlock_condition": "[技能石]漫反射"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "[技能石]跺地"
+    },
+    {
+      "skill_name": "追打",
+      "unlock_condition": "[技能石]追打"
+    },
+    {
+      "skill_name": "突袭",
+      "unlock_condition": "[技能石]突袭"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "摇篮曲",
+      "unlock_condition": "[技能石]摇篮曲"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "[技能石]魔法增效"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "[技能石]防御"
+    },
+    {
+      "skill_name": "埋伏",
+      "unlock_condition": "[技能石]埋伏"
+    },
+    {
+      "skill_name": "友谊满溢",
+      "unlock_condition": "[技能石]友谊满溢"
+    },
+    {
+      "skill_name": "撒花",
+      "unlock_condition": "[技能石]撒花"
+    }
+  ]
+}

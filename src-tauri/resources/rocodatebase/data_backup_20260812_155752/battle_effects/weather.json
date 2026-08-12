@@ -1,0 +1,20 @@
+{
+  "category": "weather",
+  "items": [
+    { "id": "none", "label": "无", "effects": [] },
+    {
+      "id": "rain",
+      "label": "雨天（水）",
+      "effects": [
+        {
+          "kind": "power_multiplier",
+          "value": 0.75,
+          "filters": { "skill_elements": ["水"] }
+        }
+      ]
+    },
+    { "id": "sandstorm", "label": "沙暴（地）", "effects": [] },
+    { "id": "snow", "label": "雪天（冰）", "effects": [] },
+    { "id": "thunder", "label": "雷鸣（电）", "effects": [] }
+  ]
+}

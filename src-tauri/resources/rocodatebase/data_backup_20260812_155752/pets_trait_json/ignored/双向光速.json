@@ -1,0 +1,16 @@
+{
+  "特性": {
+    "名称": "双向光速",
+    "效果": "在场时，双方回合结束时的效果会额外触发1次。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "未识别为当前项目关心的伤害或防御类结构化效果",
+      "ignored_text": "在场时，双方回合结束时的效果会额外触发1次。"
+    }
+  }
+}

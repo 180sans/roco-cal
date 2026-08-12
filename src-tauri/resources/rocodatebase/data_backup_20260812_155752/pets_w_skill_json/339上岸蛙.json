@@ -1,0 +1,205 @@
+{
+  "id": "339",
+  "name": "上岸蛙",
+  "other_name": [],
+  "elements": [
+    "幻"
+  ],
+  "种族资质": 554,
+  "hp": 114,
+  "atk": 106,
+  "mag": 44,
+  "def": 101,
+  "res": 69,
+  "spd": 120,
+  "特性": "张弛有度",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "338布瓜蝌",
+      "339上岸蛙"
+    ],
+    "prev": [
+      "338布瓜蝌"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "粒子对撞",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "偷师",
+      "unlock_condition": "（默认）Lv.4"
+    },
+    {
+      "skill_name": "许愿星",
+      "unlock_condition": "（默认）Lv.5"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.12"
+    },
+    {
+      "skill_name": "空间压迫",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "星轨裂变",
+      "unlock_condition": "（默认）Lv.26"
+    },
+    {
+      "skill_name": "超新星馈赠",
+      "unlock_condition": "（默认）Lv.30"
+    },
+    {
+      "skill_name": "偷袭",
+      "unlock_condition": "（默认）Lv.31"
+    },
+    {
+      "skill_name": "双星",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "心灵洞悉",
+      "unlock_condition": "（默认）Lv.34"
+    },
+    {
+      "skill_name": "二律背反",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "乘胜追击",
+      "unlock_condition": "（默认）Lv.45"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "荆棘爪",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火爪",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "肥皂泡",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冷风",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "磁干扰",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "尾后针",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "贯手",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "黑手",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "念力膨胀",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "震击",
+      "unlock_condition": "[技能石]震击"
+    },
+    {
+      "skill_name": "鸣沙陷阱",
+      "unlock_condition": "[技能石]鸣沙陷阱"
+    },
+    {
+      "skill_name": "地刺",
+      "unlock_condition": "[技能石]地刺"
+    },
+    {
+      "skill_name": "石肤术",
+      "unlock_condition": "[技能石]石肤术"
+    },
+    {
+      "skill_name": "扇风",
+      "unlock_condition": "[技能石]扇风"
+    },
+    {
+      "skill_name": "龙卷风",
+      "unlock_condition": "[技能石]龙卷风"
+    },
+    {
+      "skill_name": "乘风",
+      "unlock_condition": "[技能石]乘风"
+    },
+    {
+      "skill_name": "漫反射",
+      "unlock_condition": "[技能石]漫反射"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "[技能石]休息回复"
+    },
+    {
+      "skill_name": "快速移动",
+      "unlock_condition": "[技能石]快速移动"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    }
+  ]
+}

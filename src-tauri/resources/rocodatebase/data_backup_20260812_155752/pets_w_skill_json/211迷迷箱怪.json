@@ -1,0 +1,238 @@
+{
+  "id": "211",
+  "name": "迷迷箱怪",
+  "other_name": [],
+  "elements": [
+    "机械",
+    "幻"
+  ],
+  "种族资质": 782,
+  "hp": 138,
+  "atk": 129,
+  "mag": 129,
+  "def": 153,
+  "res": 153,
+  "spd": 80,
+  "特性": "虚假宝箱",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "210小箱怪",
+      "211迷迷箱怪"
+    ],
+    "prev": [
+      "210小箱怪"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "杠杆置换",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "能量守恒",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "粒子对撞",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "啮合传递",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "星链",
+      "unlock_condition": "（默认）Lv.18"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "针状物",
+      "unlock_condition": "（默认）Lv.25"
+    },
+    {
+      "skill_name": "主轴",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "磁暴",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "双星",
+      "unlock_condition": "（默认）Lv.39"
+    },
+    {
+      "skill_name": "后发制人",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "齿轮切开",
+      "unlock_condition": "（默认）Lv.49"
+    },
+    {
+      "skill_name": "错乱",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水泡盾",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "淤泥表皮",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "尾后针",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风墙",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "虚化",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "金属噪音",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "念力膨胀",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "四维降解",
+      "unlock_condition": "[技能石]四维降解"
+    },
+    {
+      "skill_name": "震击",
+      "unlock_condition": "[技能石]震击"
+    },
+    {
+      "skill_name": "泥巴喷射",
+      "unlock_condition": "[技能石]泥巴喷射"
+    },
+    {
+      "skill_name": "硬化",
+      "unlock_condition": "[技能石]硬化"
+    },
+    {
+      "skill_name": "刺盾",
+      "unlock_condition": "[技能石]刺盾"
+    },
+    {
+      "skill_name": "音爆",
+      "unlock_condition": "[技能石]音爆"
+    },
+    {
+      "skill_name": "压扁",
+      "unlock_condition": "[技能石]压扁"
+    },
+    {
+      "skill_name": "偷袭",
+      "unlock_condition": "[技能石]偷袭"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "棘刺",
+      "unlock_condition": "[技能石]棘刺"
+    },
+    {
+      "skill_name": "退化",
+      "unlock_condition": "[技能石]退化"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "[技能石]力量增效"
+    },
+    {
+      "skill_name": "钢钻",
+      "unlock_condition": "[技能石]钢钻"
+    },
+    {
+      "skill_name": "吓退",
+      "unlock_condition": "[技能石]吓退"
+    },
+    {
+      "skill_name": "无畏之心",
+      "unlock_condition": "[技能石]无畏之心"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "[技能石]械斗"
+    },
+    {
+      "skill_name": "铁蒺藜",
+      "unlock_condition": "[技能石]铁蒺藜"
+    },
+    {
+      "skill_name": "轮班",
+      "unlock_condition": "[技能石]轮班"
+    }
+  ]
+}
