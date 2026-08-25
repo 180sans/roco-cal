@@ -17,7 +17,11 @@
         "width": 566,
         "height": 640,
         "minWidth": 283,
-        "minHeight": 320
+        "minHeight": 320,
+        "transparent": true,
+        "decorations": true,
+        "alwaysOnTop": false,
+        "resizable": true
       }
     ],
     "security": {
@@ -27,7 +31,7 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
-    "resources": ["resources/rocodatebase", "resources/python"],
+    "resources": ["resources/rocodatebase", "resources/python", "resources/ocr-models", "resources/image-classifier"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

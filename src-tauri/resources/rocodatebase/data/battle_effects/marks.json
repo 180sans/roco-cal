@@ -14,8 +14,7 @@
       "effects": [
         {
           "kind": "power_bonus",
-          "value_per_stack": 10,
-          "filters": { "skill_names": ["迸发"] }
+          "value_per_stack": 10
         }
       ]
     },

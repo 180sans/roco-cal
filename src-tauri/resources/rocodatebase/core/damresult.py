@@ -344,6 +344,25 @@ DEFAULT_PERSONALITY_BONUS = 0.2  # 默认正面性格加成值
 DEFAULT_PERSONALITY_PENALTY = -0.1  # 默认负面性格减少值（如果需要的话）
 
 IV_ATTRS = ("hp", "atk", "mag", "def", "res", "spd")
+ATTR_ALIASES = {
+    "生命": "hp",
+    "血量": "hp",
+    "体力": "hp",
+    "攻击": "atk",
+    "物攻": "atk",
+    "魔攻": "mag",
+    "防御": "def",
+    "物防": "def",
+    "魔抗": "res",
+    "魔防": "res",
+    "速度": "spd",
+}
+
+
+def normalize_attr_name(attr):
+    if attr is None:
+        return None
+    return ATTR_ALIASES.get(str(attr).strip(), str(attr).strip())
 
 
 def parse_personality(personality_bouns, personality_down):
@@ -370,6 +389,7 @@ def parse_personality(personality_bouns, personality_down):
         else:
             attr = personality_bouns
             value = DEFAULT_PERSONALITY_BONUS
+        attr = normalize_attr_name(attr)
         if attr in IV_ATTRS:
             result[attr] = value
 
@@ -380,6 +400,7 @@ def parse_personality(personality_bouns, personality_down):
         else:
             attr = personality_down
             value = DEFAULT_PERSONALITY_PENALTY
+        attr = normalize_attr_name(attr)
         if attr in IV_ATTRS:
             result[attr] = value
 
@@ -403,6 +424,18 @@ def get_personality_bonus_for_attr(personality_dict, attr_name):
     return None
 
 
+def _matches_default_attribute(default_iv, default_personality, configured_iv, configured_personality):
+    """Match explicit values against the default state's attribute category."""
+    if configured_iv is not None and bool(default_iv > 0) != bool(configured_iv > 0):
+        return False
+    if configured_personality is not None:
+        if default_personality is None or (default_personality > 0) != (configured_personality > 0):
+            return False
+    elif configured_iv is not None and default_personality is not None:
+        return False
+    return True
+
+
 def generate_atk_scenarios(atk_iv, atk_personality_bonus, atk_attr_name):
     """
     生成攻击方场景。
@@ -414,22 +447,27 @@ def generate_atk_scenarios(atk_iv, atk_personality_bonus, atk_attr_name):
     label_map = {"atk": "攻击", "mag": "魔攻"}
     attr_label = label_map.get(atk_attr_name, atk_attr_name)
 
-    if atk_iv is None and atk_personality_bonus is None:
-        # 未指定，展开多种场景
-        return [
-            {"atk_iv": 10, "atk_personality": DEFAULT_PERSONALITY_BONUS,
-             "atk_label": f"加{attr_label}天分加性格"},
-            {"atk_iv": 10, "atk_personality": None,
-             "atk_label": f"加{attr_label}天分"},
-            {"atk_iv": 0, "atk_personality": None,
-             "atk_label": f"正常{attr_label}"},
-            {"atk_iv": 0, "atk_personality": DEFAULT_PERSONALITY_PENALTY,
-             "atk_label": f"减{attr_label}性格"},
-        ]
-    else:
-        iv = atk_iv if atk_iv is not None else 0
-        return [{"atk_iv": iv, "atk_personality": atk_personality_bonus,
-                 "atk_label": f"指定{attr_label}"}]
+    defaults = [
+        {"atk_iv": 10, "atk_personality": DEFAULT_PERSONALITY_BONUS,
+         "atk_label": f"加{attr_label}天分加性格"},
+        {"atk_iv": 10, "atk_personality": None,
+         "atk_label": f"加{attr_label}天分"},
+        {"atk_iv": 0, "atk_personality": None,
+         "atk_label": f"正常{attr_label}"},
+        {"atk_iv": 0, "atk_personality": DEFAULT_PERSONALITY_PENALTY,
+         "atk_label": f"减{attr_label}性格"},
+    ]
+    scenarios = [
+        {**scenario, "atk_iv": atk_iv if atk_iv is not None else scenario["atk_iv"],
+         "atk_personality": atk_personality_bonus if atk_personality_bonus is not None else scenario["atk_personality"]}
+        for scenario in defaults
+        if _matches_default_attribute(scenario["atk_iv"], scenario["atk_personality"], atk_iv, atk_personality_bonus)
+    ]
+    if scenarios:
+        return scenarios
+    return [{"atk_iv": atk_iv if atk_iv is not None else 0,
+             "atk_personality": atk_personality_bonus,
+             "atk_label": f"指定{attr_label}"}]
 
 
 def generate_def_scenarios(def_iv, def_personality_bonus, def_attr_name):
@@ -443,19 +481,25 @@ def generate_def_scenarios(def_iv, def_personality_bonus, def_attr_name):
     label_map = {"def": "防御", "res": "魔抗"}
     attr_label = label_map.get(def_attr_name, def_attr_name)
 
-    if def_iv is None and def_personality_bonus is None:
-        return [
-            {"def_iv": 10, "def_personality": None,
-             "def_label": f"加{attr_label}天分"},
-            {"def_iv": 0, "def_personality": None,
-             "def_label": f"正常{attr_label}"},
-            {"def_iv": 0, "def_personality": DEFAULT_PERSONALITY_PENALTY,
-             "def_label": f"减{attr_label}性格"},
-        ]
-    else:
-        iv = def_iv if def_iv is not None else 0
-        return [{"def_iv": iv, "def_personality": def_personality_bonus,
-                 "def_label": f"指定{attr_label}"}]
+    defaults = [
+        {"def_iv": 10, "def_personality": None,
+         "def_label": f"加{attr_label}天分"},
+        {"def_iv": 0, "def_personality": None,
+         "def_label": f"正常{attr_label}"},
+        {"def_iv": 0, "def_personality": DEFAULT_PERSONALITY_PENALTY,
+         "def_label": f"减{attr_label}性格"},
+    ]
+    scenarios = [
+        {**scenario, "def_iv": def_iv if def_iv is not None else scenario["def_iv"],
+         "def_personality": def_personality_bonus if def_personality_bonus is not None else scenario["def_personality"]}
+        for scenario in defaults
+        if _matches_default_attribute(scenario["def_iv"], scenario["def_personality"], def_iv, def_personality_bonus)
+    ]
+    if scenarios:
+        return scenarios
+    return [{"def_iv": def_iv if def_iv is not None else 0,
+             "def_personality": def_personality_bonus,
+             "def_label": f"指定{attr_label}"}]
 
 
 def generate_hp_scenarios(hp_iv, hp_personality_bonus):
@@ -465,19 +509,25 @@ def generate_hp_scenarios(hp_iv, hp_personality_bonus):
     hp_iv: int 或 None
     hp_personality_bonus: 性格加成值，或 None
     """
-    if hp_iv is None and hp_personality_bonus is None:
-        return [
-            {"hp_iv": 10, "hp_personality": DEFAULT_PERSONALITY_BONUS,
-             "hp_label": "加生命天分加性格"},
-            {"hp_iv": 10, "hp_personality": None,
-             "hp_label": "加生命天分"},
-            {"hp_iv": 0, "hp_personality": None,
-             "hp_label": "正常血量"},
-        ]
-    else:
-        iv = hp_iv if hp_iv is not None else 0
-        return [{"hp_iv": iv, "hp_personality": hp_personality_bonus,
-                 "hp_label": "指定血量"}]
+    defaults = [
+        {"hp_iv": 10, "hp_personality": DEFAULT_PERSONALITY_BONUS,
+         "hp_label": "加生命天分加性格"},
+        {"hp_iv": 10, "hp_personality": None,
+         "hp_label": "加生命天分"},
+        {"hp_iv": 0, "hp_personality": None,
+         "hp_label": "正常血量"},
+    ]
+    scenarios = [
+        {**scenario, "hp_iv": hp_iv if hp_iv is not None else scenario["hp_iv"],
+         "hp_personality": hp_personality_bonus if hp_personality_bonus is not None else scenario["hp_personality"]}
+        for scenario in defaults
+        if _matches_default_attribute(scenario["hp_iv"], scenario["hp_personality"], hp_iv, hp_personality_bonus)
+    ]
+    if scenarios:
+        return scenarios
+    return [{"hp_iv": hp_iv if hp_iv is not None else 0,
+             "hp_personality": hp_personality_bonus,
+             "hp_label": "指定血量"}]
 
 
 def _effect_matches_skill_filters(
@@ -1264,6 +1314,53 @@ def battle_damage(
             })
 
     return results
+
+
+def battle_required_power(target_hp, **kwargs):
+    """Find the minimum base power that deals at least target_hp in every battle scenario."""
+    if target_hp <= 0:
+        raise ValueError("目标血量必须大于 0")
+    skill_name = kwargs.get("skill_name")
+    skill_data = kwargs.pop("skill_data_override", None) or skill_dataset.find_skill(skill_name)
+    if skill_data is None:
+        raise ValueError(f"未找到技能: {skill_name}")
+    resolved_cases = skill_data.get("resolved_cases") or resolve_skill(
+        skill_data,
+        multiple=kwargs.get("multiple", 0),
+        use_override=kwargs.get("use_override", False),
+        usage_mode_choice=kwargs.get("usage_mode_choice"),
+    )
+
+    def calculate_at(power):
+        override = {
+            "name": skill_name,
+            "effect": skill_data.get("effect"),
+            "resolved_cases": [{**case, "skill_power": power} for case in resolved_cases],
+        }
+        return battle_damage(**kwargs, skill_data_override=override)
+
+    initial = calculate_at(1)
+    required = []
+    for index, initial_result in enumerate(initial):
+        low, high = 1, 1
+        while calculate_at(high)[index]["damage"] < target_hp:
+            high *= 2
+            if high > 100000:
+                raise ValueError("无法在 100000 威力内击杀目标")
+        while low < high:
+            middle = (low + high) // 2
+            if calculate_at(middle)[index]["damage"] >= target_hp:
+                high = middle
+            else:
+                low = middle + 1
+        required.append({
+            **initial_result,
+            "required_power": low,
+            "target_hp": target_hp,
+            "damage": 0,
+            "damage_info": f"击杀 {target_hp} HP 所需基础威力：{low}",
+        })
+    return required
 
 def calculate_damage_range(
     atk_iv,

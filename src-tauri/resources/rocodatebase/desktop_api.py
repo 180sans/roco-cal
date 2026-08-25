@@ -1,7 +1,11 @@
 import argparse
+import base64
 import contextlib
+import difflib
+import io
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -13,8 +17,20 @@ if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
 API_STDOUT = sys.stdout
+ONNX_OCR_ENGINE: Any | None = None
+IMAGE_CLASSIFIER: Any | None = None
+REPLAY_SKILL_OVERRIDES: dict[str, dict[str, str]] = {
+    "愿力冲击": {"type": "物攻"},
+    "聚能": {"type": "变化"},
+    "跺地": {"type": "物攻"},
+}
+REPLAY_SKILL_ALIASES = {
+    # The OCR model occasionally substitutes the first glyph of this skill.
+    "踩地": "跺地",
+}
 
 BASE_DIR = Path(__file__).resolve().parent
+CLASSIFIER_DIR = BASE_DIR.parent / "image-classifier"
 DATA_DIR = BASE_DIR / "data"
 PETS_DIR = DATA_DIR / "pets_w_skill_json"
 SKILLS_DIR = DATA_DIR / "skills_database"
@@ -493,6 +509,43 @@ def calculate_battle(payload: dict[str, Any]) -> dict[str, Any]:
     return {"results": battle_damage(**_attacker_args(attacker), **_defender_args(defender), weather=weather)}
 
 
+def calculate_quick_skills(payload: dict[str, Any]) -> dict[str, Any]:
+    """Calculate every damaging skill in the supplied card order.
+
+    This deliberately does not consult ``current_skill``.  Ctrl+J is a batch
+    action, so status skills are ignored and each attack skill gets its own
+    explicit damage calculation (including all of its resolved conditions).
+    """
+    from core.damresult import battle_damage
+    from core.skill_finder import skill_dataset
+
+    attacker = payload.get("attacker") or {}
+    defender = payload.get("defender") or {}
+    weather = payload.get("weather") or "none"
+    skills = payload.get("skills") or attacker.get("skills") or []
+    if not isinstance(skills, list):
+        skills = []
+
+    seen: set[str] = set()
+    items = []
+    defender_args = _defender_args(defender)
+    for raw_name in skills:
+        skill_name = str(raw_name or "").strip()
+        if not skill_name or skill_name in seen:
+            continue
+        seen.add(skill_name)
+        skill_data = skill_dataset.find_skill(skill_name)
+        if not isinstance(skill_data, dict) or skill_data.get("type") not in {"物攻", "魔攻"}:
+            continue
+        attacker_args = _attacker_args({**attacker, "current_skill": skill_name})
+        items.append({
+            "skillName": skill_name,
+            "skillPower": skill_data.get("skill_power"),
+            "results": battle_damage(**attacker_args, **defender_args, weather=weather),
+        })
+    return {"items": items}
+
+
 def calculate_willpower(payload: dict[str, Any]) -> dict[str, Any]:
     """Calculate only distinct relation/STAB cases, then reuse them for all 18 elements."""
     from core.will_power import WILLPOWER_ELEMENTS, willpower_skill_cases
@@ -540,6 +593,32 @@ def calculate_willpower(payload: dict[str, Any]) -> dict[str, Any]:
             cache[key] = battle_damage(**attacker_args, **_defender_args(defender), weather=weather, skill_data_override=skill_data)
         elements.append({"element": element, "advantage": advantage, "has_stab": has_stab, "results": cache[key]})
     return {"attack_type": attack_type, "elements": elements}
+
+
+def calculate_required_power(payload: dict[str, Any]) -> dict[str, Any]:
+    from core.damresult import battle_required_power
+    from core.find_pets import pets_dataset
+
+    # 判死由当前防御方攻击当前攻击方；输入的是我方（当前攻击方）的血量。
+    target = payload.get("attacker") or {}
+    killer = payload.get("defender") or {}
+    target_hp = float(payload.get("target_hp") or 0)
+    weather = payload.get("weather") or "none"
+    killer_args = _attacker_args(killer)
+    # 判死表固定枚举敌方物攻/魔攻的四种天分与性格档位，不使用其当前指定值。
+    killer_args["attacker_iv"] = {**(killer_args.get("attacker_iv") or {}), "atk": None, "mag": None}
+    killer_args["attacker_personality_bouns"] = None
+    killer_args["attacker_personality_down"] = None
+    target_args = _defender_args(target)
+    killer_data = pets_dataset.find(killer_args["attacker_name"], devolution=killer_args["attacker_devolution"], mega=killer_args["attacker_mega"])
+    element = (killer_data.get("elements") or ["普通"])[0]
+    rows = []
+    for attack_type, label in (("物攻", "物攻"), ("魔攻", "魔攻")):
+        skill_data = {"name": f"判死{label}", "effect": "攻击", "resolved_cases": [{"case_label": "判死", "is_triggered": False, "skill_power": 1, "type": attack_type, "element": element}]}
+        results = battle_required_power(target_hp, **killer_args, **target_args, weather=weather, skill_data_override=skill_data)
+        for result in results:
+            rows.append({"attack_type": label, "attacker_label": result["atk_label"], "required_power": result["required_power"]})
+    return {"target_hp": target_hp, "rows": rows}
 
 
 def apply_skill_buffs(payload: dict[str, Any]) -> dict[str, Any]:
@@ -594,7 +673,7 @@ def apply_skill_buffs(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def skill_trigger_info(payload: dict[str, Any]) -> dict[str, Any]:
-    from core.skill_finder import skill_dataset
+    from core.skill_finder import resolve_buff_options, skill_dataset
 
     skill_name = (payload.get("skill_name") or payload.get("skillName") or "").strip()
     skill_data = skill_dataset.find_skill(skill_name) if skill_name else None
@@ -626,6 +705,8 @@ def skill_trigger_info(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "skill_name": skill_name,
         "description": skill_data.get("description", "") if skill_data else "",
+        "has_damage": bool(skill_data and any(key in skill_data for key in ("skill_power", "power", "damage"))),
+        "has_buff": bool(resolve_buff_options(skill_data)),
         "stackable": stackable,
         "usage_mode_options": usage_mode_options,
     }
@@ -722,7 +803,7 @@ def manage_preset(payload: dict[str, Any]) -> dict[str, Any]:
 def save_picker_config(payload: dict[str, Any]) -> dict[str, Any]:
     section = (payload.get("section") or "").strip()
     values = payload.get("values") or {}
-    if section not in {"pet_picker", "trait_picker", "skill_picker", "ui_tokens", "burst_panel"}:
+    if section not in {"pet_picker", "trait_picker", "skill_picker", "ui_tokens", "burst_panel", "team_layout"}:
         raise ValueError(f"未知配置段: {section}")
     configs = _load_configs()
     configs.setdefault(section, {})
@@ -742,6 +823,376 @@ def call_core_probe() -> dict[str, Any]:
     }
 
 
+def is_dash_only_numeric_image(image: Any) -> bool:
+    """Identify the game's two short dashes before numeric OCR can call them 2."""
+    import numpy as np
+
+    grayscale = np.asarray(image.convert("L"))
+    foreground = grayscale >= 180
+    height, width = foreground.shape
+    seen = np.zeros_like(foreground, dtype=bool)
+    bars: list[tuple[float, float]] = []
+    for start_y, start_x in zip(*np.where(foreground)):
+        if seen[start_y, start_x]:
+            continue
+        stack = [(int(start_y), int(start_x))]
+        seen[start_y, start_x] = True
+        pixels: list[tuple[int, int]] = []
+        touches_edge = False
+        while stack:
+            y, x = stack.pop()
+            pixels.append((y, x))
+            touches_edge = touches_edge or y in (0, height - 1) or x in (0, width - 1)
+            for next_y, next_x in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
+                if 0 <= next_y < height and 0 <= next_x < width and foreground[next_y, next_x] and not seen[next_y, next_x]:
+                    seen[next_y, next_x] = True
+                    stack.append((next_y, next_x))
+        if touches_edge or len(pixels) < 20:
+            continue
+        ys = [pixel[0] for pixel in pixels]
+        xs = [pixel[1] for pixel in pixels]
+        component_width = max(xs) - min(xs) + 1
+        component_height = max(ys) - min(ys) + 1
+        if component_width >= 12 and component_height <= 10 and component_width / component_height >= 1.5:
+            bars.append(((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2))
+    return any(
+        8 <= abs(first_x - second_x) <= 42 and abs(first_y - second_y) <= 14
+        for index, (first_x, first_y) in enumerate(bars)
+        for second_x, second_y in bars[index + 1:]
+    )
+
+
+def recognize_image_text(payload: dict[str, Any]) -> dict[str, str]:
+    image_data_url = payload.get("imageDataUrl") or ""
+    mode = payload.get("mode") or "text"
+    if not isinstance(image_data_url, str) or "," not in image_data_url:
+        raise ValueError("OCR image must be a data URL")
+    if mode not in {"power", "enemy_health", "self_health", "number", "health", "text"}:
+        raise ValueError(f"Unsupported OCR mode: {mode}")
+
+    from PIL import Image
+    import numpy as np
+    _, encoded = image_data_url.split(",", 1)
+    image = Image.open(io.BytesIO(base64.b64decode(encoded))).convert("RGB")
+    numeric_modes = {"power", "enemy_health", "self_health", "number", "health"}
+    if mode in numeric_modes and is_dash_only_numeric_image(image):
+        return {"text": "-"}
+    ocr = _ocr_engine()
+    if mode in numeric_modes:
+        # A numeric crop can include game badges and borders. Let the detector
+        # locate the text before recognition instead of treating the entire
+        # crop as one glyph.
+        lines = ocr(image)
+        text = "\n".join(line["text"] for line in lines if line.get("text"))
+        if not text:
+            # Some compact, slanted game badges are rejected by the detector
+            # even though the recognizer can still read their digit shapes.
+            text = ocr.recognize_without_detection(image)
+    else:
+        lines = ocr(image)
+        text = "\n".join(line["text"] for line in lines if line.get("text"))
+    if mode in numeric_modes:
+        text = text.replace("／", "/").replace("\\", "/")
+        allowed = {
+            "power": "0123456789",
+            "enemy_health": "0123456789%",
+            "self_health": "0123456789/",
+            "number": "0123456789",
+            "health": "0123456789/",
+        }[mode]
+        text = "".join(char for char in text if char in allowed)
+    if mode in {"self_health", "health"}:
+        text = normalize_health_text(text)
+    return {"text": text.strip() or "-"}
+
+
+def normalize_health_text(text: str) -> str:
+    match = re.fullmatch(r"(\d+)/(\d+)", text)
+    if match:
+        current, maximum = (int(value) for value in match.groups())
+        return text if current <= maximum else ""
+
+    # The OCR model can read the slash as 7. Only repair an unambiguous,
+    # plausible split; otherwise reject it instead of displaying x7x.
+    candidates: list[tuple[int, int, str]] = []
+    if text.isdigit():
+        center = len(text) / 2
+        for index, char in enumerate(text[1:-1], start=1):
+            if char != "7":
+                continue
+            numerator = text[:index]
+            denominator = text[index + 1 :]
+            if int(numerator) <= int(denominator):
+                candidates.append((abs(len(numerator) - len(denominator)), int(abs(index - center) * 2), f"{numerator}/{denominator}"))
+    if not candidates:
+        return ""
+    candidates.sort()
+    return candidates[0][2] if len(candidates) == 1 or candidates[0][:2] != candidates[1][:2] else ""
+
+
+class OnnxOcr:
+    def __init__(self, models_dir: Path):
+        import onnxruntime as ort
+
+        self.det = ort.InferenceSession(str(models_dir / "det" / "model.onnx"), providers=["CPUExecutionProvider"])
+        self.rec = ort.InferenceSession(str(models_dir / "rec" / "model.onnx"), providers=["CPUExecutionProvider"])
+        self.det_input = self.det.get_inputs()[0].name
+        self.rec_input = self.rec.get_inputs()[0].name
+        self.characters = [line.rstrip("\r\n") for line in (models_dir / "ppocr_keys_v1.txt").read_text(encoding="utf-8").splitlines()]
+        self.characters.append(" ")
+
+    @staticmethod
+    def _det_input(image: Any) -> tuple[Any, tuple[int, int, int, int]]:
+        import cv2
+        import numpy as np
+
+        height, width = image.shape[:2]
+        scale = min(960 / max(height, width), 1.0)
+        resized_width = max(32, int(round(width * scale / 32) * 32))
+        resized_height = max(32, int(round(height * scale / 32) * 32))
+        resized = cv2.resize(image, (resized_width, resized_height), interpolation=cv2.INTER_LINEAR)
+        tensor = resized.astype(np.float32) / 255.0
+        tensor = (tensor - np.array([0.485, 0.456, 0.406], dtype=np.float32)) / np.array([0.229, 0.224, 0.225], dtype=np.float32)
+        return tensor.transpose(2, 0, 1)[None], (height, width, resized_height, resized_width)
+
+    @staticmethod
+    def _order_box(points: Any) -> Any:
+        import numpy as np
+
+        points = np.asarray(points, dtype=np.float32)
+        center = points.mean(axis=0)
+        angles = np.arctan2(points[:, 1] - center[1], points[:, 0] - center[0])
+        return points[np.argsort(angles)]
+
+    def _detect(self, image: Any) -> list[Any]:
+        import cv2
+        import numpy as np
+
+        tensor, (source_height, source_width, resized_height, resized_width) = self._det_input(image)
+        prediction = self.det.run(None, {self.det_input: tensor})[0][0, 0]
+        mask = (prediction > 0.3).astype(np.uint8)
+        contours, _ = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        scale_x = source_width / prediction.shape[1]
+        scale_y = source_height / prediction.shape[0]
+        boxes = []
+        for contour in contours[:1000]:
+            area = cv2.contourArea(contour)
+            if area < 3:
+                continue
+            score = cv2.mean(prediction, mask=cv2.drawContours(np.zeros_like(mask), [contour], -1, 1, -1))[0]
+            if score < 0.6:
+                continue
+            rectangle = cv2.minAreaRect(contour)
+            points = cv2.boxPoints(rectangle)
+            points[:, 0] *= scale_x
+            points[:, 1] *= scale_y
+            center = points.mean(axis=0)
+            points = center + (points - center) * 1.5
+            points[:, 0] = np.clip(points[:, 0], 0, source_width - 1)
+            points[:, 1] = np.clip(points[:, 1], 0, source_height - 1)
+            points = self._order_box(points)
+            if cv2.contourArea(points.astype(np.float32)) >= 3:
+                boxes.append(points)
+        boxes.sort(key=lambda box: (float(box[:, 1].min()), float(box[:, 0].min())))
+        return boxes
+
+    @staticmethod
+    def _crop(image: Any, box: Any) -> Any:
+        import cv2
+        import numpy as np
+
+        box = np.asarray(box, dtype=np.float32)
+        width = max(int(np.linalg.norm(box[1] - box[0])), int(np.linalg.norm(box[2] - box[3])), 8)
+        height = max(int(np.linalg.norm(box[3] - box[0])), int(np.linalg.norm(box[2] - box[1])), 8)
+        target = np.array([[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]], dtype=np.float32)
+        return cv2.warpPerspective(image, cv2.getPerspectiveTransform(box, target), (width, height), borderMode=cv2.BORDER_REPLICATE)
+
+    def _recognize_crop(self, image: Any) -> str:
+        import cv2
+        import numpy as np
+
+        height, width = image.shape[:2]
+        target_width = max(48, min(320, int(round(width / max(height, 1) * 48))))
+        resized = cv2.resize(image, (target_width, 48), interpolation=cv2.INTER_LINEAR)
+        tensor = resized.astype(np.float32) / 255.0
+        tensor = (tensor - 0.5) / 0.5
+        prediction = self.rec.run(None, {self.rec_input: tensor.transpose(2, 0, 1)[None]})[0][0]
+        indices = prediction.argmax(axis=1)
+        result = []
+        previous = -1
+        for index in indices:
+            index = int(index)
+            if index != 0 and index != previous and index - 1 < len(self.characters):
+                result.append(self.characters[index - 1])
+            previous = index
+        return "".join(result)
+
+    def recognize_without_detection(self, image: Any) -> str:
+        return self._recognize_crop(__import__("numpy").asarray(image))
+
+    def __call__(self, image: Any) -> list[dict[str, str]]:
+        import numpy as np
+
+        source = np.asarray(image)
+        return [{"text": text} for text in (self._recognize_crop(self._crop(source, box)) for box in self._detect(source)) if text]
+
+
+def _ocr_engine():
+    global ONNX_OCR_ENGINE
+    if ONNX_OCR_ENGINE is None:
+        ONNX_OCR_ENGINE = OnnxOcr(BASE_DIR.parent / "ocr-models")
+    return ONNX_OCR_ENGINE
+
+
+def recognize_images(payload: dict[str, Any]) -> dict[str, list[dict[str, str]]]:
+    images = payload.get("images")
+    if not isinstance(images, list):
+        raise ValueError("OCR images must be a list")
+    items = []
+    for image in images:
+        if not isinstance(image, dict):
+            raise ValueError("OCR image entry must be an object")
+        result = recognize_image_text(image)
+        item = {"text": result["text"]}
+        if image.get("key") in {"enemyNotice", "selfNotice"}:
+            item["event"] = classify_replay_notice(result["text"])
+        items.append(item)
+    return {"items": items}
+
+
+def classify_image_samples(payload: dict[str, Any]) -> dict[str, Any]:
+    """Run the bundled RGB sprite classifier against one or more crops."""
+    global IMAGE_CLASSIFIER
+    import json as json_module
+    import numpy as np
+    import onnxruntime as ort
+    from PIL import Image
+
+    if IMAGE_CLASSIFIER is None:
+        model_path = CLASSIFIER_DIR / "model.onnx"
+        classes_path = CLASSIFIER_DIR / "classes.json"
+        with classes_path.open("r", encoding="utf-8") as file:
+            classes = json_module.load(file)
+        IMAGE_CLASSIFIER = (ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"]), classes)
+    session, classes = IMAGE_CLASSIFIER
+    images = payload.get("images")
+    if not isinstance(images, list):
+        raise ValueError("Classifier images must be a list")
+    results = []
+    for image in images:
+        _, encoded = str(image.get("imageDataUrl", "")).split(",", 1)
+        source = Image.open(io.BytesIO(base64.b64decode(encoded))).convert("RGBA")
+        source.thumbnail((72, 72), Image.Resampling.LANCZOS)
+        canvas = Image.new("RGBA", (72, 72), (0, 0, 0, 0))
+        canvas.alpha_composite(source, ((72 - source.width) // 2, (72 - source.height) // 2))
+        # Keep transparent pixels black while dropping alpha for the RGB model.
+        rgb_canvas = canvas.convert("RGB")
+        tensor = np.asarray(rgb_canvas, dtype=np.float32).transpose(2, 0, 1)[None] / 255.0
+        logits = session.run(["logits"], {"input": tensor})[0][0]
+        probabilities = np.exp(logits - np.max(logits))
+        probabilities /= probabilities.sum()
+        indices = np.argsort(probabilities)[::-1][:6]
+        results.append({
+            "label": classes[int(indices[0])],
+            "confidence": float(probabilities[int(indices[0])]),
+            "topK": [{"label": classes[int(index)], "confidence": float(probabilities[int(index)])} for index in indices],
+        })
+    return {"items": results}
+
+
+def _resolve_replay_skill(fragment: str) -> tuple[str, dict[str, Any] | None]:
+    """Resolve partial OCR text without turning ambiguous fragments into attacks."""
+    normalized = re.sub(r"[^\u4e00-\u9fffA-Za-z0-9]", "", fragment)
+    if not normalized:
+        return "", None
+    normalized = REPLAY_SKILL_ALIASES.get(normalized, normalized)
+    override = REPLAY_SKILL_OVERRIDES.get(normalized)
+    if override:
+        return normalized, override
+    from core.skill_finder import skill_dataset
+
+    exact = skill_dataset.find_skill(normalized)
+    if isinstance(exact, dict):
+        return normalized, exact
+
+    # A prefix/suffix often survives when the OCR detector truncates the notice.
+    # A short fragment is accepted only when it identifies one skill or all
+    # matching skills share the same attack type.
+    contained = [
+        name for name in [*skill_dataset.index, *REPLAY_SKILL_OVERRIDES]
+        if len(normalized) >= 2 and normalized in name
+    ]
+    if contained:
+        types = {
+            data.get("type") for name in contained
+            if isinstance((data := REPLAY_SKILL_OVERRIDES.get(name) or skill_dataset.find_skill(name)), dict)
+        }
+        attack_types = types & {"物攻", "魔攻"}
+        if len(contained) == 1 or (len(types) == 1 and len(attack_types) == 1):
+            name = min(contained, key=len)
+            return name, REPLAY_SKILL_OVERRIDES.get(name) or skill_dataset.find_skill(name)
+
+    # Handle one missing or mistaken glyph in a three-or-more-character skill.
+    if len(normalized) >= 3:
+        candidates = [
+            name for name in [*skill_dataset.index, *REPLAY_SKILL_OVERRIDES]
+            if abs(len(name) - len(normalized)) <= 2
+        ]
+        name = max(
+            candidates,
+            key=lambda candidate: difflib.SequenceMatcher(a=normalized, b=candidate).ratio(),
+            default=None,
+        )
+        if name and difflib.SequenceMatcher(a=normalized, b=name).ratio() >= 0.66:
+            return name, REPLAY_SKILL_OVERRIDES.get(name) or skill_dataset.find_skill(name)
+    return normalized, None
+
+
+def classify_replay_notice(text: str) -> dict[str, Any]:
+    notice_text = text or ""
+    compact = re.sub(r"\s+", "", notice_text)
+    if "召唤" in compact:
+        return {"kind": "summon"}
+    if "特性" in compact:
+        return {"kind": "trait"}
+
+    # OCR may omit the trailing "出" or insert a glyph between the two. Keep
+    # the use marker tolerant, then let the skill-library match decide whether
+    # this is actually an attacking skill.
+    matches = list(re.finditer(r"使.{0,2}?出|使出?", compact))
+    after_marker = compact[matches[-1].end():] if matches else compact
+    # A skill is delimited on the left by either a non-Chinese character or
+    # "使出了", and on the right by a non-Chinese character. This prevents the
+    # action marker from being joined into the skill name.
+    delimited_skills = re.findall(r"(?:使出了?|[^\u4e00-\u9fff])([\u4e00-\u9fff]{2,})(?=[^\u4e00-\u9fff]|$)", notice_text)
+    fragment = delimited_skills[-1] if delimited_skills else after_marker
+    fragment = re.sub(r"^了?(?:[★☆]\d+)?", "", fragment)
+    fragment = re.split(r"[！!。,.，]", fragment, maxsplit=1)[0].strip()
+    try:
+        skill, skill_data = _resolve_replay_skill(fragment)
+    except Exception:
+        skill, skill_data = fragment, None
+    if not matches and skill_data is None:
+        return {"kind": "none"}
+    return {
+        "kind": "skill",
+        "skill": skill,
+        "attack": bool(isinstance(skill_data, dict) and skill_data.get("type") in {"物攻", "魔攻"}),
+    }
+
+
+def ocr_worker() -> int:
+    for line in sys.stdin:
+        try:
+            with contextlib.redirect_stdout(sys.stderr):
+                payload = _payload_from_text(line)
+                result = recognize_images(payload)
+            _json_response({"ok": True, "data": result})
+        except Exception as exc:
+            _json_response({"ok": False, "error": str(exc)})
+    return 0
+
+
 def main() -> int:
     os.chdir(BASE_DIR)
     parser = argparse.ArgumentParser()
@@ -758,20 +1209,29 @@ def main() -> int:
             "list-traits",
             "list-burst-effects",
             "calculate-battle",
+            "calculate-quick-skills",
             "calculate-willpower",
+            "calculate-required-power",
             "apply-skill-buffs",
             "skill-trigger-info",
             "save-preset",
             "manage-preset",
             "save-picker-config",
+            "recognize-image-text",
+            "classify-image-samples",
+            "ocr-worker",
         ],
     )
     parser.add_argument("--payload", default="")
+    parser.add_argument("--payload-stdin", action="store_true")
     args = parser.parse_args()
+
+    if args.command == "ocr-worker":
+        return ocr_worker()
 
     try:
         with contextlib.redirect_stdout(sys.stderr):
-            payload_arg = _payload_from_text(args.payload)
+            payload_arg = _payload_from_text(sys.stdin.read() if args.payload_stdin else args.payload)
             if args.command == "summary":
                 payload = summary()
             elif args.command == "presets":
@@ -792,8 +1252,12 @@ def main() -> int:
                 payload = list_burst_effects()
             elif args.command == "calculate-battle":
                 payload = calculate_battle(payload_arg)
+            elif args.command == "calculate-quick-skills":
+                payload = calculate_quick_skills(payload_arg)
             elif args.command == "calculate-willpower":
                 payload = calculate_willpower(payload_arg)
+            elif args.command == "calculate-required-power":
+                payload = calculate_required_power(payload_arg)
             elif args.command == "apply-skill-buffs":
                 payload = apply_skill_buffs(payload_arg)
             elif args.command == "skill-trigger-info":
@@ -802,6 +1266,10 @@ def main() -> int:
                 payload = save_preset(payload_arg)
             elif args.command == "manage-preset":
                 payload = manage_preset(payload_arg)
+            elif args.command == "recognize-image-text":
+                payload = recognize_image_text(payload_arg)
+            elif args.command == "classify-image-samples":
+                payload = classify_image_samples(payload_arg)
             else:
                 payload = save_picker_config(payload_arg)
         _json_response({"ok": True, "data": payload})

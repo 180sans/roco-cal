@@ -8,6 +8,26 @@
   text-rendering: optimizeLegibility;
 }
 
+html,
+body,
+#root {
+  background: #eef2f5;
+}
+
+html.overlay-attached,
+html.overlay-attached body,
+html.overlay-attached #root {
+  background: transparent !important;
+  border: 0;
+  box-shadow: none;
+  height: 100%;
+  margin: 0;
+  outline: 0;
+  overflow: hidden;
+  padding: 0;
+  width: 100%;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -16,6 +36,19 @@ body {
   margin: 0;
   min-width: 0;
   min-height: 100vh;
+}
+
+.app-error-boundary {
+  display: grid;
+  gap: 10px;
+  margin: 24px auto;
+  max-width: 520px;
+  padding: 16px;
+}
+
+.app-error-boundary code {
+  color: #9c2f27;
+  overflow-wrap: anywhere;
 }
 
 button,
@@ -78,6 +111,188 @@ select {
   width: 100%;
 }
 
+.app-shell.overlay-attached {
+  background: transparent !important;
+  border: 0;
+  box-shadow: none;
+  overflow: hidden;
+  outline: 0;
+  padding: 0;
+  scrollbar-gutter: auto;
+}
+
+.overlay-attached .battle-page,
+.overlay-attached .team-layout {
+  background: transparent !important;
+  border: 0;
+  box-shadow: none;
+  outline: 0;
+}
+
+.overlay-attached .battle-page.plugin-mode,
+.overlay-attached .team-layout {
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
+.overlay-attached .team-layout {
+  inset: 0;
+  position: fixed;
+}
+
+.overlay-attached .team-layout-actions {
+  left: 8px;
+  right: 8px;
+  position: fixed;
+  top: 44px;
+  z-index: 25;
+}
+
+.overlay-attached .app-header {
+  align-items: center;
+  background: rgba(18, 24, 31, 0.74);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  justify-content: space-between;
+  left: 0;
+  margin: 0;
+  min-height: 40px;
+  padding: 4px 8px;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 30;
+}
+
+.overlay-attached .app-header .tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.overlay-attached .app-header .tabs button {
+  height: 26px;
+  padding: 0 8px;
+}
+
+.overlay-attached .app-header .weather-panel {
+  display: none;
+}
+
+.overlay-attached .overlay-header-toggle {
+  left: auto;
+  position: static;
+  top: auto;
+  transform: none;
+}
+
+.overlay-attached .team-layout-actions {
+  align-items: flex-start;
+  background: rgba(18, 24, 31, 0.74);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #fff;
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+}
+
+.overlay-attached .team-layout-actions-main,
+.overlay-attached .team-layout-actions-more-grid {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.overlay-attached .team-layout-actions-more {
+  min-width: 0;
+}
+
+.overlay-attached .team-layout-actions-more summary {
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  list-style: none;
+  user-select: none;
+}
+
+.overlay-attached .team-layout-actions-more summary::-webkit-details-marker {
+  display: none;
+}
+
+.overlay-attached .team-layout-actions-more-grid {
+  margin-top: 6px;
+}
+
+.overlay-attached .team-layout-actions :is(button, input, select, summary, label, span) {
+  color: inherit;
+}
+
+.overlay-attached .battle-page.plugin-mode {
+  inset: 0;
+  position: fixed;
+}
+
+body:has(.battle-page.mixed-active) .app-header,
+.battle-page.mixed-active .team-layout-actions {
+  display: none;
+}
+
+/* 沉浸态使用统一淡黑底和白字，兼顾可读性与游戏画面。 */
+.battle-page.immersive-mode .team-layout > .roster,
+.battle-page.immersive-mode .team-layout > .team-bonus-toolbar,
+.battle-page.immersive-mode .team-layout > .team-buff-panel,
+.battle-page.immersive-mode .team-layout > .team-weather,
+.battle-page.immersive-mode .team-action-floating,
+.battle-page.immersive-mode .floating-team-panel,
+.battle-page.immersive-mode .skill-card-floating {
+  background: rgba(0, 0, 0, 0.36) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: none;
+}
+
+.battle-page.immersive-mode .floating-team-panel .trait-summary-button.compact {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+
+.battle-page.immersive-mode .floating-team-panel .trait-summary-button strong,
+.battle-page.immersive-mode .floating-team-panel .trait-summary-button span {
+  color: #fff;
+}
+
+.battle-page.immersive-mode .team-layout > .roster :is(h2, h3, p, strong, summary, label, .field-label, .ui-field-title, .muted),
+.battle-page.immersive-mode .team-layout > .team-bonus-toolbar :is(h2, h3, p, strong, summary, label, .field-label, .ui-field-title, .muted),
+.battle-page.immersive-mode .team-layout > .team-buff-panel :is(h2, h3, p, strong, summary, label, .field-label, .ui-field-title, .muted),
+.battle-page.immersive-mode .team-layout > .team-weather :is(h2, h3, p, strong, summary, label, .field-label, .ui-field-title, .muted),
+.battle-page.immersive-mode .floating-team-panel :is(h2, h3, p, strong, summary, label, .field-label, .ui-field-title, .muted),
+.battle-page.immersive-mode .skill-card-floating :is(h2, h3, p, strong, summary, label, .field-label, .ui-field-title, .muted) {
+  color: #fff;
+}
+
+/* 具有独立边框的内容卡片改用浅色层，和外层深色面板形成清晰层级。 */
+.battle-page.immersive-mode .roster .slot,
+.battle-page.immersive-mode .floating-team-panel .team-slot-section,
+.battle-page.immersive-mode .floating-team-panel .team-slot-section .trait-summary-button,
+.battle-page.immersive-mode .skill-card-floating .team-skill-card {
+  background: rgba(255, 255, 255, 0.72) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  color: #17212b;
+}
+
+.battle-page.immersive-mode .roster .slot :is(strong, span, p, .field-label, .ui-field-title),
+.battle-page.immersive-mode .floating-team-panel .team-slot-section :is(strong, span, p, label, .field-label, .ui-field-title, .muted),
+.battle-page.immersive-mode .skill-card-floating .team-skill-card :is(strong, span, p, label, .field-label, .ui-field-title, .muted) {
+  color: #17212b;
+}
+
 .preset-shell {
   overflow: auto;
 }
@@ -89,6 +304,34 @@ select {
   margin-bottom: 12px;
   min-height: 42px;
   position: relative;
+}
+
+.app-header.overlay-header {
+  cursor: grab;
+  user-select: none;
+}
+
+.app-header.overlay-header:active {
+  cursor: grabbing;
+}
+
+.app-header.overlay-header button,
+.app-header.overlay-header input,
+.app-header.overlay-header select {
+  cursor: pointer;
+}
+
+.overlay-toggle.active {
+  background: #b44b28;
+  border-color: #8e381e;
+  color: #fff;
+}
+
+.overlay-header-toggle {
+  left: 124px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .app-header .weather-panel {
@@ -140,8 +383,389 @@ select {
   padding-bottom: 0;
 }
 
+.team-layout-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 30px;
+}
+
+.team-layout-actions-main {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.team-layout-actions-more {
+  min-width: 0;
+}
+
+.team-layout-actions-more summary {
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.team-layout-actions-more summary::-webkit-details-marker {
+  display: none;
+}
+
+.team-layout-actions-more-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.team-layout-actions span {
+  color: #3d7758;
+  font-size: 12px;
+}
+
+.overlay-target-input {
+  align-items: center;
+  display: inline-flex;
+  gap: 5px;
+}
+
+.overlay-target-input span {
+  color: #526374;
+  white-space: nowrap;
+}
+
+.overlay-target-input input {
+  font-family: Consolas, "Courier New", monospace;
+  width: 118px;
+}
+
 .battle-view[hidden] {
   display: none;
+}
+
+.replay-page {
+  margin: 0;
+  max-width: 1360px;
+}
+
+.replay-header,
+.replay-events header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.replay-header {
+  margin-bottom: 12px;
+}
+
+.replay-header h2,
+.replay-sidebar h3,
+.replay-events h3 {
+  font-size: 16px;
+  margin: 0;
+}
+
+.replay-header p,
+.replay-sidebar p,
+.replay-events > p {
+  color: #667789;
+  font-size: 12px;
+  margin: 5px 0 0;
+}
+
+.replay-file-button {
+  align-items: center;
+  background: #246b58;
+  border: 1px solid #1e5b4b;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 700;
+  height: 30px;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
+.replay-file-button input {
+  display: none;
+}
+
+.replay-layout {
+  align-items: start;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(620px, 1fr) 270px;
+}
+
+.replay-workspace,
+.replay-sidebar section,
+.replay-events {
+  background: #fff;
+  border: 1px solid #d8e0e8;
+  border-radius: 8px;
+}
+
+.video-stage {
+  aspect-ratio: 16 / 9;
+  background: #18232c;
+  overflow: hidden;
+  position: relative;
+  user-select: none;
+}
+
+.video-stage video {
+  display: block;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  width: 100%;
+}
+
+.video-empty {
+  align-items: center;
+  color: #b6c4cf;
+  display: flex;
+  font-size: 13px;
+  height: 100%;
+  justify-content: center;
+}
+
+.roi {
+  background: rgba(43, 127, 213, 0.14);
+  border: 2px solid #75b1ed;
+  border-radius: 2px;
+  cursor: grab;
+  height: auto;
+  padding: 0;
+  position: absolute;
+}
+
+.roi.active {
+  background: rgba(36, 107, 88, 0.2);
+  border-color: #42c397;
+}
+
+.roi span {
+  background: #1f536f;
+  color: #fff;
+  font-size: 11px;
+  left: -2px;
+  line-height: 18px;
+  padding: 0 4px;
+  position: absolute;
+  top: -20px;
+  white-space: nowrap;
+}
+
+.roi.active span {
+  background: #246b58;
+}
+
+.replay-controls {
+  align-items: center;
+  border-top: 1px solid #d8e0e8;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+}
+
+.replay-progress {
+  align-items: center;
+  border-top: 1px solid #edf1f4;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  padding: 0 10px 9px;
+}
+
+.replay-progress span {
+  color: #667789;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.replay-progress input,
+.region-size-control input {
+  accent-color: #246b58;
+  cursor: pointer;
+  height: 18px;
+  padding: 0;
+  width: 100%;
+}
+
+.replay-controls button.active,
+.replay-sidebar button.active {
+  background: #246b58;
+  border-color: #1e5b4b;
+  color: #fff;
+}
+
+.replay-controls span {
+  color: #667789;
+  font-size: 12px;
+  margin-left: auto;
+  max-width: 230px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.replay-sidebar {
+  display: grid;
+  gap: 10px;
+}
+
+.replay-sidebar section {
+  padding: 10px;
+}
+
+.replay-sidebar section:first-child {
+  display: grid;
+  gap: 6px;
+}
+
+.replay-flow dl {
+  margin: 0;
+}
+
+.replay-flow dl div {
+  align-items: start;
+  border-top: 1px solid #edf1f4;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 46px minmax(0, 1fr);
+  padding: 6px 0;
+}
+
+.replay-flow dt,
+.replay-flow dd {
+  font-size: 12px;
+  margin: 0;
+}
+
+.replay-flow dt {
+  color: #667789;
+}
+
+.replay-flow dd {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.region-size-control {
+  color: #526374;
+  display: grid;
+  font-size: 12px;
+  gap: 2px;
+  margin-top: 3px;
+}
+
+.replay-settings-actions {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 4px;
+}
+
+.replay-sidebar h3 {
+  margin-bottom: 8px;
+}
+
+.replay-sidebar dl {
+  margin: 0;
+}
+
+.replay-sidebar dl div {
+  border-top: 1px solid #edf1f4;
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+
+.replay-sidebar dt,
+.replay-sidebar dd {
+  font-size: 12px;
+  margin: 0;
+}
+
+.replay-sidebar dt {
+  color: #667789;
+}
+
+.replay-sidebar dd {
+  font-weight: 700;
+}
+
+.ocr-debug {
+  border-top: 1px solid #edf1f4;
+  display: grid;
+  font-size: 12px;
+  gap: 4px;
+  margin-top: 6px;
+  padding-top: 7px;
+}
+
+.ocr-debug code {
+  background: #f4f7f9;
+  border: 1px solid #d8e0e8;
+  border-radius: 4px;
+  display: block;
+  min-height: 24px;
+  overflow-wrap: anywhere;
+  padding: 4px 5px;
+}
+
+.ocr-sample-panel {
+  display: grid;
+  gap: 7px;
+}
+
+.ocr-sample-panel input {
+  width: 100%;
+}
+
+.ocr-sample-panel button {
+  justify-self: start;
+}
+
+.sample-message {
+  overflow-wrap: anywhere;
+}
+
+.replay-events {
+  margin-top: 12px;
+  padding: 10px;
+}
+
+.replay-events ol {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.replay-events li {
+  align-items: center;
+  border-top: 1px solid #edf1f4;
+  display: grid;
+  font-size: 12px;
+  gap: 8px;
+  grid-template-columns: 42px 44px 1fr;
+  padding: 7px 0;
+}
+
+.replay-events time {
+  color: #667789;
+  font-variant-numeric: tabular-nums;
+}
+
+.replay-events strong {
+  color: #246b58;
 }
 
 .settings-page {
@@ -414,8 +1038,169 @@ select {
 .team-layout {
   --personality-pair-width: calc(var(--personality-width) + var(--personality-width) + 78px);
   --team-side-column-width: max(230px, calc(max(var(--team-pet-width), var(--skill-card-width)) + max(var(--team-pet-width), var(--skill-card-width)) + 21px), calc(var(--personality-pair-width) + 28px));
+  min-height: 700px;
+  min-width: 100%;
+  overflow: visible;
+  position: relative;
+  width: max(100%, calc(max(var(--team-side-column-width), var(--team-region-width)) * 2 + 8px));
+}
+
+.detection-calibration {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.detection-roi {
+  position: absolute;
   display: grid;
-  align-items: stretch;
+  place-items: center;
+  box-sizing: border-box;
+  border: 2px solid #d83b3b;
+  border-radius: 2px;
+  background: rgba(216, 59, 59, 0.08);
+  color: #8f1212;
+  font-size: 11px;
+  letter-spacing: 0;
+  cursor: move;
+  pointer-events: auto;
+  overflow: hidden;
+}
+
+.detection-roi.number { border-color: #1677b8; background: rgba(22, 119, 184, 0.08); color: #075887; }
+.detection-roi.hidden { pointer-events: none; visibility: hidden; }
+.detection-roi span { pointer-events: none; white-space: nowrap; text-shadow: 0 1px #fff; }
+.detection-toast {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1100;
+  max-width: min(80%, 420px);
+  padding: 10px 14px;
+  border: 1px solid rgba(20, 34, 48, 0.7);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  color: #142230;
+  font-size: 13px;
+  line-height: 1.35;
+  pointer-events: none;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.recognition-status-panel {
+  background: rgba(20, 27, 34, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+  color: #fff;
+  cursor: move;
+  display: grid;
+  gap: 3px;
+  min-width: 220px;
+  padding: 9px 11px;
+  position: fixed;
+  touch-action: none;
+  user-select: none;
+  z-index: 1200;
+}
+
+.recognition-status-panel strong { font-size: 13px; }
+.recognition-status-panel span { font-size: 12px; }
+.recognition-status-panel small { color: #a9d7ff; font-size: 11px; }
+.battle-health-readout {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 950;
+  display: flex;
+  gap: 8px;
+  padding: 4px 6px;
+  border: 1px solid rgba(30, 30, 30, 0.45);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #222;
+  font-size: 12px;
+}
+.battle-power-readout {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  z-index: 950;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(54px, auto));
+  gap: 6px;
+  padding: 4px 6px;
+  border: 1px solid rgba(30, 30, 30, 0.45);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #222;
+  font-size: 12px;
+}
+.draggable-readout { cursor: move; touch-action: none; user-select: none; }
+
+.team-layout > .roster,
+.team-layout > .team-bonus-toolbar,
+.team-layout > .team-buff-panel,
+.team-layout > .team-skill-panel {
+  position: absolute;
+  margin: 0;
+}
+
+.team-layout .team-left-roster { left: var(--left-roster-x); top: var(--left-roster-y); z-index: var(--left-roster-z); }
+.team-layout .team-right-roster { left: var(--right-roster-x); top: var(--right-roster-y); z-index: var(--right-roster-z); }
+.team-layout .team-left-bonus-toolbar { left: var(--left-bonus-tools-x); top: var(--left-bonus-tools-y); z-index: var(--left-bonus-tools-z); }
+.team-layout .team-right-bonus-toolbar { left: var(--right-bonus-tools-x); top: var(--right-bonus-tools-y); z-index: var(--right-bonus-tools-z); }
+.team-layout .team-left-buff { left: var(--left-buff-x); top: var(--left-buff-y); z-index: var(--left-buff-z); }
+.team-layout .team-right-buff { left: var(--right-buff-x); top: var(--right-buff-y); z-index: var(--right-buff-z); }
+.team-layout .team-left-skills { left: var(--left-skills-x); top: var(--left-skills-y); z-index: var(--left-skills-z); }
+.team-layout .team-right-skills { left: var(--right-skills-x); top: var(--right-skills-y); z-index: var(--right-skills-z); }
+.team-layout .team-weather { left: var(--weather-x); top: var(--weather-y); z-index: var(--weather-z); }
+
+.team-layout > .roster,
+.team-layout > .team-bonus-toolbar,
+.team-layout > .team-buff-panel,
+.team-layout > .team-skill-panel {
+  cursor: move;
+  touch-action: none;
+}
+
+.team-layout > .team-weather {
+  cursor: move;
+  margin: 0;
+  position: absolute;
+  touch-action: none;
+}
+
+.team-layout > .roster button,
+.team-layout > .roster input,
+.team-layout > .roster select,
+.team-layout > .team-bonus-toolbar button,
+.team-layout > .team-buff-panel button,
+.team-layout > .team-buff-panel input,
+.team-layout > .team-buff-panel select,
+.team-layout > .team-skill-panel button,
+.team-layout > .team-skill-panel input,
+.team-layout > .team-skill-panel select,
+.team-layout > .team-skill-panel summary {
+  cursor: pointer;
+}
+
+.mode-switch {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.mode-switch button.active {
+  background: #246b58;
+  border-color: #1e5b4b;
+  color: #fff;
+}
+
+.normal-mode .team-layout {
+  display: grid;
   gap: 8px;
   grid-template-areas:
     "left-roster right-roster"
@@ -423,8 +1208,319 @@ select {
     "left-buff right-buff"
     "left-skills right-skills";
   grid-template-columns: var(--team-side-column-width) var(--team-side-column-width);
-  grid-template-rows: auto auto auto;
   justify-content: center;
+  min-height: 0;
+  overflow: auto;
+  width: 100%;
+}
+
+.normal-mode .team-layout > .roster,
+.normal-mode .team-layout > .team-bonus-toolbar,
+.normal-mode .team-layout > .team-buff-panel,
+.normal-mode .team-layout > .team-skill-panel {
+  margin: 0;
+  position: static;
+}
+
+.normal-mode .team-layout > .team-weather {
+  display: none;
+}
+
+.normal-team-action {
+  height: auto;
+  position: fixed;
+  width: max-content;
+}
+
+.floating-team-panel {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid #d8e0e8;
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(20, 31, 43, 0.2);
+  max-height: min(360px, calc(100vh - 16px));
+  overflow: auto;
+  padding: 8px;
+  position: fixed;
+  width: min(310px, calc(100vw - 16px));
+  z-index: 15;
+}
+
+.floating-team-panel > header {
+  cursor: move;
+  margin-bottom: 6px;
+  user-select: none;
+}
+
+.plugin-mode .team-layout > .roster,
+.plugin-mode .team-layout > .team-bonus-toolbar,
+.plugin-mode .team-layout > .team-buff-panel,
+.plugin-mode .team-layout > .team-skill-panel,
+.plugin-mode .team-layout > .team-weather,
+.plugin-mode .team-action-floating,
+.plugin-mode .bonus-tool-floating,
+.plugin-mode .result-panel,
+.plugin-mode .required-power-panel {
+  backdrop-filter: none;
+}
+
+.plugin-mode .team-layout > .roster { background: rgba(247, 251, 255, 0.22); }
+.plugin-mode .team-layout > .team-buff-panel { background: rgba(248, 253, 249, 0.22); }
+.plugin-mode .team-layout > .team-skill-panel { background: rgba(255, 250, 243, 0.22); }
+.plugin-mode .team-layout > .team-bonus-toolbar { background: rgba(241, 243, 245, 0.18); }
+.plugin-mode .team-layout > .team-weather { background: rgba(246, 247, 251, 0.18); }
+.plugin-mode .team-action-floating,
+.plugin-mode .bonus-tool-floating,
+.plugin-mode .result-panel,
+.plugin-mode .required-power-panel { background: rgba(255, 255, 255, 0.22); }
+
+.plugin-mode .roster {
+  opacity: 0.82;
+  transition: opacity 140ms ease, transform 140ms ease;
+  width: 190px;
+}
+
+.plugin-mode .team-right-roster,
+.plugin-mode .team-right-bonus-toolbar,
+.plugin-mode .team-right-buff {
+  border-color: rgba(224, 133, 142, 0.86);
+}
+
+.plugin-mode .team-left-roster,
+.plugin-mode .team-left-bonus-toolbar,
+.plugin-mode .team-left-buff {
+  border-color: rgba(111, 173, 222, 0.86);
+}
+
+.plugin-mode [class*="team-right-skill-"] .team-skill-card {
+  border-color: rgba(224, 133, 142, 0.86);
+}
+
+.plugin-mode [class*="team-left-skill-"] .team-skill-card {
+  border-color: rgba(111, 173, 222, 0.86);
+}
+
+.plugin-mode .roster .slot-grid {
+  grid-template-columns: 1fr;
+}
+
+.plugin-mode .roster:hover,
+.plugin-mode .roster:focus-within {
+  opacity: 1;
+}
+
+/* 统一浮层布局只保留控件本体，避免容器和内容卡片重复占据游戏画面。 */
+.plugin-mode .floating-team-panel {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 28px;
+  min-width: 72px;
+  overflow: visible;
+  padding: 0;
+  resize: none;
+}
+
+.plugin-mode .team-layout > .team-left-roster { height: var(--left-roster-height); width: var(--left-roster-width); }
+.plugin-mode .team-layout > .team-right-roster { height: var(--right-roster-height); width: var(--right-roster-width); }
+.plugin-mode .team-layout > .team-left-bonus-toolbar { height: var(--left-bonus-height); width: var(--left-bonus-width); }
+.plugin-mode .team-layout > .team-right-bonus-toolbar { height: var(--right-bonus-height); width: var(--right-bonus-width); }
+.plugin-mode .team-layout > .team-left-buff { height: var(--left-buff-height); width: var(--left-buff-width); }
+.plugin-mode .team-layout > .team-right-buff { height: var(--right-buff-height); width: var(--right-buff-width); }
+.plugin-mode .team-layout > .team-weather { height: var(--weather-height); width: var(--weather-width); }
+
+.plugin-mode [class*="team-left-"]:hover {
+  outline: 1px solid rgba(111, 173, 222, 0.92);
+  outline-offset: 1px;
+}
+
+.plugin-mode [class*="team-right-"]:hover {
+  outline: 1px solid rgba(224, 133, 142, 0.92);
+  outline-offset: 1px;
+}
+
+.plugin-mode .team-layout > [class*="team-left-"],
+.plugin-mode .floating-team-panel[class*="team-left-"],
+.plugin-mode [class*="team-left-skill-"] .team-skill-card {
+  border-color: transparent !important;
+}
+
+.plugin-mode .team-layout > [class*="team-right-"],
+.plugin-mode .floating-team-panel[class*="team-right-"],
+.plugin-mode [class*="team-right-skill-"] .team-skill-card {
+  border-color: transparent !important;
+}
+
+.plugin-mode [class*="team-left-skill-"]:hover .team-skill-card {
+  border-color: rgba(111, 173, 222, 0.9) !important;
+}
+
+.plugin-mode [class*="team-right-skill-"]:hover .team-skill-card {
+  border-color: rgba(224, 133, 142, 0.9) !important;
+}
+
+.plugin-mode .floating-team-panel .team-slot-section {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+.plugin-mode .floating-team-panel .trait-summary-button.compact {
+  background: rgba(255, 255, 255, 0.3);
+  height: 23px;
+  margin-bottom: 3px;
+  padding: 2px 4px;
+}
+
+.plugin-mode .floating-team-panel .trait-summary-button strong,
+.plugin-mode .floating-team-panel .trait-summary-button span,
+.plugin-mode .floating-team-panel .trait-control-grid,
+.plugin-mode .floating-team-panel .trait-control-grid .field-label,
+.plugin-mode .floating-team-panel .trait-control-grid .check-row,
+.plugin-mode .floating-team-panel .trait-control-grid .num-input,
+.plugin-mode .floating-team-panel .slot-evolution-control .field-label,
+.plugin-mode .floating-team-panel .slot-evolution-control select,
+.plugin-mode .floating-team-panel .slot-evolution-control .num-input,
+.plugin-mode .floating-team-panel .compact-button {
+  font-size: 10px;
+}
+
+.plugin-mode .floating-team-panel .trait-control-grid,
+.plugin-mode .floating-team-panel .trait-expanded-content {
+  gap: 3px;
+}
+
+.plugin-mode .floating-team-panel .trait-trigger-button,
+.plugin-mode .floating-team-panel .trait-select-button,
+.plugin-mode .floating-team-panel .trait-reset-button,
+.plugin-mode .floating-team-panel .evolution-reset-button {
+  height: 21px;
+}
+
+.plugin-mode .floating-team-panel .slot-evolution-row {
+  gap: 3px;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+}
+
+.plugin-mode .floating-team-panel .slot-evolution-control {
+  gap: 3px;
+}
+
+.plugin-mode .floating-team-panel .slot-devolution-control .number-input-control {
+  width: 48px;
+}
+
+.plugin-mode .floating-team-panel .slot-devolution-control .num-input,
+.plugin-mode .floating-team-panel .slot-mega-control select {
+  height: 22px;
+}
+
+.plugin-mode .floating-team-panel .slot-mega-control select {
+  width: 58px;
+}
+
+.plugin-mode .speed-line {
+  background: #fff;
+  border: 1px solid #687686;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(20, 31, 43, 0.18);
+  box-sizing: border-box;
+  cursor: move;
+  padding: 6px 8px;
+  z-index: 16;
+}
+
+.plugin-mode .speed-line,
+.plugin-mode .speed-line :is(strong, span, div) {
+  color: #111;
+}
+
+.speed-line-title {
+  color: #28323c;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.speed-line-sides {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.speed-line-sides > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 5px;
+  min-width: 0;
+}
+
+.speed-line-sides strong,
+.speed-line-sides span {
+  font-size: 11px;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.speed-line-sides strong {
+  flex-basis: 100%;
+}
+
+.slot-cell {
+  position: relative;
+}
+
+.plugin-mode .slot-iv-popover {
+  background: #fff;
+  border: 1px solid #687686;
+  border-radius: 6px;
+  box-shadow: 0 8px 20px rgba(20, 31, 43, 0.22);
+  left: calc(100% + 6px);
+  padding: 6px;
+  position: absolute;
+  top: 0;
+  width: 244px;
+  z-index: 40;
+}
+
+.plugin-mode .slot-iv-popover :is(summary, label, span, .ui-field-title) {
+  color: #111;
+}
+
+.plugin-mode .team-right-roster .slot-iv-popover {
+  left: auto;
+  right: calc(100% + 6px);
+}
+
+.plugin-mode .slot-iv-popover .team-iv-details {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.plugin-mode .slot-iv-popover .team-iv-details > summary {
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+
+.plugin-mode .slot-iv-popover .iv-editor-content {
+  display: grid;
+  gap: 5px;
+}
+
+.plugin-mode .slot-iv-popover .iv-grid {
+  gap: 3px;
+}
+
+.plugin-mode .slot-iv-popover .iv-grid label,
+.plugin-mode .slot-iv-popover .personality-row {
+  font-size: 10px;
+}
+
+body:has(.plugin-mode) .app-header .weather-panel {
+  display: none;
 }
 
 .team-toolbar {
@@ -441,12 +1537,12 @@ select {
   box-shadow: 0 12px 32px rgba(20, 31, 43, 0.2);
   cursor: move;
   height: var(--team-action-frame-height);
-  overflow: auto;
+  overflow: visible;
   padding: 6px;
   position: fixed;
   touch-action: none;
   user-select: none;
-  width: var(--team-action-frame-width);
+  width: max(420px, var(--team-action-frame-width));
   z-index: 16;
 }
 
@@ -467,12 +1563,12 @@ select {
 }
 
 .team-action-floating .calc-button {
-  flex: 0 0 var(--calc-button-width);
+  flex: 0 0 52px;
   font-size: var(--calc-button-font-size);
   height: var(--calc-button-height);
   min-width: 0;
   padding: 0 6px;
-  width: var(--calc-button-width);
+  width: 52px;
 }
 
 .team-action-floating .buff-button {
@@ -556,6 +1652,99 @@ select {
   border-color: #e7c38a;
   box-shadow: inset 0 0 0 1px #f5e4c8;
 }
+
+/* 统一浮层布局用边框而非阵营文字区分两侧；此处置于通用面板规则之后以确保生效。 */
+.plugin-mode .team-layout > .team-right-roster,
+.plugin-mode .team-layout > .team-right-bonus-toolbar,
+.plugin-mode .team-layout > .team-right-buff {
+  border-color: rgba(224, 133, 142, 0.9);
+}
+
+.plugin-mode .team-layout > .team-left-roster,
+.plugin-mode .team-layout > .team-left-bonus-toolbar,
+.plugin-mode .team-layout > .team-left-buff {
+  border-color: rgba(111, 173, 222, 0.9);
+}
+
+.plugin-mode .team-layout > .roster,
+.plugin-mode .team-layout > .team-bonus-toolbar,
+.plugin-mode .team-layout > .team-buff-panel,
+.plugin-mode .team-layout > .team-weather,
+.plugin-mode .team-action-floating {
+  min-height: 30px;
+  min-width: 72px;
+  overflow: visible;
+  resize: none;
+}
+
+/* 无标题浮层保留顶部 6px 的拖动热区，不增加额外文字或外框。 */
+.plugin-mode .team-layout > .roster::before,
+.plugin-mode .team-layout > .team-bonus-toolbar::before,
+.plugin-mode .team-layout > .team-buff-panel::before,
+.plugin-mode .team-layout > .team-weather::before,
+.plugin-mode .team-action-floating::before,
+.plugin-mode .floating-team-panel::before,
+.plugin-mode .skill-card-floating::before {
+  content: "";
+  cursor: move;
+  height: 6px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 4;
+}
+
+.plugin-drag-zone {
+  cursor: move;
+  height: 8px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 6;
+}
+
+.plugin-resize-edge {
+  position: absolute;
+  z-index: 8;
+}
+
+.plugin-resize-edge.top,
+.plugin-resize-edge.bottom {
+  height: 6px;
+  left: 0;
+  right: 0;
+}
+
+.plugin-resize-edge.top {
+  cursor: ns-resize;
+  top: -3px;
+}
+
+.plugin-resize-edge.bottom {
+  bottom: -3px;
+  cursor: ns-resize;
+}
+
+.plugin-resize-edge.left,
+.plugin-resize-edge.right {
+  bottom: 0;
+  top: 0;
+  width: 6px;
+}
+
+.plugin-resize-edge.left {
+  cursor: ew-resize;
+  left: -3px;
+}
+
+.plugin-resize-edge.right {
+  cursor: ew-resize;
+  right: -3px;
+}
+
+/* 保留右下角拖拽缩放，隐藏 WebView 默认绘制的系统图标。 */
 
 .roster h2,
 .team-skill-panel h2,
@@ -658,6 +1847,23 @@ select {
 .bonus-tool-button.marks { font-size: var(--marks-button-font-size); height: var(--marks-button-height); width: var(--marks-button-width); }
 .bonus-tool-button.thunderstorm { font-size: var(--thunderstorm-button-font-size); height: var(--thunderstorm-button-height); width: var(--thunderstorm-button-width); }
 .bonus-tool-button.willpower { font-size: var(--dedication-button-font-size); height: var(--dedication-button-height); width: var(--dedication-button-width); }
+.team-action-floating .required-power-input { flex: 0 0 64px; font-size: 12px; height: var(--calc-button-height); min-width: 0; width: 64px; }
+.required-power-panel {
+  background: #fff;
+  border: 1px solid #d8e0e8;
+  border-radius: 8px;
+  box-shadow: 0 18px 56px rgba(20, 31, 43, 0.24);
+  padding: 10px;
+  position: fixed;
+  width: min(390px, calc(100vw - 32px));
+  z-index: 18;
+}
+.required-power-panel header { align-items: flex-start; cursor: move; display: flex; justify-content: space-between; user-select: none; }
+.required-power-panel header span { color: #536474; display: block; font-size: 11px; margin-top: 4px; }
+.required-power-table { display: grid; grid-template-columns: minmax(120px, 1.3fr) repeat(2, minmax(76px, 1fr)); margin-top: 8px; }
+.required-power-table > div { border-bottom: 1px solid #d8e0e8; border-right: 1px solid #d8e0e8; font-size: 12px; padding: 7px; }
+.required-power-table > div:nth-child(3n + 1) { border-left: 1px solid #d8e0e8; }
+.required-power-table > div:nth-child(-n + 3) { background: #edf5f0; border-top: 1px solid #d8e0e8; font-weight: 700; }
 
 .team-bonus-toolbar button.active {
   background: #23785e;
@@ -839,6 +2045,31 @@ select {
   font-weight: 700;
   justify-content: space-between;
   list-style: none;
+}
+
+.team-buff-summary-title {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.buff-summary-values {
+  color: #257154;
+  display: block;
+  font-size: 11px;
+  line-height: 1.35;
+  margin: 3px 0 0 20px;
+  overflow-wrap: anywhere;
+}
+
+.team-region-drag-handle {
+  color: #718396;
+  cursor: move;
+  font-size: 11px;
+  letter-spacing: 0;
+  line-height: 1;
+  padding: 3px 2px;
+  user-select: none;
 }
 
 .team-iv-details summary {
@@ -1046,6 +2277,161 @@ select {
   font-size: var(--skill-card-font-size);
 }
 
+.team-skill-panel .team-skill-card {
+  gap: 4px;
+  min-height: max(var(--skill-card-height), 82px);
+}
+
+.plugin-mode .skill-card-floating {
+  background: transparent !important;
+  border: 0;
+  box-shadow: none;
+  cursor: move;
+  max-height: none;
+  min-height: 46px;
+  min-width: 128px;
+  overflow: visible;
+  padding: 0;
+  position: fixed;
+  resize: none;
+  z-index: 14;
+}
+
+.plugin-mode .skill-card-floating > h2 {
+  display: none;
+}
+
+.plugin-mode .skill-card-floating .skill-card-grid {
+  display: block;
+}
+
+.plugin-mode .skill-card-floating .team-skill-card {
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(182, 145, 83, 0.58);
+  flex-direction: row;
+  gap: 3px;
+  height: auto;
+  min-height: 30px;
+  padding: 4px;
+  width: 100%;
+}
+
+.plugin-mode .skill-card-floating .team-skill-card strong {
+  font-size: 13px;
+  line-height: 1.2;
+  width: 100%;
+}
+
+.plugin-mode .skill-card-floating .skill-card-actions {
+  gap: 2px;
+}
+
+.plugin-mode .skill-card-floating .team-skill-card .slot-action {
+  font-size: 9px;
+  height: 18px;
+  padding: 0 2px;
+}
+
+.plugin-skill-controls {
+  align-items: center;
+  border-top: 1px solid rgba(139, 153, 168, 0.48);
+  display: grid;
+  gap: 3px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 3px;
+  padding-top: 3px;
+}
+
+.plugin-skill-controls .skill-stack-control {
+  align-items: center;
+  display: inline-flex;
+  gap: 3px;
+  min-width: 0;
+}
+
+.plugin-skill-controls .field-label,
+.plugin-skill-controls .compact-button,
+.plugin-skill-controls .num-input,
+.plugin-skill-controls select {
+  background-color: rgba(255, 255, 255, 0.22);
+  font-size: 11px;
+}
+
+.plugin-skill-controls .compact-button,
+.plugin-skill-controls .num-input,
+.plugin-skill-controls select {
+  border-color: rgba(139, 153, 168, 0.52);
+  height: 22px;
+}
+
+.plugin-skill-controls .number-input-control {
+  width: 52px;
+}
+
+.quick-skill-result {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  left: calc(100% + 6px);
+  position: absolute;
+  top: 0;
+  width: max-content;
+}
+
+.quick-skill-result span {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: #17212b;
+  display: grid;
+  gap: 1px;
+  min-width: 42px;
+  padding: 3px 4px;
+  text-align: center;
+}
+
+.quick-skill-result-row {
+  display: flex;
+  gap: 4px;
+}
+
+.quick-skill-result b {
+  font-size: 12px;
+}
+
+.quick-skill-result small {
+  color: #384958;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.battle-page.immersive-mode .quick-skill-result :is(span, b) {
+  color: #17212b;
+}
+
+.battle-page.immersive-mode .quick-skill-result small {
+  color: #384958;
+}
+
+.skill-card-actions {
+  display: grid;
+  gap: 3px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: auto;
+  width: 100%;
+}
+
+.skill-card-runtime-actions {
+  margin-top: 0;
+}
+
+.team-skill-card .slot-action {
+  font-size: 11px;
+  height: 22px;
+  min-width: 0;
+  padding: 0 3px;
+  width: 100%;
+}
+
 .team-skill-panel .skill-card.selected {
   background: #fff2f2;
   border: 2px solid #d14b4b;
@@ -1076,6 +2462,19 @@ select {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.quick-skill-power {
+  color: #167a3f;
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.battle-page.immersive-mode .roster .slot.active,
+.plugin-mode .roster .slot.active {
+  background: rgba(255, 224, 224, 0.8) !important;
+  border-color: #d14b4b !important;
 }
 
 .team-skill-card .slot-action {
@@ -2390,7 +3789,8 @@ select {
 
 @media (max-width: 540px) {
   .team-layout,
-  .preset-manager-page {
+  .preset-manager-page,
+  .replay-layout {
     grid-template-columns: 1fr;
   }
 
@@ -2406,4 +3806,190 @@ select {
       "right-skills";
   }
 
+}
+
+/* Plugin mixed mode uses a consistent two-level contrast system. */
+.battle-page.immersive-mode.plugin-mode :is(
+  .team-layout > .roster,
+  .team-layout > .team-bonus-toolbar,
+  .team-layout > .team-buff-panel,
+  .team-layout > .team-skill-panel,
+  .team-layout > .team-weather,
+  .team-action-floating,
+  .bonus-tool-floating,
+  .result-panel,
+  .required-power-panel,
+  .floating-team-panel:not(.speed-line),
+  .skill-card-floating
+) {
+  background: rgba(0, 0, 0, 0.48) !important;
+  border-color: rgba(255, 255, 255, 0.38) !important;
+  color: #fff !important;
+}
+
+.battle-page.immersive-mode.plugin-mode :is(
+  .team-layout > .roster,
+  .team-layout > .team-bonus-toolbar,
+  .team-layout > .team-buff-panel,
+  .team-layout > .team-skill-panel,
+  .team-layout > .team-weather,
+  .team-action-floating,
+  .bonus-tool-floating,
+  .result-panel,
+  .required-power-panel,
+  .floating-team-panel:not(.speed-line),
+  .skill-card-floating
+) > :is(h2, h3, p, strong, summary, label, span, .field-label, .ui-field-title, .muted) {
+  color: #fff !important;
+}
+
+.battle-page.immersive-mode.plugin-mode :is(
+  .roster .slot,
+  .team-skill-card,
+  .floating-team-panel .team-slot-section,
+  .trait-summary-button,
+  .number-input-control,
+  button,
+  input,
+  select,
+  textarea
+) {
+  background: rgba(255, 255, 255, 0.76) !important;
+  border-color: rgba(255, 255, 255, 0.56) !important;
+  color: #111 !important;
+}
+
+.battle-page.immersive-mode.plugin-mode :is(
+  .roster .slot,
+  .team-skill-card,
+  .floating-team-panel .team-slot-section,
+  .trait-summary-button,
+  .number-input-control
+) :is(h2, h3, p, strong, summary, label, span, .field-label, .ui-field-title, .muted) {
+  color: #111 !important;
+}
+
+/* The speed line and IV popup are outer plugin panels, not inner frames. */
+.battle-page.immersive-mode.plugin-mode .speed-line,
+.battle-page.immersive-mode.plugin-mode .slot-iv-popover {
+  background: rgba(0, 0, 0, 0.48) !important;
+  border-color: rgba(255, 255, 255, 0.38) !important;
+  color: #fff !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .speed-line :is(div, strong, span),
+.battle-page.immersive-mode.plugin-mode .slot-iv-popover :is(details, summary, div, label, span, .ui-field-title) {
+  background: transparent !important;
+  color: #fff !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .slot-iv-popover :is(select, option, button, input, textarea) {
+  background: rgba(255, 255, 255, 0.76) !important;
+  border-color: rgba(255, 255, 255, 0.56) !important;
+  color: #111 !important;
+}
+
+/* IV labels are descriptions in the outer popup, not inner controls. */
+.battle-page.immersive-mode.plugin-mode .slot-iv-popover :is(
+  .team-iv-details,
+  .iv-editor-content,
+  .iv-grid > label,
+  .personality-row,
+  .personality-row .field-label,
+  .ui-field-title
+) {
+  background: transparent !important;
+  color: #fff !important;
+}
+
+/* Selection state takes precedence over the neutral inner-frame color. */
+.battle-page.immersive-mode.plugin-mode .roster .slot.active,
+.battle-page.immersive-mode.plugin-mode .team-skill-card.selected {
+  background: rgba(255, 224, 224, 0.8) !important;
+  border-color: #d14b4b !important;
+  color: #17212b !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .roster .slot.active :is(strong, span, p, label, .field-label, .ui-field-title),
+.battle-page.immersive-mode.plugin-mode .team-skill-card.selected :is(strong, span, p, label, .field-label, .ui-field-title) {
+  color: #17212b !important;
+}
+
+/* The result matrix uses black grid lines as data separators, including in mixed mode. */
+.battle-page.immersive-mode.plugin-mode .result-matrix {
+  border-color: #111 !important;
+}
+
+.battle-page.immersive-mode.plugin-mode :is(
+  .result-matrix-corner,
+  .result-matrix-header,
+  .result-matrix-row-label,
+  .result-matrix-cell
+) {
+  border-bottom-color: #111 !important;
+  border-right-color: #111 !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .result-matrix-edge-right {
+  border-right: 0 !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .result-matrix-edge-bottom {
+  border-bottom: 0 !important;
+}
+
+/* Pet and skill pickers use the same two-level contrast as plugin panels. */
+.battle-page.immersive-mode.plugin-mode .picker-modal {
+  background: rgba(0, 0, 0, 0.72) !important;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  color: #fff !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .picker-modal :is(
+  h2,
+  .field-label,
+  .ui-field-title,
+  .picker-hint
+) {
+  color: #fff !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .picker-modal :is(
+  button,
+  input,
+  select,
+  .compact-picker-card
+) {
+  background: rgba(255, 255, 255, 0.84) !important;
+  border-color: rgba(255, 255, 255, 0.62) !important;
+  color: #111 !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .picker-modal .compact-picker-card :is(strong, span, em) {
+  color: #111 !important;
+  opacity: 1;
+}
+
+.battle-page.immersive-mode.plugin-mode .picker-modal .segmented button.active,
+.battle-page.immersive-mode.plugin-mode .picker-modal .filter-toggle.active {
+  background: rgba(215, 235, 228, 0.96) !important;
+  border-color: #5f9c87 !important;
+  color: #123b2f !important;
+}
+
+/* Grid gaps provide stable black separators that button theme rules cannot override. */
+.battle-page.immersive-mode.plugin-mode .result-matrix {
+  background: #111 !important;
+  border: 1px solid #111 !important;
+  gap: 1px;
+  padding: 0;
+}
+
+.battle-page.immersive-mode.plugin-mode :is(
+  .result-matrix-corner,
+  .result-matrix-header,
+  .result-matrix-row-label,
+  .result-matrix-cell
+) {
+  border: 0 !important;
 }

@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
-import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
-import { Fragment, type CSSProperties, type PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from "react";
+import { listen } from "@tauri-apps/api/event";
+import { cursorPosition, getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
+import { Fragment, type CSSProperties, type PointerEvent as ReactPointerEvent, type PointerEventHandler as ReactPointerEventHandler, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { ReplayPage } from "./replay/ReplayPage";
 
 const STATS = ["hp", "atk", "mag", "def", "res", "spd"] as const;
 const STAT_LABEL: Record<(typeof STATS)[number], string> = {
@@ -24,12 +26,12 @@ const UI_TOKEN_DEFAULTS = {
   "skill-region-height": 154,
   "team-slot-count": 6,
   "team-skill-card-count": DEFAULT_SKILL_CARD_COUNT,
-  "team-action-frame-width": 300,
+  "team-action-frame-width": 420,
   "team-action-frame-height": 46,
   "direction-button-width": 34,
   "direction-button-height": 34,
   "direction-button-font-size": 20,
-  "calc-button-width": 84,
+  "calc-button-width": 56,
   "calc-button-height": 34,
   "calc-button-font-size": 12,
   "buff-button-width": 48,
@@ -394,6 +396,8 @@ type ApplySkillBuffsResult = { skill_name: string; combo_count: number; options:
 type SkillTriggerInfo = {
   skill_name: string;
   description: string;
+  has_damage: boolean;
+  has_buff: boolean;
   stackable: Array<{ index: number; label: string; max?: number }>;
   usage_mode_options: Array<{ index: number; label: string }>;
 };
@@ -447,13 +451,18 @@ type BattleResult = {
   atk_value: number;
   def_value: number;
   damage: number;
+  required_power?: number;
+  target_hp?: number;
   damage_info?: string | null;
   usage_results?: Array<{ effective_power: number; combo: number | null; damage: number }> | null;
   starfall?: { stacks: number; power: number; damage: number } | null;
   hp_results: Array<{ hp_label: string; hp: number; damage_percent: number }>;
 };
+type QuickSkillResult = { skillName: string; skillPower?: number | null; results: BattleResult[] };
 type WillpowerElementResult = { element: string; advantage: number; has_stab: boolean; results: BattleResult[] };
 type WillpowerResponse = { attack_type: "atk" | "mag"; elements: WillpowerElementResult[] };
+type RequiredPowerRow = { attack_type: "物攻" | "魔攻"; attacker_label: string; required_power: number };
+type RequiredPowerResponse = { target_hp: number; rows: RequiredPowerRow[] };
 
 type BattleContext = {
   attackerName: string;
@@ -655,15 +664,35 @@ function updateIv(iv: Record<string, number> | null, stat: string, value: string
   return Object.keys(next).length ? next : null;
 }
 
+const STAT_ALIASES: Record<string, string> = {
+  生命: "hp",
+  血量: "hp",
+  体力: "hp",
+  攻击: "atk",
+  物攻: "atk",
+  魔攻: "mag",
+  防御: "def",
+  物防: "def",
+  魔抗: "res",
+  魔防: "res",
+  速度: "spd",
+};
+
+function normalizeStat(value: string) {
+  const stat = value.trim();
+  return STAT_ALIASES[stat] || stat;
+}
+
 function parsePersonality(value: string | null) {
   if (!value) return { stat: "", amount: "" };
   const [stat, amount = ""] = value.split(":");
-  return { stat, amount };
+  return { stat: normalizeStat(stat), amount };
 }
 
 function buildPersonality(stat: string, amount: string) {
   if (!stat) return null;
-  return amount.trim() ? `${stat}:${amount.trim()}` : stat;
+  const normalized = normalizeStat(stat);
+  return amount.trim() ? `${normalized}:${amount.trim()}` : normalized;
 }
 
 function asError(err: unknown) {
@@ -841,6 +870,72 @@ function skillCardSlots(skills: string[], count = DEFAULT_SKILL_CARD_COUNT) {
 
 function FieldLabel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <label className={`field-label ${className}`.trim()}>{children}</label>;
+}
+
+type SpeedScenario = { label: "速度-" | "速度" | "速度+" | "速度++"; value: number };
+
+function personalityValue(value: string | null, stat: string, direction: 1 | -1) {
+  const parsed = parsePersonality(value);
+  if (parsed.stat !== stat) return null;
+  const amount = Number(parsed.amount);
+  return direction * (Number.isFinite(amount) && amount > 0 ? amount : direction > 0 ? 0.2 : 0.1);
+}
+
+function speedValue(raceValue: number, iv: number, personality: number | null) {
+  const level = 60;
+  const star = 5;
+  const effort = 10 * star;
+  const effectiveIv = iv + iv * star;
+  const base = Math.floor(level * (raceValue / 100) + 50 * (raceValue / 100) + 10 + 0.5)
+    + Math.floor(level * ((effectiveIv / 2) / 100) + 50 * ((effectiveIv / 2) / 100) + 0.5);
+  return Math.floor((base * (1 + (personality || 0))) + effort + 0.5);
+}
+
+function speedScenarios(value: UnitState, pets: Pet[]): SpeedScenario[] {
+  // display_name is a user-defined preset label; calculations must use the pet identity.
+  const petName = value.mega_form || value.name;
+  const pet = pets.find((item) => item.label === petName || item.name === petName || `${item.id}${item.name}` === petName);
+  if (!pet || typeof pet.spd !== "number") return [];
+  const configuredIv = value.iv?.spd;
+  const speedPersonality = personalityValue(value.personality_bouns, "spd", 1)
+    ?? personalityValue(value.personality_down, "spd", -1);
+  // A chosen personality that affects another stat still proves speed has no personality modifier.
+  const configuredPersonality = speedPersonality ?? (value.personality_bouns || value.personality_down ? 0 : null);
+  const defaults: Array<{ label: SpeedScenario["label"]; iv: number; personality: number | null }> = [
+    { label: "速度-", iv: 0, personality: -0.1 },
+    { label: "速度", iv: 0, personality: null },
+    { label: "速度+", iv: 10, personality: null },
+    { label: "速度++", iv: 10, personality: 0.2 },
+  ];
+  const matches = defaults
+    .filter((scenario) =>
+      (configuredIv === undefined || (scenario.iv > 0) === (configuredIv > 0))
+      && (configuredPersonality === null
+        || (configuredPersonality === 0 ? scenario.personality === null : scenario.personality !== null && (scenario.personality > 0) === (configuredPersonality > 0))),
+    )
+    .map((scenario) => ({
+      ...scenario,
+      iv: configuredIv ?? scenario.iv,
+      personality: configuredPersonality === null ? scenario.personality : configuredPersonality || null,
+    }));
+  const scenarios = matches.length ? matches : [{
+    label: configuredPersonality && configuredPersonality < 0 ? "速度-" : configuredIv && configuredPersonality ? "速度++" : configuredIv ? "速度+" : "速度",
+    iv: configuredIv ?? 0,
+    personality: configuredPersonality,
+  }];
+  return scenarios.map((scenario) => ({
+    label: scenario.label,
+    value: speedValue(pet.spd!, scenario.iv, scenario.personality),
+  }));
+}
+
+function PluginResizeEdges({ onPointerDown }: { onPointerDown?: ReactPointerEventHandler<HTMLDivElement> }) {
+  return <>
+    <div className="plugin-resize-edge top" onPointerDown={onPointerDown} />
+    <div className="plugin-resize-edge right" onPointerDown={onPointerDown} />
+    <div className="plugin-resize-edge bottom" onPointerDown={onPointerDown} />
+    <div className="plugin-resize-edge left" onPointerDown={onPointerDown} />
+  </>;
 }
 
 function NumberInput({
@@ -1255,26 +1350,41 @@ function PickerModal({
 }
 
 function TeamActionPanel({
+  pluginMode,
+  layout,
+  onLayoutChange,
   leftAttacks,
   onToggleDirection,
   onCalculate,
   onApplyBuff,
+  onResetBattle,
+  targetHp,
+  onTargetHpChange,
+  onCalculateRequiredPower,
   buffOptions,
   selectedBuffOption,
   onSelectBuffOption,
 }: {
+  pluginMode: boolean;
+  layout?: PluginOverlayLayout;
+  onLayoutChange?: (partial: Partial<PluginOverlayLayout>) => void;
   leftAttacks: boolean;
   onToggleDirection: () => void;
   onCalculate: () => void;
   onApplyBuff: () => void;
+  onResetBattle: () => void;
+  targetHp: number;
+  onTargetHpChange: (value: number) => void;
+  onCalculateRequiredPower: () => void;
   buffOptions: BuffOption[];
   selectedBuffOption: number;
   onSelectBuffOption: (index: number) => void;
 }) {
-  const [position, setPosition] = useState(() => ({
+  const [normalPosition, setNormalPosition] = useState(() => ({
     x: Math.max(8, Math.round(window.innerWidth / 2 - 150)),
     y: 76,
   }));
+  const position = pluginMode && layout ? layout : normalPosition;
   const dragRef = useRef<{ pointerX: number; pointerY: number; x: number; y: number } | null>(null);
   const panelRef = useRef<HTMLElement | null>(null);
 
@@ -1288,7 +1398,9 @@ function TeamActionPanel({
   }
 
   useEffect(() => {
-    const keepVisible = () => setPosition((current) => clampToViewport(current.x, current.y));
+    const keepVisible = () => {
+      if (!pluginMode) setNormalPosition((current) => clampToViewport(current.x, current.y));
+    };
     window.addEventListener("resize", keepVisible);
     const observer = new ResizeObserver(keepVisible);
     if (panelRef.current) observer.observe(panelRef.current);
@@ -1299,16 +1411,18 @@ function TeamActionPanel({
   }, []);
 
   function startDrag(event: ReactPointerEvent<HTMLElement>) {
-    if ((event.target as HTMLElement).closest("button, select")) return;
+    if ((event.target as HTMLElement).closest("button, select, input")) return;
     event.preventDefault();
     dragRef.current = { pointerX: event.clientX, pointerY: event.clientY, x: position.x, y: position.y };
     const move = (moveEvent: PointerEvent) => {
       const start = dragRef.current;
       if (!start) return;
-      setPosition(clampToViewport(
+      const next = clampToViewport(
         start.x + moveEvent.clientX - start.pointerX,
         start.y + moveEvent.clientY - start.pointerY,
-      ));
+      );
+      if (pluginMode) onLayoutChange?.(next);
+      else setNormalPosition(next);
     };
     const stop = () => {
       dragRef.current = null;
@@ -1320,12 +1434,16 @@ function TeamActionPanel({
   }
 
   return (
-    <section ref={panelRef} className="team-action-floating" style={{ left: position.x, top: position.y }} onPointerDown={startDrag}>
+    <section ref={panelRef} className={pluginMode ? "team-action-floating" : "team-action-floating normal-team-action"} data-overlay-control data-plugin-resizable={pluginMode || undefined} data-plugin-overlay-id={pluginMode ? "action" : undefined} style={{ left: position.x, top: position.y, width: pluginMode && layout ? layout.width : undefined, height: pluginMode && layout ? layout.height : undefined }} onPointerDown={startDrag}>
+      {pluginMode ? <PluginResizeEdges /> : null}
       <div className="team-action-buttons">
         <button className="direction-button" title="切换攻击方向" onClick={onToggleDirection}>
           {leftAttacks ? "→" : "←"}
         </button>
         <button className="calc-button" onClick={onCalculate}>计算</button>
+        <button className="calc-button" onClick={onResetBattle}>对局重置</button>
+        <input className="required-power-input" aria-label="我方血量" type="number" min="1" value={targetHp || ""} placeholder="我方血量" onChange={(event) => onTargetHpChange(Math.max(0, Number(event.target.value) || 0))} />
+        <button className="calc-button" onClick={onCalculateRequiredPower} disabled={!targetHp}>判死</button>
         <select
           className="buff-option-select"
           value={buffOptions.length ? selectedBuffOption : ""}
@@ -1340,6 +1458,186 @@ function TeamActionPanel({
   );
 }
 
+type TeamRegionId =
+  | "left-roster"
+  | "right-roster"
+  | "left-bonus-tools"
+  | "right-bonus-tools"
+  | "left-buff"
+  | "right-buff"
+  | "left-skills"
+  | "right-skills"
+  | "weather";
+
+type TeamRegionPosition = { x: number; y: number; zIndex: number; width?: number; height?: number };
+type TeamRegionPositions = Record<TeamRegionId, TeamRegionPosition>;
+type PluginOverlayLayout = { x: number; y: number; width: number; height: number };
+type PluginOverlayLayouts = Record<string, PluginOverlayLayout>;
+type DetectionReadoutLayouts = Record<"health" | "powers", { x: number; y: number }>;
+type DetectionGroup = "battleStart" | "battleLive";
+type NumericOcrMode = "power" | "enemy_health" | "self_health";
+type DetectionRegion = { x: number; y: number; width: number; height: number };
+type DetectionRegions = Record<string, DetectionRegion>;
+type CaptureClientArea = { x: number; y: number; width: number; height: number };
+type TargetCapture = { canvas: HTMLCanvasElement; targetClient: CaptureClientArea; overlayClient: CaptureClientArea };
+type RecognitionStatus = { label: string; detail: string; progress: string };
+const REPLAY_SETTINGS_KEY = "rocodatebase.replay.settings.v1";
+const BATTLE_START_IMAGE_KEYS = ["battleStartImage1", "battleStartImage2", "battleStartImage3", "battleStartImage4", "battleStartImage5", "battleStartImage6"] as const;
+const BATTLE_LIVE_IMAGE_KEYS = ["enemyImage", "selfImage"] as const;
+const BATTLE_LIVE_HEALTH_KEYS = ["enemyHealth", "selfHealth"] as const;
+const BATTLE_LIVE_NUMBER_KEYS = ["enemyHealth", "selfHealth", "skill1", "skill2", "skill3", "skill4"] as const;
+const DEFAULT_DETECTION_REGIONS: DetectionRegions = {
+  battleStartImage1: { x: 10, y: 10, width: 12, height: 18 }, battleStartImage2: { x: 24, y: 10, width: 12, height: 18 }, battleStartImage3: { x: 38, y: 10, width: 12, height: 18 },
+  battleStartImage4: { x: 52, y: 10, width: 12, height: 18 }, battleStartImage5: { x: 66, y: 10, width: 12, height: 18 }, battleStartImage6: { x: 80, y: 10, width: 12, height: 18 },
+  enemyImage: { x: 15, y: 15, width: 25, height: 35 }, selfImage: { x: 15, y: 50, width: 25, height: 35 },
+  enemyHealth: { x: 73, y: 12, width: 16, height: 7 }, selfHealth: { x: 8, y: 76, width: 16, height: 7 },
+  skill1: { x: 36, y: 20, width: 16, height: 8 }, skill2: { x: 36, y: 52, width: 16, height: 8 }, skill3: { x: 52, y: 20, width: 16, height: 8 }, skill4: { x: 52, y: 52, width: 16, height: 8 },
+};
+const detectionLabel = (key: string) => key.startsWith("battleStart") ? `敌方图像 ${Number(key.slice(-1))}` : ({ enemyImage: "敌方当前精灵", selfImage: "我方当前精灵", enemyHealth: "敌方血量", selfHealth: "我方血量", skill1: "技能1", skill2: "技能2", skill3: "技能3", skill4: "技能4" }[key] || key);
+
+function replayDetectionSizes() {
+  try {
+    const settings = JSON.parse(localStorage.getItem(REPLAY_SETTINGS_KEY) || "") as { regions?: Record<string, DetectionRegion> };
+    return settings.regions || {};
+  } catch { return {}; }
+}
+
+function withReplayDetectionSizes(regions: DetectionRegions): DetectionRegions {
+  const replayRegions = replayDetectionSizes();
+  const sourceForKey: Record<string, string> = {
+    ...Object.fromEntries(BATTLE_START_IMAGE_KEYS.map((key) => [key, "enemyImage"])),
+    enemyImage: "enemyImage", selfImage: "selfImage",
+    enemyHealth: "enemyHealth", selfHealth: "selfHealth",
+  };
+  return Object.fromEntries(Object.entries(regions).map(([key, region]) => {
+    const source = replayRegions[sourceForKey[key]];
+    return [key, source && Number.isFinite(source.width) && Number.isFinite(source.height)
+      ? { ...region, width: source.width, height: source.height }
+      : region];
+  })) as DetectionRegions;
+}
+
+function savedDetectionRegions(configs: PickerConfigs): DetectionRegions {
+  const saved = (configs.team_layout?.detection_regions as DetectionRegions | undefined) || {};
+  return {
+    // Replay dimensions are only defaults for a newly created detection box.
+    // Never apply them after loading saved positions/sizes.
+    ...withReplayDetectionSizes(DEFAULT_DETECTION_REGIONS),
+    ...saved,
+    ...(saved.skill1 ? {} : saved.enemyDamage ? { skill1: saved.enemyDamage } : {}),
+    ...(saved.skill2 ? {} : saved.selfDamage ? { skill2: saved.selfDamage } : {}),
+  };
+}
+
+function savedDetectionReadoutLayouts(configs: PickerConfigs): DetectionReadoutLayouts {
+  const saved = configs.team_layout?.detection_readouts as Partial<DetectionReadoutLayouts> | undefined;
+  const coordinate = (value: unknown) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+  return {
+    health: { x: coordinate(saved?.health?.x), y: coordinate(saved?.health?.y) },
+    powers: { x: coordinate(saved?.powers?.x), y: coordinate(saved?.powers?.y) },
+  };
+}
+const TEAM_REGION_IDS: TeamRegionId[] = [
+  "left-roster",
+  "right-roster",
+  "left-bonus-tools",
+  "right-bonus-tools",
+  "left-buff",
+  "right-buff",
+  "left-skills",
+  "right-skills",
+  "weather",
+];
+
+function initialTeamRegionPositions(regionWidth: number, regionHeight: number): TeamRegionPositions {
+  const rightX = regionWidth + 8;
+  const toolbarY = regionHeight + 8;
+  const buffY = toolbarY + 42;
+  const skillsY = buffY + 64;
+  return {
+    "left-roster": { x: 0, y: 0, zIndex: 1 },
+    "right-roster": { x: rightX, y: 0, zIndex: 1 },
+    "left-bonus-tools": { x: 0, y: toolbarY, zIndex: 1 },
+    "right-bonus-tools": { x: rightX, y: toolbarY, zIndex: 1 },
+    "left-buff": { x: 0, y: buffY, zIndex: 1 },
+    "right-buff": { x: rightX, y: buffY, zIndex: 1 },
+    "left-skills": { x: 0, y: skillsY, zIndex: 1 },
+    "right-skills": { x: rightX, y: skillsY, zIndex: 1 },
+    "weather": { x: rightX + regionWidth + 8, y: 0, zIndex: 2 },
+  };
+}
+
+function savedTeamRegionPositions(configs: PickerConfigs, regionWidth: number, regionHeight: number): TeamRegionPositions {
+  const defaults = initialTeamRegionPositions(regionWidth, regionHeight);
+  const saved = configs.team_layout?.regions;
+  if (!saved || typeof saved !== "object") return defaults;
+  const source = saved as Record<string, unknown>;
+  return TEAM_REGION_IDS.reduce((positions, id) => {
+    const item = source[id];
+    if (!item || typeof item !== "object") return positions;
+    const values = item as Record<string, unknown>;
+    const x = Number(values.x);
+    const y = Number(values.y);
+    const zIndex = Number(values.zIndex);
+    const width = Number(values.width);
+    const height = Number(values.height);
+    if (Number.isFinite(x) && Number.isFinite(y)) {
+      positions[id] = {
+        x: Math.max(0, x),
+        y: Math.max(0, y),
+        zIndex: Number.isFinite(zIndex) ? Math.max(1, zIndex) : positions[id].zIndex,
+        ...(Number.isFinite(width) ? { width: Math.max(72, width) } : {}),
+        ...(Number.isFinite(height) ? { height: Math.max(30, height) } : {}),
+      };
+    }
+    return positions;
+  }, { ...defaults });
+}
+
+function defaultPluginOverlayLayout(id: string): PluginOverlayLayout {
+  if (id === "action") {
+    return { x: Math.max(8, Math.round(window.innerWidth / 2 - 210)), y: 76, width: 420, height: 48 };
+  }
+  if (id === "recognition-status") {
+    return { x: 18, y: 18, width: 240, height: 70 };
+  }
+  if (id === "speed-line") {
+    return { x: Math.max(8, Math.round(window.innerWidth / 2 - 130)), y: 132, width: 260, height: 86 };
+  }
+  const isRight = id.includes("right-");
+  const isEvolution = id.includes("evolution");
+  const skillIndex = Number(id.match(/skill-(\d+)$/)?.[1] || 0);
+  return {
+    x: isRight ? 520 : 270,
+    y: id.includes("skill-") ? 120 + skillIndex * 88 : isEvolution ? 300 : 120,
+    width: id.includes("skill-") ? 112 : 154,
+    height: id.includes("skill-") ? 78 : 64,
+  };
+}
+
+function savedPluginOverlayLayouts(configs: PickerConfigs): PluginOverlayLayouts {
+  const saved = configs.team_layout?.overlays;
+  if (!saved || typeof saved !== "object") return {};
+  return Object.fromEntries(Object.entries(saved as Record<string, unknown>).flatMap(([id, item]) => {
+    if (!item || typeof item !== "object") return [];
+    const values = item as Record<string, unknown>;
+    const fallback = defaultPluginOverlayLayout(id);
+    const x = Number(values.x);
+    const y = Number(values.y);
+    const width = Number(values.width);
+    const height = Number(values.height);
+    return [[id, {
+      x: Number.isFinite(x) ? Math.max(0, x) : fallback.x,
+      y: Number.isFinite(y) ? Math.max(0, y) : fallback.y,
+      width: Number.isFinite(width) ? Math.max(72, width) : fallback.width,
+      height: Number.isFinite(height) ? Math.max(28, height) : fallback.height,
+    }]];
+  }));
+}
+
 function TeamBattlePage({
   presets,
   pets,
@@ -1347,8 +1645,11 @@ function TeamBattlePage({
   configs,
   burstEffects,
   weather,
+  onWeatherChange,
   onPresetsChanged,
   onConfigsChanged,
+  onOverlayAttachmentChange,
+  onDisplayModeChange,
 }: {
   presets: PresetGroup[];
   pets: Pet[];
@@ -1356,12 +1657,32 @@ function TeamBattlePage({
   configs: PickerConfigs;
   burstEffects: BurstEffectItem[];
   weather: (typeof WEATHER_OPTIONS)[number]["value"];
+  onWeatherChange: (weather: (typeof WEATHER_OPTIONS)[number]["value"]) => void;
   onPresetsChanged: (groups: PresetGroup[]) => void;
   onConfigsChanged: (configs: PickerConfigs) => void;
+  onOverlayAttachmentChange: (attached: boolean) => void;
+  onDisplayModeChange: (mode: "normal" | "plugin") => void;
 }) {
   const teamValues = uiTokenValues(configs);
   const teamSlotCount = teamValues["team-slot-count"];
   const teamSkillCardCount = teamValues["team-skill-card-count"];
+  const [regionPositions, setRegionPositions] = useState<TeamRegionPositions>(() =>
+    savedTeamRegionPositions(configs, teamValues["team-region-width"], teamValues["team-region-height"]),
+  );
+  const [overlayLayouts, setOverlayLayouts] = useState<PluginOverlayLayouts>(() => savedPluginOverlayLayouts(configs));
+  const [detectionRegions, setDetectionRegions] = useState<DetectionRegions>(() => savedDetectionRegions(configs));
+  const [detectionGroup, setDetectionGroup] = useState<DetectionGroup | null>(null);
+  const [detectionMessage, setDetectionMessage] = useState("");
+  const [detectionToast, setDetectionToast] = useState("");
+  const [ocrTestMode, setOcrTestMode] = useState(configs.team_layout?.ocr_test_mode === true);
+  const [detectedHealth, setDetectedHealth] = useState({ enemy: "-", self: "-" });
+  const [detectedSkillPowers, setDetectedSkillPowers] = useState(["-", "-", "-", "-"]);
+  const [detectionReadoutLayouts, setDetectionReadoutLayouts] = useState<DetectionReadoutLayouts>(() => savedDetectionReadoutLayouts(configs));
+  const [recognitionStatus, setRecognitionStatus] = useState<RecognitionStatus | null>(null);
+  const recognitionBusyRef = useRef(false);
+  const detectionRegionsRef = useRef(detectionRegions);
+  const detectionRoiRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const detectionReadoutLayoutsRef = useRef(detectionReadoutLayouts);
   const [leftSlots, setLeftSlots] = useState<UnitState[]>(() => Array.from({ length: teamSlotCount }, blankUnit));
   const [rightSlots, setRightSlots] = useState<UnitState[]>(() => Array.from({ length: teamSlotCount }, blankUnit));
   const [leftIndex, setLeftIndex] = useState(0);
@@ -1373,6 +1694,9 @@ function TeamBattlePage({
   const [leftMarkFields, setLeftMarkFields] = useState<MarkField[]>([]);
   const [rightMarkFields, setRightMarkFields] = useState<MarkField[]>([]);
   const [results, setResults] = useState<BattleResult[]>([]);
+  const [quickSkillResults, setQuickSkillResults] = useState<QuickSkillResult[] | null>(null);
+  const [targetHp, setTargetHp] = useState(0);
+  const [requiredPower, setRequiredPower] = useState<RequiredPowerResponse | null>(null);
   const [willpower, setWillpower] = useState<WillpowerResponse | null>(null);
   const [selectedWillpowerElement, setSelectedWillpowerElement] = useState<string | null>(null);
   const [battleContext, setBattleContext] = useState<BattleContext | null>(null);
@@ -1381,11 +1705,780 @@ function TeamBattlePage({
   const [selectedBuffOption, setSelectedBuffOption] = useState(0);
   const [bonusTool, setBonusTool] = useState<BonusTool | null>(null);
   const [bonusSide, setBonusSide] = useState<"left" | "right">("left");
+  const [layoutMessage, setLayoutMessage] = useState("");
+  const [targetHwnd, setTargetHwnd] = useState("");
+  const [targetStatus, setTargetStatus] = useState("");
+  const targetStatusTimerRef = useRef<number | undefined>(undefined);
+  const calculateQuickSkillsRef = useRef<() => void>(() => undefined);
+  const hideQuickSkillResultsRef = useRef<() => void>(() => undefined);
+  const [targetAttached, setTargetAttached] = useState(false);
+  const [mixedMode, setMixedMode] = useState(false);
+  const mixedModeTokenRef = useRef(0);
+  const [displayMode, setDisplayMode] = useState<"normal" | "plugin">(
+    configs.team_layout?.display_mode === "normal" ? "normal" : "plugin",
+  );
   const activeBuffUnit = leftAttacks ? leftSlots[leftIndex] : rightSlots[rightIndex];
   const activeBuffOpponent = leftAttacks ? rightSlots[rightIndex] : leftSlots[leftIndex];
   const activeBuffOtherBonuses = leftAttacks ? leftOtherBonuses : rightOtherBonuses;
   const activeBuffOpponentBonuses = leftAttacks ? rightOtherBonuses : leftOtherBonuses;
   const activeBuffSkillName = activeBuffUnit?.current_skill || activeBuffUnit?.skills?.[0] || "";
+
+  useEffect(() => {
+    if (!error) return;
+    const timer = window.setTimeout(() => setError(""), 4500);
+    return () => window.clearTimeout(timer);
+  }, [error]);
+
+  useEffect(() => {
+    detectionRegionsRef.current = detectionRegions;
+  }, [detectionRegions]);
+
+  useEffect(() => {
+    detectionReadoutLayoutsRef.current = detectionReadoutLayouts;
+  }, [detectionReadoutLayouts]);
+
+  function moveRegion(id: TeamRegionId, position: Partial<TeamRegionPosition>) {
+    setRegionPositions((current) => ({ ...current, [id]: { ...current[id], ...position } }));
+  }
+
+  function showTemporaryTargetStatus(message: string) {
+    window.clearTimeout(targetStatusTimerRef.current);
+    setTargetStatus(message);
+    targetStatusTimerRef.current = window.setTimeout(() => setTargetStatus(""), 4500);
+  }
+
+  useEffect(() => () => window.clearTimeout(targetStatusTimerRef.current), []);
+
+  function focusRegion(id: TeamRegionId) {
+    setRegionPositions((current) => {
+      const topZIndex = Math.max(...Object.values(current).map((item) => item.zIndex), 0) + 1;
+      return { ...current, [id]: { ...current[id], zIndex: topZIndex } };
+    });
+  }
+
+  function overlayLayout(id: string) {
+    return overlayLayouts[id] || defaultPluginOverlayLayout(id);
+  }
+
+  function updateOverlayLayout(id: string, partial: Partial<PluginOverlayLayout>) {
+    setOverlayLayouts((current) => {
+      const previous = current[id] || defaultPluginOverlayLayout(id);
+      const next = { ...previous, ...partial };
+      if (previous.x === next.x && previous.y === next.y && previous.width === next.width && previous.height === next.height) return current;
+      return { ...current, [id]: next };
+    });
+  }
+
+  function sameFamily(first: Pet, second: Pet) {
+    const firstForms = new Set([first.label, ...(first.evolutionChain || [])]);
+    return [second.label, ...(second.evolutionChain || [])].some((form) => firstForms.has(form));
+  }
+
+  function petForRecognition(label: string) {
+    const normalized = label.trim();
+    return pets.find((pet) => [pet.label, pet.name, `${pet.id}${pet.name}`].includes(normalized));
+  }
+
+  function applyRecognizedPets(side: "left" | "right", predictions: Array<{ label: string; confidence?: number; topK?: Array<{ label: string; confidence: number }> }>) {
+    const recognized = predictions.map((prediction) => petForRecognition(prediction.label)).filter((pet): pet is Pet => Boolean(pet));
+    const setter = side === "left" ? setLeftSlots : setRightSlots;
+    const setIndex = side === "left" ? setLeftIndex : setRightIndex;
+    const visibleSlots = side === "left" ? leftSlots : rightSlots;
+    const classifierCandidates = predictions.flatMap((prediction) => prediction.topK || [{ label: prediction.label, confidence: prediction.confidence || 0 }]);
+    const hasSixWayCandidate = visibleSlots.every((slot) => slot.name) && classifierCandidates.some((candidate) => Boolean(petForRecognition(candidate.label)));
+    if (!recognized.length && !hasSixWayCandidate) return 0;
+    const directMatch = recognized.map((pet) => visibleSlots.findIndex((slot) => {
+      const current = petForRecognition(slot.name) || pets.find((item) => item.label === slot.name || `${item.id}${item.name}` === slot.name);
+      return Boolean(current && sameFamily(current, pet));
+    })).find((index) => index >= 0);
+    const empty = visibleSlots.findIndex((slot) => !slot.name);
+    // Once every slot is occupied, classification must choose one of these
+    // six families rather than discarding a non-exact top-1 recognition.
+    const sixWayMatch = empty >= 0 ? -1 : visibleSlots.reduce((best, slot, index) => {
+      const current = petForRecognition(slot.name) || pets.find((item) => item.label === slot.name || `${item.id}${item.name}` === slot.name);
+      if (!current) return best;
+      const confidence = classifierCandidates
+        .reduce((score, candidate) => {
+          const candidatePet = petForRecognition(candidate.label);
+          return candidatePet && sameFamily(current, candidatePet) ? Math.max(score, candidate.confidence) : score;
+        }, -1);
+      return confidence > best.confidence ? { index, confidence } : best;
+    }, { index: -1, confidence: -1 }).index;
+    const selected = directMatch ?? (empty >= 0 ? empty : sixWayMatch);
+    setter((slots) => {
+      const next = [...slots];
+      for (const pet of recognized) {
+        const matching = next.findIndex((slot) => {
+          const current = petForRecognition(slot.name) || pets.find((item) => item.label === slot.name || `${item.id}${item.name}` === slot.name);
+          return Boolean(current && sameFamily(current, pet));
+        });
+        if (matching >= 0) continue;
+        const openSlot = next.findIndex((slot) => !slot.name);
+        if (openSlot >= 0) next[openSlot] = { ...blankUnit(), name: `${pet.id}${pet.name}` };
+      }
+      return next;
+    });
+    if (selected >= 0) setIndex(selected);
+    return recognized.length || (selected >= 0 ? 1 : 0);
+  }
+
+  async function targetCanvas() {
+    const captured = await invoke<{ imageDataUrl: string; width: number; height: number; targetClient: CaptureClientArea; overlayClient: CaptureClientArea }>("capture_overlay_target");
+    const image = new Image();
+    await new Promise<void>((resolve, reject) => { image.onload = () => resolve(); image.onerror = () => reject(new Error("截图无法读取")); image.src = captured.imageDataUrl; });
+    const canvas = document.createElement("canvas");
+    canvas.width = captured.width; canvas.height = captured.height;
+    canvas.getContext("2d")?.drawImage(image, 0, 0);
+    return { canvas, targetClient: captured.targetClient, overlayClient: captured.overlayClient } satisfies TargetCapture;
+  }
+
+  function cropDetection(capture: TargetCapture, key: string) {
+    const crop = document.createElement("canvas");
+    const roiBounds = detectionRoiRefs.current[key]?.getBoundingClientRect();
+    if (!roiBounds || capture.overlayClient.width <= 0 || capture.overlayClient.height <= 0 || window.innerWidth <= 0 || window.innerHeight <= 0) {
+      throw new Error("检测框的实际屏幕边界不可用");
+    }
+    // The rectangle comes from the element currently drawn on screen. Windows
+    // supplies both client-area origins, so an overlay title bar/DPI offset
+    // cannot shift the crop vertically.
+    const xScale = capture.overlayClient.width / window.innerWidth;
+    const yScale = capture.overlayClient.height / window.innerHeight;
+    const left = Math.round(capture.overlayClient.x + roiBounds.left * xScale - capture.targetClient.x);
+    const top = Math.round(capture.overlayClient.y + roiBounds.top * yScale - capture.targetClient.y);
+    const right = Math.round(capture.overlayClient.x + roiBounds.right * xScale - capture.targetClient.x);
+    const bottom = Math.round(capture.overlayClient.y + roiBounds.bottom * yScale - capture.targetClient.y);
+    const sourceWidth = Math.max(1, right - left);
+    const sourceHeight = Math.max(1, bottom - top);
+    crop.width = sourceWidth;
+    crop.height = sourceHeight;
+    const context = crop.getContext("2d");
+    if (!context) return crop.toDataURL("image/png");
+    context.drawImage(capture.canvas, left, top, sourceWidth, sourceHeight, 0, 0, crop.width, crop.height);
+    return crop.toDataURL("image/png");
+  }
+
+  async function recognizeNumericImages(images: Array<{ key: string; imageDataUrl: string; mode: NumericOcrMode }>) {
+    const preparedImages = await Promise.all(images.map(async (image) => ({
+      ...image,
+      imageDataUrl: await prepareNumericImage(image.imageDataUrl),
+    })));
+    await saveOcrDebugImages("numeric", preparedImages);
+    return invoke<{ items: Array<{ text: string }> }>("recognize_images", { images: preparedImages });
+  }
+
+  async function prepareNumericImage(imageDataUrl: string) {
+    const image = new Image();
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error("数字识别图片无法读取"));
+      image.src = imageDataUrl;
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, image.naturalWidth * 2);
+    canvas.height = Math.max(1, image.naturalHeight * 2);
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("数字识别图片无法处理");
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+    for (let index = 0; index < pixels.data.length; index += 4) {
+      const gray = Math.round(0.299 * pixels.data[index] + 0.587 * pixels.data[index + 1] + 0.114 * pixels.data[index + 2]);
+      pixels.data[index] = gray;
+      pixels.data[index + 1] = gray;
+      pixels.data[index + 2] = gray;
+    }
+    context.putImageData(pixels, 0, 0);
+    return canvas.toDataURL("image/png");
+  }
+
+  async function saveOcrDebugImages(category: string, images: Array<{ key?: string; imageDataUrl: string }>) {
+    if (!ocrTestMode) return;
+    await invoke("save_ocr_debug_images", { category, images });
+  }
+
+  async function changeOcrTestMode(enabled: boolean) {
+    const previous = ocrTestMode;
+    setOcrTestMode(enabled);
+    try {
+      const result = await invoke<{ configs: PickerConfigs }>("save_picker_config", { payload: { section: "team_layout", values: { ocr_test_mode: enabled } } });
+      onConfigsChanged(result.configs);
+      setDetectionMessage(enabled ? "测试模式已开启：识别输入将保存到本地" : "测试模式已关闭");
+    } catch (error) {
+      setOcrTestMode(previous);
+      setError(asError(error));
+    }
+  }
+
+  async function recognizeDetection(group: DetectionGroup) {
+    const notifyDetection = (message: string) => { setDetectionMessage(message); setDetectionToast(message); };
+    if (!targetAttached) { notifyDetection("请先绑定目标窗口"); return; }
+    if (recognitionBusyRef.current) return;
+    recognitionBusyRef.current = true;
+    const updateStatus = (label: string, detail: string, progress: string) => {
+      setRecognitionStatus({ label, detail, progress });
+      setDetectionMessage(`${label}：${detail}`);
+    };
+    updateStatus(group === "battleStart" ? "战斗开始识别" : "战斗内识别", "正在截取目标窗口", "准备中");
+    try {
+        const capture = await targetCanvas();
+      if (group === "battleStart") {
+        updateStatus("战斗开始识别", "正在识别敌方队伍图像框", `1/${BATTLE_START_IMAGE_KEYS.length} 组`);
+        const images = BATTLE_START_IMAGE_KEYS.map((key) => ({ key, imageDataUrl: cropDetection(capture, key) }));
+        await saveOcrDebugImages("battle-start", images);
+        const result = await invoke<{ items: Array<{ label: string }> }>("classify_image_samples", { payload: { images } });
+        const count = applyRecognizedPets("right", result.items);
+        notifyDetection(`战斗开始识别完成：识别 ${count} 只，已导入敌方队伍`);
+      } else {
+        updateStatus("战斗内识别", "正在并行识别双方精灵和血量", "4 个识别框");
+        const images = BATTLE_LIVE_IMAGE_KEYS.map((key) => ({ key, imageDataUrl: cropDetection(capture, key), mode: "text" }));
+        const healthImages = BATTLE_LIVE_HEALTH_KEYS.map((key) => {
+          const mode = key === "selfHealth" ? "self_health" : "enemy_health";
+          return { key, imageDataUrl: cropDetection(capture, key), mode } as const;
+        });
+        const [imageResult, enemyHealthResult, selfHealthResult] = await Promise.all([
+          (async () => { await saveOcrDebugImages("battle-live-pets", images); return invoke<{ items: Array<{ label: string }> }>("classify_image_samples", { payload: { images } }); })(),
+          recognizeNumericImages([healthImages[0]]),
+          recognizeNumericImages([healthImages[1]]),
+        ]);
+        applyRecognizedPets("right", imageResult.items[0] ? [imageResult.items[0]] : []);
+        applyRecognizedPets("left", imageResult.items[1] ? [imageResult.items[1]] : []);
+        const enemyRaw = enemyHealthResult.items[0]?.text || "";
+        const selfRaw = selfHealthResult.items[0]?.text || "";
+        const enemy = enemyRaw.match(/(?:100|[1-9]?\d)\s*%?/)?.[0]?.replace(/\s/g, "");
+        const self = selfRaw.match(/^\d+\/\d+$/)?.[0];
+        setDetectedHealth((current) => ({
+          enemy: enemy && Number(enemy.replace("%", "")) <= 100 ? `${enemy.replace("%", "")}%` : (enemyRaw.trim() || "识别失败"),
+          self: self || current.self,
+        }));
+        notifyDetection("战斗内识别完成：已更新双方精灵和血量");
+      }
+    } catch (error) { notifyDetection(`识别失败：${asError(error)}`); }
+    finally {
+      recognitionBusyRef.current = false;
+      setRecognitionStatus(null);
+    }
+  }
+
+  async function recognizeSkillPowers() {
+    const notifyDetection = (message: string) => { setDetectionMessage(message); setDetectionToast(message); };
+    if (!targetAttached) { notifyDetection("请先绑定目标窗口"); return; }
+    if (recognitionBusyRef.current) return;
+    recognitionBusyRef.current = true;
+    setRecognitionStatus({ label: "技能威力识别", detail: "正在识别 4 个技能威力框", progress: "进行中" });
+    try {
+      const capture = await targetCanvas();
+      const response = await recognizeNumericImages(
+        (["skill1", "skill2", "skill3", "skill4"] as const).map((key) => ({ key, imageDataUrl: cropDetection(capture, key), mode: "power" })),
+      );
+      const powers = response.items.map((item) => item.text.trim() || "识别失败");
+      setDetectedSkillPowers(powers);
+      const calibrated = await calibratePowerStacks(powers);
+      notifyDetection(calibrated ? "技能威力 OCR 识别完成，已自动修正叠层" : "技能威力 OCR 识别完成，未匹配到唯一叠层修正");
+    } catch (error) { notifyDetection(`技能威力识别失败：${asError(error)}`); }
+    finally {
+      recognitionBusyRef.current = false;
+      setRecognitionStatus(null);
+    }
+  }
+
+  async function calibratePowerStacks(powerTexts: string[]) {
+    const attacker = leftAttacks ? leftSlots[leftIndex] : rightSlots[rightIndex];
+    const defender = leftAttacks ? rightSlots[rightIndex] : leftSlots[leftIndex];
+    const otherBonuses = leftAttacks ? leftOtherBonuses : rightOtherBonuses;
+    const defenderBonuses = leftAttacks ? rightOtherBonuses : leftOtherBonuses;
+    const nextStacks = { ...attacker.skill_trigger_stacks };
+    let applied = false;
+    for (const [index, rawPower] of powerTexts.entries()) {
+      const digits = rawPower.replace(/\D/g, "");
+      if (!digits) continue;
+      const observed = Number(digits);
+      const skillName = skillCardSlots(attacker.skills, teamSkillCardCount)[index];
+      if (!Number.isFinite(observed) || !skillName) continue;
+      const info = await cachedSkillTriggerInfo(skillName);
+      const candidates: Array<{ trigger: number; count: number }> = [];
+      for (const trigger of info.stackable) {
+        for (let count = 0; count <= (trigger.max ?? 10); count += 1) {
+          const stacks = [...(attacker.skill_trigger_stacks[skillName] || [])];
+          stacks[trigger.index] = count;
+          const data = await invoke<{ items: QuickSkillResult[] }>("calculate_quick_skills", { payload: {
+            attacker: { ...attacker, current_skill: skillName, skill_trigger_stacks: { ...attacker.skill_trigger_stacks, [skillName]: stacks }, other_bonuses: otherBonuses },
+            defender: { ...defender, other_bonuses: defenderBonuses }, skills: [skillName], weather,
+          } });
+          if (data.items[0]?.results.some((result) => Math.round(result.effective_power) === observed)) candidates.push({ trigger: trigger.index, count });
+        }
+      }
+      if (candidates.length !== 1) continue;
+      const match = candidates[0];
+      const stacks = [...(nextStacks[skillName] || [])];
+      stacks[match.trigger] = match.count;
+      nextStacks[skillName] = stacks;
+      applied = true;
+    }
+    if (applied) patchSlot(leftAttacks ? "left" : "right", leftAttacks ? leftIndex : rightIndex, { skill_trigger_stacks: nextStacks });
+    return applied;
+  }
+
+  useEffect(() => {
+    if (!detectionToast) return;
+    const timer = window.setTimeout(() => setDetectionToast(""), 2500);
+    return () => window.clearTimeout(timer);
+  }, [detectionToast]);
+
+  function startDetectionDrag(event: ReactPointerEvent<HTMLElement>, key: string) {
+    if (!detectionGroup) return;
+    event.preventDefault(); event.stopPropagation();
+    const region = detectionRegions[key];
+    const container = event.currentTarget.parentElement;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const move = (moveEvent: PointerEvent) => setDetectionRegions((current) => {
+      const next = { ...current, [key]: { ...current[key], x: Math.max(0, Math.min(100 - region.width, (moveEvent.clientX - rect.left) / rect.width * 100 - region.width / 2)), y: Math.max(0, Math.min(100 - region.height, (moveEvent.clientY - rect.top) / rect.height * 100 - region.height / 2)) } };
+      detectionRegionsRef.current = next;
+      return next;
+    });
+    const stop = () => {
+      window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", stop);
+    };
+    window.addEventListener("pointermove", move); window.addEventListener("pointerup", stop);
+  }
+
+  function startDetectionResize(event: ReactPointerEvent<HTMLElement>, key: string, edges: { left: boolean; right: boolean; top: boolean; bottom: boolean }) {
+    event.preventDefault(); event.stopPropagation();
+    const region = detectionRegions[key];
+    const container = event.currentTarget.parentElement;
+    if (!container) return;
+    const bounds = container.getBoundingClientRect();
+    const start = { x: event.clientX, y: event.clientY };
+    const move = (moveEvent: PointerEvent) => {
+      const dx = (moveEvent.clientX - start.x) / bounds.width * 100;
+      const dy = (moveEvent.clientY - start.y) / bounds.height * 100;
+      const width = Math.max(1, Math.min(100, region.width + (edges.left ? -dx : edges.right ? dx : 0)));
+      const height = Math.max(1, Math.min(100, region.height + (edges.top ? -dy : edges.bottom ? dy : 0)));
+      setDetectionRegions((current) => {
+        const next = { ...current, [key]: {
+        ...current[key],
+        width: Math.min(width, 100 - (edges.left ? Math.max(0, region.x + region.width - width) : region.x)),
+        height: Math.min(height, 100 - (edges.top ? Math.max(0, region.y + region.height - height) : region.y)),
+        x: edges.left ? Math.max(0, region.x + region.width - width) : region.x,
+        y: edges.top ? Math.max(0, region.y + region.height - height) : region.y,
+        } };
+        detectionRegionsRef.current = next;
+        return next;
+      });
+    };
+    const stop = () => {
+      window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", stop);
+    };
+    window.addEventListener("pointermove", move); window.addEventListener("pointerup", stop);
+  }
+
+  function startDetectionPointer(event: ReactPointerEvent<HTMLButtonElement>, key: string) {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const edges = {
+      left: event.clientX - bounds.left <= 7,
+      right: bounds.right - event.clientX <= 7,
+      top: event.clientY - bounds.top <= 7,
+      bottom: bounds.bottom - event.clientY <= 7,
+    };
+    if (edges.left || edges.right || edges.top || edges.bottom) startDetectionResize(event, key, edges);
+    else startDetectionDrag(event, key);
+  }
+
+  function startReadoutDrag(event: ReactPointerEvent<HTMLElement>, id: keyof DetectionReadoutLayouts) {
+    if ((event.target as HTMLElement).closest("button, input, select")) return;
+    event.preventDefault();
+    const start = { pointerX: event.clientX, pointerY: event.clientY, ...detectionReadoutLayouts[id] };
+    const move = (moveEvent: PointerEvent) => setDetectionReadoutLayouts((current) => {
+      const next = {
+        ...current,
+        [id]: { x: start.x + moveEvent.clientX - start.pointerX, y: start.y + moveEvent.clientY - start.pointerY },
+      };
+      detectionReadoutLayoutsRef.current = next;
+      return next;
+    });
+    const stop = () => {
+      window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", stop);
+    };
+    window.addEventListener("pointermove", move); window.addEventListener("pointerup", stop);
+  }
+
+  function startRecognitionStatusDrag(event: ReactPointerEvent<HTMLElement>) {
+    if ((event.target as HTMLElement).closest("button, input, select")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const start = { pointerX: event.clientX, pointerY: event.clientY, ...overlayLayout("recognition-status") };
+    const move = (moveEvent: PointerEvent) => {
+      updateOverlayLayout("recognition-status", {
+        x: Math.max(0, start.x + moveEvent.clientX - start.pointerX),
+        y: Math.max(0, start.y + moveEvent.clientY - start.pointerY),
+      });
+    };
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+  }
+
+  useEffect(() => {
+    if (displayMode !== "plugin") return;
+    const startResize = (event: PointerEvent) => {
+      const resizeEdge = (event.target as HTMLElement).closest<HTMLElement>(".plugin-resize-edge");
+      const panel = resizeEdge?.closest<HTMLElement>("[data-plugin-resizable]");
+      if (!resizeEdge || !panel) return;
+      const rect = panel.getBoundingClientRect();
+      const edges = {
+        left: resizeEdge.classList.contains("left"),
+        right: resizeEdge.classList.contains("right"),
+        top: resizeEdge.classList.contains("top"),
+        bottom: resizeEdge.classList.contains("bottom"),
+      };
+      event.preventDefault();
+      event.stopPropagation();
+      const regionClasses: Array<[TeamRegionId, string]> = [
+        ["left-roster", "team-left-roster"], ["right-roster", "team-right-roster"],
+        ["left-bonus-tools", "team-left-bonus-toolbar"], ["right-bonus-tools", "team-right-bonus-toolbar"],
+        ["left-buff", "team-left-buff"], ["right-buff", "team-right-buff"], ["weather", "team-weather"],
+      ];
+      const regionId = regionClasses.find(([, className]) => panel.classList.contains(className))?.[0];
+      const explicitOverlayId = panel.dataset.pluginOverlayId;
+      const overlayClass = [...panel.classList].find((className) => /^team-(left|right)-(trait|evolution|skill-\d+)$/.test(className));
+      const overlayId = explicitOverlayId || overlayClass?.replace("team-", "");
+      const saved = regionId ? regionPositions[regionId] : overlayId ? overlayLayout(overlayId) : { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
+      const start = { pointerX: event.clientX, pointerY: event.clientY, x: saved.x, y: saved.y, width: rect.width, height: rect.height };
+      const move = (moveEvent: PointerEvent) => {
+        const dx = moveEvent.clientX - start.pointerX;
+        const dy = moveEvent.clientY - start.pointerY;
+        const width = Math.max(72, start.width + (edges.left ? -dx : edges.right ? dx : 0));
+        const height = Math.max(30, start.height + (edges.top ? -dy : edges.bottom ? dy : 0));
+        const x = start.x + (edges.left ? start.width - width : 0);
+        const y = start.y + (edges.top ? start.height - height : 0);
+        if (regionId) moveRegion(regionId, { x, y, width, height });
+        else if (overlayId) updateOverlayLayout(overlayId, { x, y, width, height });
+        else {
+          panel.style.width = `${width}px`;
+          panel.style.height = `${height}px`;
+        }
+      };
+      const stop = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", stop);
+        window.removeEventListener("pointercancel", stop);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", stop);
+      window.addEventListener("pointercancel", stop);
+    };
+    document.addEventListener("pointerdown", startResize, true);
+    return () => document.removeEventListener("pointerdown", startResize, true);
+  }, [displayMode, regionPositions, overlayLayouts]);
+
+  async function changeDisplayMode(nextMode: "normal" | "plugin") {
+    setDisplayMode(nextMode);
+    onDisplayModeChange(nextMode);
+    mixedModeTokenRef.current += 1;
+    setMixedMode(false);
+    setLayoutMessage("");
+    await invoke("update_overlay_click_through", { enabled: false }).catch(() => undefined);
+    try {
+      const data = await invoke<{ configs: PickerConfigs }>("save_picker_config", {
+        payload: { section: "team_layout", values: { display_mode: nextMode } },
+      });
+      onConfigsChanged(data.configs);
+      if (nextMode === "plugin") {
+        setRegionPositions(savedTeamRegionPositions(data.configs, teamValues["team-region-width"], teamValues["team-region-height"]));
+        setOverlayLayouts(savedPluginOverlayLayouts(data.configs));
+        setDetectionReadoutLayouts(savedDetectionReadoutLayouts(data.configs));
+      }
+    } catch (err) {
+      setError(asError(err));
+    }
+  }
+
+  async function saveCurrentLayout() {
+    setLayoutMessage("");
+    try {
+      const data = await invoke<{ configs: PickerConfigs }>("save_picker_config", {
+        payload: { section: "team_layout", values: { regions: regionPositions, overlays: overlayLayouts, detection_regions: detectionRegions, detection_readouts: detectionReadoutLayouts } },
+      });
+      onConfigsChanged(data.configs);
+      setLayoutMessage("布局已保存");
+    } catch (err) {
+      setError(asError(err));
+    }
+  }
+
+  function syncReplayDetectionSizes() {
+    setDetectionRegions((current) => withReplayDetectionSizes(current));
+    setLayoutMessage("已同步对局回放检测框尺寸，点击保存布局写入配置");
+  }
+
+  function resetLayout() {
+    setRegionPositions(initialTeamRegionPositions(teamValues["team-region-width"], teamValues["team-region-height"]));
+    setDetectionRegions(DEFAULT_DETECTION_REGIONS);
+    setLayoutMessage("已恢复默认布局，点击保存后写入个人配置");
+  }
+
+  function resetBattle() {
+    setLeftSlots(Array.from({ length: teamSlotCount }, blankUnit));
+    setRightSlots(Array.from({ length: teamSlotCount }, blankUnit));
+    setLeftIndex(0);
+    setRightIndex(0);
+    setLeftAttacks(true);
+    setLeftOtherBonuses(blankTeamOtherBonuses());
+    setRightOtherBonuses(blankTeamOtherBonuses());
+    setLeftMarkFields([]);
+    setRightMarkFields([]);
+    setResults([]);
+    setWillpower(null);
+    setRequiredPower(null);
+    setBattleContext(null);
+    setBuffOptions([]);
+    setTargetHp(0);
+  }
+
+  async function attachTargetWindow() {
+    setTargetStatus("");
+    try {
+      mixedModeTokenRef.current += 1;
+      setMixedMode(false);
+      setDetectionGroup(null);
+      await invoke("update_overlay_click_through", { enabled: false }).catch(() => undefined);
+      const response = await invoke<{ attached: boolean; hwnd: string }>("attach_overlay_target", { hwnd: targetHwnd });
+      setTargetAttached(response.attached);
+      onOverlayAttachmentChange(response.attached);
+      setTargetStatus(`已绑定 ${response.hwnd}`);
+      window.dispatchEvent(new CustomEvent<boolean>("overlay-topmost-change", { detail: false }));
+    } catch (err) {
+      showTemporaryTargetStatus(`绑定失败：${asError(err)}`);
+    }
+  }
+
+  async function detachTargetWindow() {
+    setTargetStatus("");
+    try {
+      mixedModeTokenRef.current += 1;
+      await invoke("detach_overlay_target");
+      setTargetAttached(false);
+      setMixedMode(false);
+      onOverlayAttachmentChange(false);
+      setTargetStatus("已解除窗口绑定");
+      window.dispatchEvent(new CustomEvent<boolean>("overlay-topmost-change", { detail: false }));
+    } catch (err) {
+      setError(asError(err));
+    }
+  }
+
+  async function exitMixedMode() {
+    mixedModeTokenRef.current += 1;
+    setMixedMode(false);
+    setDetectionGroup(null);
+    await invoke("update_overlay_click_through", { enabled: false }).catch(() => undefined);
+  }
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let disposed = false;
+    void listen<boolean>("overlay-attachment-change", ({ payload }) => {
+      setTargetAttached(payload);
+      if (!payload) {
+        setMixedMode(false);
+        setTargetStatus("目标窗口已关闭，已恢复普通窗口");
+        onOverlayAttachmentChange(false);
+      }
+    }).then((stop) => {
+      if (disposed) stop();
+      else unlisten = stop;
+    }).catch((err) => setError(asError(err)));
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [onOverlayAttachmentChange]);
+
+  async function toggleMixedMode() {
+    const next = !mixedMode;
+    try {
+      if (next) {
+        mixedModeTokenRef.current += 1;
+        setMixedMode(true);
+      } else {
+        await exitMixedMode();
+      }
+    } catch (err) {
+      setMixedMode(false);
+      setError(asError(err));
+    }
+  }
+
+  useEffect(() => {
+    if (!mixedMode || !targetAttached || displayMode !== "plugin") return;
+    let cancelled = false;
+    const token = mixedModeTokenRef.current;
+    let lastIgnore: boolean | null = null;
+    let syncing = false;
+    const syncHitTarget = async () => {
+      if (syncing) return;
+      if (token !== mixedModeTokenRef.current) return;
+      syncing = true;
+      try {
+        const currentWindow = getCurrentWindow();
+        const [cursor, origin, scaleFactor] = await Promise.all([
+          cursorPosition(),
+          currentWindow.outerPosition(),
+          currentWindow.scaleFactor(),
+        ]);
+        if (cancelled) return;
+        const x = (cursor.x - origin.x) / scaleFactor;
+        const y = (cursor.y - origin.y) / scaleFactor;
+        const element = document.elementFromPoint(x, y);
+        const interactive = Boolean(element?.closest("button, input, select, textarea, [data-overlay-control], [role=dialog]"));
+        const ignore = !interactive;
+        if (token !== mixedModeTokenRef.current || ignore === lastIgnore) return;
+        await invoke("update_overlay_click_through", { enabled: ignore });
+        if (!cancelled && token === mixedModeTokenRef.current) lastIgnore = ignore;
+      } catch (err) {
+        if (!cancelled) setError(asError(err));
+      } finally {
+        syncing = false;
+      }
+    };
+    void syncHitTarget();
+    const timer = window.setInterval(() => void syncHitTarget(), 80);
+    return () => {
+      cancelled = true;
+      mixedModeTokenRef.current += 1;
+      window.clearInterval(timer);
+      // Vite 热更新会卸载此 effect；同时恢复原生窗口交互，避免残留点击穿透。
+      void invoke("update_overlay_click_through", { enabled: false }).catch(() => undefined);
+    };
+  }, [mixedMode, targetAttached, displayMode]);
+
+  useEffect(() => {
+    let disposed = false;
+    const stops: Array<() => void> = [];
+    void Promise.all([
+      listen("overlay-battle-start-scan", () => void recognizeDetection("battleStart")),
+      listen("overlay-battle-live-scan", () => void recognizeDetection("battleLive")),
+      listen("overlay-battle-power-scan", () => void recognizeSkillPowers()),
+    ]).then((items) => { if (disposed) items.forEach((stop) => stop()); else stops.push(...items); }).catch((err) => setError(asError(err)));
+    return () => { disposed = true; stops.forEach((stop) => stop()); };
+  }, [targetAttached, detectionRegions, pets, leftSlots, rightSlots]);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let disposed = false;
+    void listen("overlay-force-edit-mode", () => {
+      void exitMixedMode();
+      setTargetStatus("已退出混合交互");
+    }).then((dispose) => {
+      if (disposed) dispose();
+      else unlisten = dispose;
+    }).catch((err) => setError(asError(err)));
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (displayMode !== "plugin" || event.key !== "F8") return;
+      event.preventDefault();
+      void exitMixedMode().catch((err) => setError(asError(err)));
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [displayMode]);
+
+  function startTeamRegionDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    if (displayMode !== "plugin") return;
+    const target = event.target as HTMLElement;
+    if (target.closest("button, input, select, textarea, a")) return;
+    if (target.closest("summary") && !target.closest(".team-region-drag-handle")) return;
+    const regionClasses: Array<[TeamRegionId, string]> = [
+      ["left-roster", "team-left-roster"],
+      ["right-roster", "team-right-roster"],
+      ["left-bonus-tools", "team-left-bonus-toolbar"],
+      ["right-bonus-tools", "team-right-bonus-toolbar"],
+      ["left-buff", "team-left-buff"],
+      ["right-buff", "team-right-buff"],
+      ["left-skills", "team-left-skills"],
+      ["right-skills", "team-right-skills"],
+      ["weather", "team-weather"],
+    ];
+    const matched = regionClasses.find(([, className]) => target.closest(`.${className}`));
+    if (!matched) return;
+    const [id, className] = matched;
+    const region = target.closest<HTMLElement>(`.${className}`);
+    if (!region) return;
+    event.preventDefault();
+    focusRegion(id);
+    const start = { pointerX: event.clientX, pointerY: event.clientY, x: regionPositions[id].x, y: regionPositions[id].y };
+    const workspace = event.currentTarget;
+    const move = (moveEvent: PointerEvent) => {
+      const nextX = start.x + moveEvent.clientX - start.pointerX;
+      const nextY = start.y + moveEvent.clientY - start.pointerY;
+      moveRegion(id, {
+        x: Math.min(Math.max(0, nextX), Math.max(0, workspace.clientWidth - region.offsetWidth)),
+        y: Math.min(Math.max(0, nextY), Math.max(0, workspace.clientHeight - region.offsetHeight)),
+      });
+    };
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+  }
+
+  const regionWidth = (id: TeamRegionId, fallback: string) => regionPositions[id].width ? `${regionPositions[id].width}px` : fallback;
+  const regionHeight = (id: TeamRegionId, fallback: string) => regionPositions[id].height ? `${regionPositions[id].height}px` : fallback;
+  const teamLayoutStyle = {
+    "--left-roster-x": `${regionPositions["left-roster"].x}px`,
+    "--left-roster-y": `${regionPositions["left-roster"].y}px`,
+    "--left-roster-z": regionPositions["left-roster"].zIndex,
+    "--right-roster-x": `${regionPositions["right-roster"].x}px`,
+    "--right-roster-y": `${regionPositions["right-roster"].y}px`,
+    "--right-roster-z": regionPositions["right-roster"].zIndex,
+    "--left-bonus-tools-x": `${regionPositions["left-bonus-tools"].x}px`,
+    "--left-bonus-tools-y": `${regionPositions["left-bonus-tools"].y}px`,
+    "--left-bonus-tools-z": regionPositions["left-bonus-tools"].zIndex,
+    "--right-bonus-tools-x": `${regionPositions["right-bonus-tools"].x}px`,
+    "--right-bonus-tools-y": `${regionPositions["right-bonus-tools"].y}px`,
+    "--right-bonus-tools-z": regionPositions["right-bonus-tools"].zIndex,
+    "--left-buff-x": `${regionPositions["left-buff"].x}px`,
+    "--left-buff-y": `${regionPositions["left-buff"].y}px`,
+    "--left-buff-z": regionPositions["left-buff"].zIndex,
+    "--right-buff-x": `${regionPositions["right-buff"].x}px`,
+    "--right-buff-y": `${regionPositions["right-buff"].y}px`,
+    "--right-buff-z": regionPositions["right-buff"].zIndex,
+    "--left-skills-x": `${regionPositions["left-skills"].x}px`,
+    "--left-skills-y": `${regionPositions["left-skills"].y}px`,
+    "--left-skills-z": regionPositions["left-skills"].zIndex,
+    "--right-skills-x": `${regionPositions["right-skills"].x}px`,
+    "--right-skills-y": `${regionPositions["right-skills"].y}px`,
+    "--right-skills-z": regionPositions["right-skills"].zIndex,
+    "--weather-x": `${regionPositions.weather.x}px`,
+    "--weather-y": `${regionPositions.weather.y}px`,
+    "--weather-z": regionPositions.weather.zIndex,
+    "--left-roster-width": regionWidth("left-roster", "var(--team-region-width)"),
+    "--left-roster-height": regionHeight("left-roster", "auto"),
+    "--right-roster-width": regionWidth("right-roster", "95px"),
+    "--right-roster-height": regionHeight("right-roster", "auto"),
+    "--left-bonus-width": regionWidth("left-bonus-tools", "max-content"),
+    "--left-bonus-height": regionHeight("left-bonus-tools", "auto"),
+    "--right-bonus-width": regionWidth("right-bonus-tools", "max-content"),
+    "--right-bonus-height": regionHeight("right-bonus-tools", "auto"),
+    "--left-buff-width": regionWidth("left-buff", "var(--buff-region-width)"),
+    "--left-buff-height": regionHeight("left-buff", "auto"),
+    "--right-buff-width": regionWidth("right-buff", "var(--buff-region-width)"),
+    "--right-buff-height": regionHeight("right-buff", "auto"),
+    "--weather-width": regionWidth("weather", "var(--weather-panel-width)"),
+    "--weather-height": regionHeight("weather", "auto"),
+  } as CSSProperties;
 
   function resizeSlots(count: number) {
     setLeftSlots((slots) => Array.from({ length: count }, (_, index) => slots[index] || blankUnit()));
@@ -1409,10 +2502,10 @@ function TeamBattlePage({
       .filter((option) => option.effects.length > 0);
   }
 
-  function currentBuffPayload() {
+  function currentBuffPayload(skillName = activeBuffSkillName) {
     return {
-      skill_name: activeBuffSkillName,
-      attacker: { ...activeBuffUnit, other_bonuses: activeBuffOtherBonuses },
+      skill_name: skillName,
+      attacker: { ...activeBuffUnit, current_skill: skillName, other_bonuses: activeBuffOtherBonuses },
       defender: { ...activeBuffOpponent, other_bonuses: activeBuffOpponentBonuses },
     };
   }
@@ -1430,8 +2523,8 @@ function TeamBattlePage({
         if (cancelled || data.skill_name !== activeBuffSkillName) return;
         setBuffOptions(normalizeBuffOptions(data));
       })
-      .catch((err) => {
-        if (!cancelled) setError(asError(err));
+      .catch(() => {
+        if (!cancelled) setBuffOptions([]);
       });
     return () => { cancelled = true; };
   }, [
@@ -1474,23 +2567,88 @@ function TeamBattlePage({
     }
   }
 
-  async function calculate() {
+  async function calculate(skillName?: string) {
     setError("");
     try {
       const attacker = leftAttacks ? leftSlots[leftIndex] : rightSlots[rightIndex];
       const defender = leftAttacks ? rightSlots[rightIndex] : leftSlots[leftIndex];
       const other_bonuses = leftAttacks ? leftOtherBonuses : rightOtherBonuses;
       const defender_other_bonuses = leftAttacks ? rightOtherBonuses : leftOtherBonuses;
-      const data = await invoke<{ results: BattleResult[] }>("calculate_battle", { payload: { attacker: { ...attacker, other_bonuses }, defender: { ...defender, other_bonuses: defender_other_bonuses }, weather } });
+      const data = await invoke<{ results: BattleResult[] }>("calculate_battle", { payload: { attacker: { ...attacker, current_skill: skillName || attacker.current_skill, other_bonuses }, defender: { ...defender, other_bonuses: defender_other_bonuses }, weather } });
       setBattleContext(battleContextFromUnits(attacker, defender));
       setResults(data.results);
       setWillpower(null);
+      setRequiredPower(null);
     } catch (err) {
       setError(asError(err));
       setBattleContext(null);
       setResults([]);
     }
   }
+
+  async function calculateQuickSkills() {
+    const attacker = leftAttacks ? leftSlots[leftIndex] : rightSlots[rightIndex];
+    const defender = leftAttacks ? rightSlots[rightIndex] : leftSlots[leftIndex];
+    const otherBonuses = leftAttacks ? leftOtherBonuses : rightOtherBonuses;
+    const defenderOtherBonuses = leftAttacks ? rightOtherBonuses : leftOtherBonuses;
+    const skills = uniqueByOrder(attacker.skills.filter(Boolean)).slice(0, teamSkillCardCount);
+    if (!skills.length) {
+      setQuickSkillResults(null);
+      return;
+    }
+    setError("");
+    try {
+      const data = await invoke<{ items: QuickSkillResult[] }>("calculate_quick_skills", {
+        payload: {
+          attacker: { ...attacker, other_bonuses: otherBonuses },
+          defender: { ...defender, other_bonuses: defenderOtherBonuses },
+          skills,
+          weather,
+        },
+      });
+      setQuickSkillResults(data.items);
+      setResults([]);
+      setWillpower(null);
+      setRequiredPower(null);
+      setBattleContext(null);
+    } catch (err) {
+      setQuickSkillResults(null);
+      setError(asError(err));
+    }
+  }
+
+  calculateQuickSkillsRef.current = () => void calculateQuickSkills();
+  hideQuickSkillResultsRef.current = () => setQuickSkillResults(null);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let disposed = false;
+    void listen("overlay-quick-calculate", () => calculateQuickSkillsRef.current())
+      .then((dispose) => {
+        if (disposed) dispose();
+        else unlisten = dispose;
+      })
+      .catch((err) => setError(asError(err)));
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let disposed = false;
+    void listen("overlay-hide-quick-results", () => hideQuickSkillResultsRef.current())
+      .then((dispose) => {
+        if (disposed) dispose();
+        else unlisten = dispose;
+      })
+      .catch((err) => setError(asError(err)));
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
 
   async function calculateWillpower() {
     setError("");
@@ -1502,6 +2660,7 @@ function TeamBattlePage({
       const data = await invoke<WillpowerResponse>("calculate_willpower", { payload: { attacker: { ...attacker, other_bonuses }, defender: { ...defender, other_bonuses: defender_other_bonuses }, weather } });
       setBattleContext({ ...battleContextFromUnits(attacker, defender), skillName: "愿力" });
       setWillpower(data);
+      setRequiredPower(null);
       const initial = data.elements[0];
       setSelectedWillpowerElement(initial?.element || null);
       setResults(initial?.results || []);
@@ -1512,19 +2671,38 @@ function TeamBattlePage({
     }
   }
 
+  async function calculateRequiredPower() {
+    setError("");
+    try {
+      const attacker = leftAttacks ? leftSlots[leftIndex] : rightSlots[rightIndex];
+      const defender = leftAttacks ? rightSlots[rightIndex] : leftSlots[leftIndex];
+      const other_bonuses = leftAttacks ? leftOtherBonuses : rightOtherBonuses;
+      const defender_other_bonuses = leftAttacks ? rightOtherBonuses : leftOtherBonuses;
+      const data = await invoke<RequiredPowerResponse>("calculate_required_power", { payload: { attacker: { ...attacker, other_bonuses }, defender: { ...defender, other_bonuses: defender_other_bonuses }, weather, target_hp: targetHp } });
+      setBattleContext(battleContextFromUnits(defender, attacker));
+      setWillpower(null);
+      setRequiredPower(data);
+      setResults([]);
+    } catch (err) {
+      setError(asError(err));
+      setRequiredPower(null);
+      setResults([]);
+    }
+  }
+
   function selectWillpowerElement(element: WillpowerElementResult) {
     setSelectedWillpowerElement(element.element);
     setResults(element.results);
   }
 
-  async function applyBuff() {
+  async function applyBuff(skillName?: string) {
     setError("");
     const attackerSide = leftAttacks ? "left" : "right";
     const opponentSide = leftAttacks ? "right" : "left";
     let selectedOption: BuffOption | undefined;
     try {
       const data = await invoke<ApplySkillBuffsResult>("apply_skill_buffs", {
-        payload: currentBuffPayload(),
+        payload: currentBuffPayload(skillName),
       });
       const latestOptions = normalizeBuffOptions(data);
       setBuffOptions(latestOptions);
@@ -1534,7 +2712,7 @@ function TeamBattlePage({
       return;
     }
     if (!selectedOption) {
-      setError(activeBuffSkillName ? "该技能没有可应用的 Buff" : "请先选择技能");
+      setError(skillName || activeBuffSkillName ? "该技能没有可应用的 Buff" : "请先选择技能");
       return;
     }
 
@@ -1557,11 +2735,85 @@ function TeamBattlePage({
   }
 
   return (
-    <section className="battle-page">
-      <div className="team-layout">
-        <Roster className="team-left-roster" title="己方队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={leftSlots} activeIndex={leftIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("left", groupName)} onSelect={setLeftIndex} onPatchSlot={(partial) => patchSlot("left", leftIndex, partial)} onChoose={(index) => { setLeftIndex(index); setPetPicker({ side: "left", index }); }} onClear={(index) => setSlot("left", index, blankUnit())} />
-        <Roster className="team-right-roster" title="敌方队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={rightSlots} activeIndex={rightIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("right", groupName)} onSelect={setRightIndex} onPatchSlot={(partial) => patchSlot("right", rightIndex, partial)} onChoose={(index) => { setRightIndex(index); setPetPicker({ side: "right", index }); }} onClear={(index) => setSlot("right", index, blankUnit())} />
-        <section className="team-bonus-toolbar team-left-bonus-toolbar" aria-label="己方其他加成">
+    <section className={`battle-page ${displayMode === "plugin" ? "plugin-mode immersive-mode" : "normal-mode"}${mixedMode ? " mixed-active" : ""}`}>
+      <div className="team-layout-actions" data-overlay-control>
+        <div className="team-layout-actions-main">
+          <div className="mode-switch" role="group" aria-label="界面模式">
+            <button className={displayMode === "normal" ? "active" : ""} onClick={() => void changeDisplayMode("normal")}>常规模式</button>
+            <button className={displayMode === "plugin" ? "active" : ""} onClick={() => void changeDisplayMode("plugin")}>插件模式</button>
+          </div>
+          {displayMode === "plugin" ? <>
+            <label className="overlay-target-input">
+              <span>目标 HWND</span>
+              <input
+                value={targetHwnd}
+                placeholder="0x00123456"
+                onChange={(event) => setTargetHwnd(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") void attachTargetWindow();
+                }}
+              />
+            </label>
+            <button onClick={() => void attachTargetWindow()} disabled={!targetHwnd.trim()}>绑定窗口</button>
+            {targetAttached ? <button onClick={() => void detachTargetWindow()}>解绑窗口</button> : null}
+            <button onClick={() => void toggleMixedMode()} disabled={!targetAttached} aria-pressed={mixedMode} className={mixedMode ? "active" : ""}>
+              {mixedMode ? "关闭混合" : "混合模式"}
+            </button>
+          </> : null}
+        </div>
+        {displayMode === "plugin" ? <details className="team-layout-actions-more">
+          <summary>更多</summary>
+          <div className="team-layout-actions-more-grid">
+            <button onClick={() => void changeOcrTestMode(!ocrTestMode)} aria-pressed={ocrTestMode} className={ocrTestMode ? "active" : ""}>
+              {ocrTestMode ? "关闭测试" : "测试模式"}
+            </button>
+            <button onClick={() => void saveCurrentLayout()}>保存布局</button>
+            <button onClick={resetLayout}>恢复默认布局</button>
+            <button onClick={syncReplayDetectionSizes}>同步回放框尺寸</button>
+            <label className="overlay-target-input">
+              <span>天气</span>
+              <select value={weather} onChange={(event) => onWeatherChange(event.target.value as (typeof WEATHER_OPTIONS)[number]["value"])}>
+                {WEATHER_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+            </label>
+            <button className={detectionGroup === "battleStart" ? "active" : ""} onClick={() => setDetectionGroup((current) => current === "battleStart" ? null : "battleStart")}>战斗开始框</button>
+            <button className={detectionGroup === "battleLive" ? "active" : ""} onClick={() => setDetectionGroup((current) => current === "battleLive" ? null : "battleLive")}>战斗内框</button>
+            <button onClick={() => void recognizeDetection("battleStart")} disabled={!targetAttached}>开始识别 Ctrl+B</button>
+            <button onClick={() => void recognizeDetection("battleLive")} disabled={!targetAttached}>战斗识别 Ctrl+U</button>
+            <button onClick={() => void recognizeSkillPowers()} disabled={!targetAttached}>威力识别 Ctrl+P</button>
+          </div>
+        </details> : null}
+        {targetStatus || layoutMessage || detectionMessage ? <span>{targetStatus || layoutMessage || detectionMessage}</span> : null}
+      </div>
+      <div className="team-layout" style={teamLayoutStyle} onPointerDown={startTeamRegionDrag}>
+        {displayMode === "plugin" && detectionToast ? <div className="detection-toast" role="status">{detectionToast}</div> : null}
+        {displayMode === "plugin" && recognitionStatus ? <section className="recognition-status-panel" data-overlay-control style={{ left: overlayLayout("recognition-status").x, top: overlayLayout("recognition-status").y }} onPointerDown={startRecognitionStatusDrag} role="status" aria-live="polite">
+          <strong>{recognitionStatus.label}</strong>
+          <span>{recognitionStatus.detail}</span>
+          <small>{recognitionStatus.progress}</small>
+        </section> : null}
+        {displayMode === "plugin" ? <div className={`detection-calibration ${detectionGroup || "hidden"}`} data-overlay-control>
+          {[...BATTLE_START_IMAGE_KEYS, ...BATTLE_LIVE_IMAGE_KEYS, ...BATTLE_LIVE_NUMBER_KEYS].map((key) => {
+            const region = detectionRegions[key];
+            const visible = (detectionGroup === "battleStart" && BATTLE_START_IMAGE_KEYS.includes(key as typeof BATTLE_START_IMAGE_KEYS[number])) || (detectionGroup === "battleLive" && !BATTLE_START_IMAGE_KEYS.includes(key as typeof BATTLE_START_IMAGE_KEYS[number]));
+            return <button key={key} ref={(element) => { detectionRoiRefs.current[key] = element; }} className={`detection-roi ${key.includes("Image") ? "image" : "number"}${visible ? "" : " hidden"}`} style={{ left: `${region.x}%`, top: `${region.y}%`, width: `${region.width}%`, height: `${region.height}%` }} onPointerDown={(event) => startDetectionPointer(event, key)} title={`拖动 ${detectionLabel(key)}；拖动边缘缩放`}><span>{detectionLabel(key)}</span></button>;
+          })}
+        </div> : null}
+        {displayMode === "plugin" ? <>
+          <section className="battle-health-readout draggable-readout" data-overlay-control style={{ transform: `translate(${detectionReadoutLayouts.health.x}px, ${detectionReadoutLayouts.health.y}px)` }} onPointerDown={(event) => startReadoutDrag(event, "health")}><span>敌方 HP {detectedHealth.enemy}</span><span>我方 HP {detectedHealth.self}</span></section>
+          <section className="battle-power-readout draggable-readout" data-overlay-control style={{ transform: `translate(-50%, 0) translate(${detectionReadoutLayouts.powers.x}px, ${detectionReadoutLayouts.powers.y}px)` }} onPointerDown={(event) => startReadoutDrag(event, "powers")}>{detectedSkillPowers.map((power, index) => <span key={index}>技能{index + 1} {power}</span>)}</section>
+        </> : null}
+        <Roster pluginMode={displayMode === "plugin"} className="team-left-roster" title="队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={leftSlots} activeIndex={leftIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("left", groupName)} onSelect={setLeftIndex} onPatchSlot={(partial) => patchSlot("left", leftIndex, partial)} onPatchSlotAt={(index, partial) => patchSlot("left", index, partial)} onChoose={(index) => { setLeftIndex(index); setPetPicker({ side: "left", index }); }} onClear={(index) => setSlot("left", index, blankUnit())} />
+        <Roster pluginMode={displayMode === "plugin"} className="team-right-roster" title="队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={rightSlots} activeIndex={rightIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("right", groupName)} onSelect={setRightIndex} onPatchSlot={(partial) => patchSlot("right", rightIndex, partial)} onPatchSlotAt={(index, partial) => patchSlot("right", index, partial)} onChoose={(index) => { setRightIndex(index); setPetPicker({ side: "right", index }); }} onClear={(index) => setSlot("right", index, blankUnit())} />
+        {displayMode === "plugin" ? <>
+          <SpeedLine left={leftSlots[leftIndex]} right={rightSlots[rightIndex]} pets={pets} layout={overlayLayout("speed-line")} onLayoutChange={(partial) => updateOverlayLayout("speed-line", partial)} />
+          <FloatingTeamPanel className="team-left-trait" layout={overlayLayout("left-trait")} onLayoutChange={(partial) => updateOverlayLayout("left-trait", partial)}><TeamTraitEditor value={leftSlots[leftIndex]} pets={pets} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onChange={(partial) => patchSlot("left", leftIndex, partial)} /></FloatingTeamPanel>
+          <FloatingTeamPanel className="team-right-trait" layout={overlayLayout("right-trait")} onLayoutChange={(partial) => updateOverlayLayout("right-trait", partial)}><TeamTraitEditor value={rightSlots[rightIndex]} pets={pets} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onChange={(partial) => patchSlot("right", rightIndex, partial)} /></FloatingTeamPanel>
+          <FloatingTeamPanel className="team-left-evolution" layout={overlayLayout("left-evolution")} onLayoutChange={(partial) => updateOverlayLayout("left-evolution", partial)}><TeamEvolutionControls value={leftSlots[leftIndex]} pets={pets} onChange={(partial) => patchSlot("left", leftIndex, partial)} /></FloatingTeamPanel>
+          <FloatingTeamPanel className="team-right-evolution" layout={overlayLayout("right-evolution")} onLayoutChange={(partial) => updateOverlayLayout("right-evolution", partial)}><TeamEvolutionControls value={rightSlots[rightIndex]} pets={pets} onChange={(partial) => patchSlot("right", rightIndex, partial)} /></FloatingTeamPanel>
+        </> : null}
+        <section className="team-bonus-toolbar team-left-bonus-toolbar" data-overlay-control data-plugin-resizable={displayMode === "plugin" || undefined} aria-label="己方其他加成">
+          {displayMode === "plugin" ? <PluginResizeEdges /> : null}
           <button className="bonus-tool-button willpower" onClick={() => void calculateWillpower()}>愿力</button>
           {(["dedication", "marks", "thunderstorm"] as const).map((tool) => (
             <button key={tool} className={`bonus-tool-button ${tool}${bonusTool === tool && bonusSide === "left" ? " active" : ""}`} aria-pressed={bonusTool === tool && bonusSide === "left"} onClick={() => openBonusTool("left", tool)}>
@@ -1569,7 +2821,8 @@ function TeamBattlePage({
             </button>
           ))}
         </section>
-        <section className="team-bonus-toolbar team-right-bonus-toolbar" aria-label="敌方其他加成">
+        <section className="team-bonus-toolbar team-right-bonus-toolbar" data-overlay-control data-plugin-resizable={displayMode === "plugin" || undefined} aria-label="敌方其他加成">
+          {displayMode === "plugin" ? <PluginResizeEdges /> : null}
           <button className="bonus-tool-button willpower" onClick={() => void calculateWillpower()}>愿力</button>
           {(["dedication", "marks", "thunderstorm"] as const).map((tool) => (
             <button key={tool} className={`bonus-tool-button ${tool}${bonusTool === tool && bonusSide === "right" ? " active" : ""}`} aria-pressed={bonusTool === tool && bonusSide === "right"} onClick={() => openBonusTool("right", tool)}>
@@ -1579,10 +2832,28 @@ function TeamBattlePage({
         </section>
         <TeamBuffPanel className="team-left-buff" title="己方 buff" value={leftSlots[leftIndex]} onChange={(partial) => patchSlot("left", leftIndex, partial)} />
         <TeamBuffPanel className="team-right-buff" title="敌方 buff" value={rightSlots[rightIndex]} onChange={(partial) => patchSlot("right", rightIndex, partial)} />
-        <TeamSkillCards className="team-left-skills" title="己方技能卡片" cardCount={teamSkillCardCount} value={leftSlots[leftIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onChange={(partial) => patchSlot("left", leftIndex, partial)} />
-        <TeamSkillCards className="team-right-skills" title="敌方技能卡片" cardCount={teamSkillCardCount} value={rightSlots[rightIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onChange={(partial) => patchSlot("right", rightIndex, partial)} />
+        {displayMode === "plugin" ? <>
+          {Array.from({ length: teamSkillCardCount }, (_, skillIndex) => (
+            <TeamSkillCards key={`left-skill-${skillIndex}`} pluginMode className={`team-left-skill-${skillIndex}`} title={`技能 ${skillIndex + 1}`} cardCount={teamSkillCardCount} onlyIndex={skillIndex} floating layout={overlayLayout(`left-skill-${skillIndex}`)} onLayoutChange={(partial) => updateOverlayLayout(`left-skill-${skillIndex}`, partial)} value={leftSlots[leftIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onApplySkill={leftAttacks ? (skill) => void applyBuff(skill) : undefined} quickResult={leftAttacks ? quickSkillResults?.find((item) => item.skillName === skillCardSlots(leftSlots[leftIndex].skills, teamSkillCardCount)[skillIndex]) || null : null} onChange={(partial) => patchSlot("left", leftIndex, partial)} />
+          ))}
+          {Array.from({ length: teamSkillCardCount }, (_, skillIndex) => (
+            <TeamSkillCards key={`right-skill-${skillIndex}`} pluginMode className={`team-right-skill-${skillIndex}`} title={`技能 ${skillIndex + 1}`} cardCount={teamSkillCardCount} onlyIndex={skillIndex} floating layout={overlayLayout(`right-skill-${skillIndex}`)} onLayoutChange={(partial) => updateOverlayLayout(`right-skill-${skillIndex}`, partial)} value={rightSlots[rightIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onApplySkill={!leftAttacks ? (skill) => void applyBuff(skill) : undefined} quickResult={!leftAttacks ? quickSkillResults?.find((item) => item.skillName === skillCardSlots(rightSlots[rightIndex].skills, teamSkillCardCount)[skillIndex]) || null : null} onChange={(partial) => patchSlot("right", rightIndex, partial)} />
+          ))}
+        </> : <>
+          <TeamSkillCards className="team-left-skills" title="己方技能卡片" cardCount={teamSkillCardCount} value={leftSlots[leftIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onApplySkill={leftAttacks ? (skill) => void applyBuff(skill) : undefined} onChange={(partial) => patchSlot("left", leftIndex, partial)} />
+          <TeamSkillCards className="team-right-skills" title="敌方技能卡片" cardCount={teamSkillCardCount} value={rightSlots[rightIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onApplySkill={!leftAttacks ? (skill) => void applyBuff(skill) : undefined} onChange={(partial) => patchSlot("right", rightIndex, partial)} />
+        </>}
+        {displayMode === "plugin" ? <section className="weather-panel team-weather" data-overlay-control data-plugin-resizable aria-label="天气">
+          <PluginResizeEdges />
+          <label>
+            <span className="ui-field-title">天气</span>
+            <select value={weather} onChange={(event) => onWeatherChange(event.target.value as (typeof WEATHER_OPTIONS)[number]["value"])}>
+              {WEATHER_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </label>
+        </section> : null}
       </div>
-      <TeamActionPanel leftAttacks={leftAttacks} onToggleDirection={() => setLeftAttacks((value) => !value)} onCalculate={() => void calculate()} onApplyBuff={() => void applyBuff()} buffOptions={buffOptions} selectedBuffOption={selectedBuffOption} onSelectBuffOption={setSelectedBuffOption} />
+      <TeamActionPanel pluginMode={displayMode === "plugin"} layout={displayMode === "plugin" ? overlayLayout("action") : undefined} onLayoutChange={(partial) => updateOverlayLayout("action", partial)} leftAttacks={leftAttacks} onToggleDirection={() => setLeftAttacks((value) => !value)} onCalculate={() => void calculate()} onApplyBuff={() => void applyBuff()} onResetBattle={resetBattle} targetHp={targetHp} onTargetHpChange={setTargetHp} onCalculateRequiredPower={() => void calculateRequiredPower()} buffOptions={buffOptions} selectedBuffOption={selectedBuffOption} onSelectBuffOption={setSelectedBuffOption} />
       {bonusTool ? (
         <BattleBonusToolPanel
           tool={bonusTool}
@@ -1605,6 +2876,7 @@ function TeamBattlePage({
         selectedWillpowerElement={selectedWillpowerElement}
         onSelectWillpowerElement={selectWillpowerElement}
       />
+      {requiredPower ? <RequiredPowerView value={requiredPower} context={battleContext} /> : null}
       {petPicker ? (
         <PickerModal
           mode="pet"
@@ -1916,27 +3188,63 @@ function TeamSkillCards({
   title,
   className = "",
   cardCount,
+  onlyIndex,
+  floating = false,
+  layout,
+  onLayoutChange,
+  pluginMode = false,
   value,
   elements,
   configs,
   onConfigsChanged,
+  onApplySkill,
+  quickResult,
   onChange,
 }: {
   title: string;
   className?: string;
   cardCount: number;
+  onlyIndex?: number;
+  floating?: boolean;
+  layout?: PluginOverlayLayout;
+  onLayoutChange?: (partial: Partial<PluginOverlayLayout>) => void;
+  pluginMode?: boolean;
   value: UnitState;
   elements: string[];
   configs: PickerConfigs;
   onConfigsChanged: (configs: PickerConfigs) => void;
+  onApplySkill?: (skill: string) => void;
+  quickResult?: QuickSkillResult | null;
   onChange: (partial: Partial<UnitState>) => void;
 }) {
-  const cards = skillCardSlots(value.skills, cardCount).map((name) => (name ? { name } : null));
+  const cards = (onlyIndex === undefined ? skillCardSlots(value.skills, cardCount) : [skillCardSlots(value.skills, Math.max(cardCount, value.skills.length))[onlyIndex] || ""]).map((name) => (name ? { name } : null));
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
   const [skillData, setSkillData] = useState<SkillListResult>({ petSkills: [], allSkills: [] });
-    const [stackableTriggers, setStackableTriggers] = useState<SkillTriggerInfo["stackable"]>([]);
-    const [usageModeOptions, setUsageModeOptions] = useState<SkillTriggerInfo["usage_mode_options"]>([]);
+  const panelRef = useRef<HTMLElement | null>(null);
+  const suppressCardClickRef = useRef(false);
+  const [skillInfo, setSkillInfo] = useState<SkillTriggerInfo | null>(null);
   const currentSkill = value.current_skill || value.skills[0] || "";
+  const controlSkill = onlyIndex === undefined ? currentSkill : cards[0]?.name || "";
+
+  function startFloatingDrag(event: ReactPointerEvent<HTMLElement>) {
+    if (!floating || (event.target as HTMLElement).closest("button, input, select, textarea")) return;
+    event.preventDefault();
+    const start = { pointerX: event.clientX, pointerY: event.clientY, ...(layout || defaultPluginOverlayLayout(className)) };
+    const move = (moveEvent: PointerEvent) => {
+      if (Math.abs(moveEvent.clientX - start.pointerX) > 3 || Math.abs(moveEvent.clientY - start.pointerY) > 3) suppressCardClickRef.current = true;
+      onLayoutChange?.({
+        x: Math.max(0, start.x + moveEvent.clientX - start.pointerX),
+        y: Math.max(0, start.y + moveEvent.clientY - start.pointerY),
+      });
+    };
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      window.setTimeout(() => { suppressCardClickRef.current = false; }, 0);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+  }
 
   useEffect(() => {
     if (pickerIndex === null) return;
@@ -1945,26 +3253,29 @@ function TeamSkillCards({
 
   useEffect(() => {
     let cancelled = false;
-      setStackableTriggers([]);
-      setUsageModeOptions([]);
-    if (!currentSkill) return () => { cancelled = true; };
-    void cachedSkillTriggerInfo(currentSkill)
+    setSkillInfo(null);
+    if (!controlSkill) return () => { cancelled = true; };
+    void cachedSkillTriggerInfo(controlSkill)
       .then((data) => {
-        if (!cancelled && data.skill_name === currentSkill) {
-          setStackableTriggers(data.stackable || []);
-          setUsageModeOptions(data.usage_mode_options || []);
-        }
+        if (!cancelled && data.skill_name === controlSkill) setSkillInfo(data);
       })
       .catch(() => {
-          if (!cancelled) setStackableTriggers([]);
-          if (!cancelled) setUsageModeOptions([]);
+        if (!cancelled) setSkillInfo(null);
       });
     return () => { cancelled = true; };
-  }, [currentSkill]);
+  }, [controlSkill]);
+
+  useEffect(() => {
+    if (!floating || !panelRef.current || !onLayoutChange) return;
+    const panel = panelRef.current;
+    const observer = new ResizeObserver(() => onLayoutChange({ width: panel.offsetWidth, height: panel.offsetHeight }));
+    observer.observe(panel);
+    return () => observer.disconnect();
+  }, [floating, onLayoutChange]);
 
   function setSkillAt(index: number, skillName: string) {
     const next = skillCardSlots(value.skills, Math.max(cardCount, value.skills.length));
-    next[index] = skillName;
+    next[onlyIndex === undefined ? index : onlyIndex] = skillName;
     onChange({
       skills: next.filter(Boolean),
       current_skill: skillName,
@@ -1973,8 +3284,9 @@ function TeamSkillCards({
 
   function clearSkillAt(index: number) {
     const next = skillCardSlots(value.skills, Math.max(cardCount, value.skills.length));
-    const removed = next[index];
-    next[index] = "";
+    const actualIndex = onlyIndex === undefined ? index : onlyIndex;
+    const removed = next[actualIndex];
+    next[actualIndex] = "";
     const skills = next.filter(Boolean);
     onChange({
       skills,
@@ -1989,23 +3301,34 @@ function TeamSkillCards({
   }
 
   return (
-    <section className={`team-skill-panel ${className}`.trim()}>
+    <section ref={panelRef} className={`team-skill-panel ${floating ? "skill-card-floating" : ""} ${className}`.trim()} data-overlay-control data-plugin-resizable={floating || undefined} style={floating && layout ? { left: layout.x, top: layout.y, width: layout.width, height: layout.height } : undefined} onPointerDown={floating ? startFloatingDrag : undefined} onClickCapture={(event) => {
+      if (!suppressCardClickRef.current) return;
+      event.preventDefault();
+      event.stopPropagation();
+      suppressCardClickRef.current = false;
+    }}>
+      {floating ? <PluginResizeEdges /> : null}
       <h2>{title}</h2>
       <TeamSkillCardGrid
         cards={cards}
+        emptySkillOffset={onlyIndex || 0}
         currentSkill={value.current_skill}
-        onPick={(current_skill) => onChange({ current_skill })}
+        onPick={(current_skill) => onChange({ current_skill: value.current_skill === current_skill ? "" : current_skill })}
         onChoose={setPickerIndex}
         onClear={clearSkillAt}
+        onApply={onApplySkill}
+        pluginMode={pluginMode}
+        quickResult={quickResult}
       />
-      {stackableTriggers.length ? (
-        <div className="team-skill-inline-controls">
-          {stackableTriggers.map((trigger) => {
-            const stacks = value.skill_trigger_stacks[currentSkill] || [];
+      {pluginMode && quickResult ? <QuickSkillResultDisplay result={quickResult} /> : null}
+      {pluginMode && controlSkill ? (
+        <div className="plugin-skill-controls">
+          {skillInfo?.stackable.map((trigger) => {
+            const stacks = value.skill_trigger_stacks[controlSkill] || [];
             const stackCount = stacks[trigger.index] ?? 0;
             return (
               <div className="skill-stack-control" key={trigger.index}>
-                <FieldLabel>{stackableTriggers.length > 1 ? trigger.label : "叠加"}</FieldLabel>
+                <FieldLabel>{skillInfo.stackable.length > 1 ? trigger.label : "叠加"}</FieldLabel>
                 <NumberInput
                   value={stackCount}
                   min={0}
@@ -2013,36 +3336,29 @@ function TeamSkillCards({
                   onChange={(nextStackCount) => {
                     const nextStacks = [...stacks];
                     nextStacks[trigger.index] = nextStackCount;
-                    onChange({ skill_trigger_stacks: { ...value.skill_trigger_stacks, [currentSkill]: nextStacks } });
+                    onChange({ skill_trigger_stacks: { ...value.skill_trigger_stacks, [controlSkill]: nextStacks } });
                   }}
                 />
               </div>
             );
           })}
-          <button
-            className="compact-button skill-reset-button"
-            onClick={() => onChange({ skill_trigger_stacks: { ...value.skill_trigger_stacks, [currentSkill]: [] } })}
-          >
-            重置
-          </button>
-        </div>
-      ) : null}
-      {usageModeOptions.length > 1 && value.usage_time_plus > 0 ? (
-        <div className="team-skill-inline-controls">
+          {skillInfo?.stackable.length ? <button className="compact-button skill-reset-button" onClick={() => onChange({ skill_trigger_stacks: { ...value.skill_trigger_stacks, [controlSkill]: [] } })}>重置</button> : null}
+          {skillInfo?.has_buff && onApplySkill ? <button className="compact-button" onClick={() => onApplySkill(controlSkill)}>应用</button> : null}
+          {skillInfo && skillInfo.usage_mode_options.length > 1 && value.usage_time_plus > 0 ? (
           <div className="skill-stack-control">
             <FieldLabel>使用强化</FieldLabel>
             <select
-              value={value.skill_usage_mode_choices[currentSkill] ?? usageModeOptions[0].index}
+              value={value.skill_usage_mode_choices[controlSkill] ?? skillInfo.usage_mode_options[0].index}
               onChange={(event) => onChange({
                 skill_usage_mode_choices: {
                   ...value.skill_usage_mode_choices,
-                  [currentSkill]: Number(event.target.value),
+                  [controlSkill]: Number(event.target.value),
                 },
               })}
             >
-              {usageModeOptions.map((option) => <option key={option.index} value={option.index}>{option.label}</option>)}
+              {skillInfo.usage_mode_options.map((option) => <option key={option.index} value={option.index}>{option.label}</option>)}
             </select>
-          </div>
+          </div>) : null}
         </div>
       ) : null}
       {pickerIndex !== null ? (
@@ -2281,7 +3597,7 @@ function BattleBonusToolPanel({
   }
 
   return (
-    <section ref={panelRef} className={`bonus-tool-floating ${tool}`} style={{ left: position.x, top: position.y }}>
+    <section ref={panelRef} className={`bonus-tool-floating ${tool}`} data-overlay-control style={{ left: position.x, top: position.y }}>
       <header onPointerDown={startDrag}>
         <strong>{title}</strong>
         <button className="icon-button" title="关闭" aria-label="关闭" onClick={onClose}>×</button>
@@ -2293,16 +3609,26 @@ function BattleBonusToolPanel({
 
 function TeamSkillCardGrid({
   cards,
+  emptySkillOffset = 0,
   currentSkill,
   onPick,
   onChoose,
   onClear,
+  onCalculate,
+  onApply,
+  pluginMode,
+  quickResult,
 }: {
   cards: Array<SkillItem | null>;
+  emptySkillOffset?: number;
   currentSkill: string;
   onPick: (skill: string) => void;
   onChoose: (index: number) => void;
   onClear: (index: number) => void;
+  onCalculate?: (skill: string) => void;
+  onApply?: (skill: string) => void;
+  pluginMode?: boolean;
+  quickResult?: QuickSkillResult | null;
 }) {
   const cardSkillNames = [...new Set(cards.flatMap((skill) => (skill ? [skill.name] : [])))];
   const cardSkillNamesKey = cardSkillNames.join("\u0000");
@@ -2338,6 +3664,7 @@ function TeamSkillCardGrid({
           title={skill ? [skill.name, skillDescriptions[skill.name]].filter(Boolean).join("\n") : "空技能"}
           onClick={() => {
             if (skill) onPick(skill.name);
+            else onChoose(index);
           }}
           onKeyDown={(event) => {
             if (event.key === "Enter" || event.key === " ") {
@@ -2346,16 +3673,13 @@ function TeamSkillCardGrid({
             }
           }}
         >
-          <strong>{skill?.name || "空技能"}</strong>
-          <button
-            className="slot-action"
-            onClick={(event) => {
-              event.stopPropagation();
-              skill ? onClear(index) : onChoose(index);
-            }}
-          >
-            {skill ? "取消" : "选择"}
-          </button>
+          <strong>{skill?.name || `空技能${emptySkillOffset + index + 1}`}</strong>
+          {quickResult && quickResult.skillName === skill?.name && quickResult.skillPower !== null && quickResult.skillPower !== undefined ? <span className="quick-skill-power">威力 {quickResult.skillPower}</span> : null}
+          {!pluginMode ? <div className="skill-card-actions">
+            <button className="slot-action" onClick={(event) => { event.stopPropagation(); skill ? onClear(index) : onChoose(index); }}>
+              {skill ? "取消" : "选择"}
+            </button>
+          </div> : null}
         </div>
       ))}
     </div>
@@ -2373,10 +3697,31 @@ function TeamBuffPanel({
   value: UnitState;
   onChange: (partial: Partial<UnitState>) => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const activeBuffs = [
+    ["物攻", value.phys_atk_buff, "%"],
+    ["魔攻", value.mag_atk_buff, "%"],
+    ["物防", value.phys_def_buff, "%"],
+    ["魔防", value.mag_def_buff, "%"],
+    ["威力", value.power_multiplier, "%"],
+    ["威力", value.power_bonus, ""],
+    ["连击", value.combo_plus, ""],
+    ["连击倍", value.combo_mul === 1 ? 0 : value.combo_mul, "x"],
+    ["使用", value.usage_time_plus, ""],
+  ].filter(([, amount]) => Number(amount) !== 0) as Array<[string, number, string]>;
   return (
-    <details className={`team-buff-panel ${className}`.trim()}>
-      <summary>
-        <span>{title}</span>
+    <details className={`team-buff-panel ${className}`.trim()} data-overlay-control data-plugin-resizable open={expanded}>
+      <PluginResizeEdges />
+      <summary onClick={(event) => {
+        event.preventDefault();
+        if ((event.target as HTMLElement).closest("button, .team-region-drag-handle")) return;
+        setExpanded((current) => !current);
+      }}>
+          <span className="team-buff-summary-title">
+          <span className="team-region-drag-handle" title="拖动 Buff 区域" aria-label="拖动 Buff 区域">::</span>
+          <span>{title}</span>
+          </span>
+          {activeBuffs.length ? <span className="buff-summary-values">{activeBuffs.map(([label, amount, suffix]) => `${label}${amount > 0 ? "+" : ""}${amount}${suffix}`).join(" ")}</span> : null}
         <button
           className="compact-button buff-reset-button"
           onClick={(event) => {
@@ -2463,7 +3808,7 @@ function TeamTraitEditor({
   const traitLabel = traitRuntime?.error
     ? "特性读取失败"
     : traitRuntime?.name
-      ? `${value.trait_override_query ? "手动特性" : "特性"}：${traitRuntime.name}`
+      ? traitRuntime.name
       : "未找到精灵特性";
   const traitDetail = traitRuntime?.error ? traitRuntime.error : traitRuntime?.effect_text || "";
   const traitChoiceLabel = (option: string) => ({ weekend: "周末", workday: "工作日" } as Record<string, string>)[option] || option;
@@ -2493,7 +3838,7 @@ function TeamTraitEditor({
               </div>
             </>
           ) : null}
-          <button className="compact-button trait-reset-button" onClick={() => onChange({ trait_override_query: null, trait_triggered: false, trait_stacks: 0, trait_choices: {} })}>重置</button>
+          {traitRuntime?.stack_input ? <button className="compact-button trait-reset-button" onClick={() => onChange({ trait_override_query: null, trait_triggered: false, trait_stacks: 0, trait_choices: {} })}>重置</button> : null}
         </div>
         {Object.entries(traitRuntime?.exclusive_choices || {}).map(([groupName, choice]: [string, any]) => (
           <label className="inline-row" key={groupName}>
@@ -2603,6 +3948,52 @@ function TeamIvEditor({
   );
 }
 
+function FloatingTeamPanel({ className, layout, onLayoutChange, children }: { className: string; layout: PluginOverlayLayout; onLayoutChange: (partial: Partial<PluginOverlayLayout>) => void; children: ReactNode }) {
+  const panelRef = useRef<HTMLElement | null>(null);
+
+  function startDrag(event: ReactPointerEvent<HTMLElement>) {
+    if ((event.target as HTMLElement).closest("button, input, select, textarea")) return;
+    event.preventDefault();
+    const start = { pointerX: event.clientX, pointerY: event.clientY, ...layout };
+    const move = (moveEvent: PointerEvent) => onLayoutChange({
+      x: Math.max(0, start.x + moveEvent.clientX - start.pointerX),
+      y: Math.max(0, start.y + moveEvent.clientY - start.pointerY),
+    });
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+  }
+
+  useEffect(() => {
+    if (!panelRef.current) return;
+    const panel = panelRef.current;
+    const observer = new ResizeObserver(() => onLayoutChange({ width: panel.offsetWidth, height: panel.offsetHeight }));
+    observer.observe(panel);
+    return () => observer.disconnect();
+  }, [onLayoutChange]);
+
+  return <section ref={panelRef} className={`floating-team-panel ${className}`} data-overlay-control data-plugin-resizable style={{ left: layout.x, top: layout.y, width: layout.width, height: layout.height }} onPointerDown={startDrag}>
+    <div className="plugin-drag-zone" aria-label="拖动面板" />
+    <PluginResizeEdges />
+    {children}
+  </section>;
+}
+
+function SpeedLine({ left, right, pets, layout, onLayoutChange }: { left: UnitState; right: UnitState; pets: Pet[]; layout: PluginOverlayLayout; onLayoutChange: (partial: Partial<PluginOverlayLayout>) => void }) {
+  const leftScenarios = speedScenarios(left, pets);
+  const rightScenarios = speedScenarios(right, pets);
+  return <FloatingTeamPanel className="speed-line" layout={layout} onLayoutChange={onLayoutChange}>
+    <div className="speed-line-title">速度线</div>
+    <div className="speed-line-sides">
+      <div><strong>{left.display_name || left.name || "己方"}</strong>{leftScenarios.length ? leftScenarios.map((item) => <span key={item.label}>{item.label} {item.value}</span>) : <span>未选择精灵</span>}</div>
+      <div><strong>{right.display_name || right.name || "敌方"}</strong>{rightScenarios.length ? rightScenarios.map((item) => <span key={item.label}>{item.label} {item.value}</span>) : <span>未选择精灵</span>}</div>
+    </div>
+  </FloatingTeamPanel>;
+}
+
 function Roster({
   title,
   className = "",
@@ -2616,8 +4007,10 @@ function Roster({
   onImportGroup,
   onSelect,
   onPatchSlot,
+  onPatchSlotAt,
   onChoose,
   onClear,
+  pluginMode,
 }: {
   title: string;
   className?: string;
@@ -2631,14 +4024,29 @@ function Roster({
   onImportGroup: (groupName: string) => void;
   onSelect: (index: number) => void;
   onPatchSlot: (partial: Partial<UnitState>) => void;
+  onPatchSlotAt: (index: number, partial: Partial<UnitState>) => void;
   onChoose: (index: number) => void;
   onClear: (index: number) => void;
+  pluginMode: boolean;
 }) {
   const activeSlot = slots[activeIndex] || blankUnit();
   const controlAfterIndex = Math.min(activeIndex % 2 === 0 ? activeIndex + 1 : activeIndex, slots.length - 1);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const closeTimer = useRef<number | null>(null);
+
+  function openPopover(index: number) {
+    if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
+    setHoveredIndex(index);
+  }
+
+  function schedulePopoverClose() {
+    if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
+    closeTimer.current = window.setTimeout(() => setHoveredIndex(null), 240);
+  }
 
   return (
-    <section className={`roster ${className}`.trim()}>
+    <section className={`roster ${className}`.trim()} data-overlay-control data-plugin-resizable={pluginMode || undefined}>
+      {pluginMode ? <PluginResizeEdges /> : null}
       <header className="roster-header">
         <h2>{title}</h2>
         <select
@@ -2660,7 +4068,7 @@ function Roster({
       <div className="slot-grid">
         {slots.map((slot, index) => (
           <Fragment key={index}>
-            <div className="slot-cell">
+            <div className="slot-cell" onMouseEnter={() => pluginMode && openPopover(index)} onMouseLeave={schedulePopoverClose}>
               <div
                 className={index === activeIndex ? "slot active" : "slot"}
                 role="button"
@@ -2686,8 +4094,11 @@ function Roster({
                   {slot.name ? "取消" : "选择"}
                 </button>
               </div>
+              {pluginMode && hoveredIndex === index && slot.name ? <div className="slot-iv-popover" onMouseEnter={() => openPopover(index)} onMouseLeave={schedulePopoverClose} onPointerDown={(event) => event.stopPropagation()}>
+                <TeamIvEditor value={slot} onChange={(partial) => onPatchSlotAt(index, partial)} alwaysOpen />
+              </div> : null}
             </div>
-            {index === controlAfterIndex ? (
+            {!pluginMode && index === controlAfterIndex ? (
               <div className="slot-inline-controls">
                 <TeamTraitEditor value={activeSlot} pets={pets} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onChange={onPatchSlot} />
                 <TeamIvEditor value={activeSlot} onChange={onPatchSlot} />
@@ -2749,6 +4160,7 @@ function ResultView({
   const attackerName = context?.attackerName || "攻击方";
   const defenderName = context?.defenderName || "防御方";
   const skillName = context?.skillName || summary.skill_name || "-";
+  const isRequiredPower = results.some((result) => result.required_power !== undefined);
   const showLegacyResultCards = false;
   const showLegacyResultDetail = false;
   return (
@@ -2776,7 +4188,7 @@ function ResultView({
           <section className="result-section" key={caseLabel}>
             <header>
               <strong>{caseLabel}</strong>
-              <span>最终威力 {caseResults[0]?.effective_power ?? "-"}</span>
+              <span>{isRequiredPower ? "所需基础威力" : "最终威力"} {isRequiredPower ? caseResults[0]?.required_power ?? "-" : caseResults[0]?.effective_power ?? "-"}</span>
             </header>
             {showLegacyResultCards ? (
               <div className="result-cards">
@@ -2841,7 +4253,7 @@ function ResultView({
                                 if (rowResult) setSelected(selected === rowResult ? null : rowResult);
                               }}
                             >
-                              {rowResult?.damage ?? "-"}
+                              {isRequiredPower ? rowResult?.required_power ?? "-" : rowResult?.damage ?? "-"}
                             </button>
                             {hpLabels.map((hpLabel, hpIndex) => {
                               const hpResult = rowResult?.hp_results.find((item) => item.hp_label === hpLabel);
@@ -2899,6 +4311,73 @@ function ResultView({
       ) : null}
     </section>
   );
+}
+
+function RequiredPowerView({ value, context }: { value: RequiredPowerResponse; context: BattleContext | null }) {
+  const [visible, setVisible] = useState(true);
+  const [position, setPosition] = useState({ x: 80, y: 88 });
+  const dragRef = useRef<{ pointerX: number; pointerY: number; x: number; y: number } | null>(null);
+  const labels = ["天分加性格++", "天分+", "正常", "减性格-"];
+  const physical = value.rows.filter((row) => row.attack_type === "物攻");
+  const magical = value.rows.filter((row) => row.attack_type === "魔攻");
+  useEffect(() => setVisible(true), [value]);
+
+  function startDrag(event: ReactPointerEvent<HTMLElement>) {
+    if ((event.target as HTMLElement).closest("button")) return;
+    dragRef.current = { pointerX: event.clientX, pointerY: event.clientY, x: position.x, y: position.y };
+    const move = (moveEvent: PointerEvent) => {
+      const start = dragRef.current;
+      if (!start) return;
+      setPosition({ x: Math.max(8, start.x + moveEvent.clientX - start.pointerX), y: Math.max(8, start.y + moveEvent.clientY - start.pointerY) });
+    };
+    const stop = () => {
+      dragRef.current = null;
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+  }
+
+  if (!visible) return null;
+  return (
+    <section className="required-power-panel" style={{ left: position.x, top: position.y }}>
+      <header onPointerDown={startDrag}>
+        <div>
+          <strong>判死所需威力</strong>
+          <span>{context?.attackerName || "敌方"} 击杀 {context?.defenderName || "我方"}（{value.target_hp} HP）</span>
+        </div>
+        <button onClick={() => setVisible(false)}>关闭</button>
+      </header>
+      <div className="required-power-table">
+        <div>敌方攻击档位</div><div>物攻威力</div><div>魔攻威力</div>
+        {labels.map((label, index) => (
+          <Fragment key={label}>
+            <div>{label}</div>
+            <div>{physical[index]?.required_power ?? "-"}</div>
+            <div>{magical[index]?.required_power ?? "-"}</div>
+          </Fragment>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function QuickSkillResultDisplay({ result }: { result: QuickSkillResult }) {
+  const resultRows = [true, false].map((isTriggered) => result.results.filter((item, index, source) =>
+    item.is_triggered === isTriggered
+      && source.findIndex((candidate) => candidate.is_triggered === isTriggered
+        && candidate.damage === item.damage
+        && candidate.hp_results.map(({ damage_percent }) => damage_percent).join("/") === item.hp_results.map(({ damage_percent }) => damage_percent).join("/")) === index,
+  )).filter((items) => items.length > 0);
+  return <div className="quick-skill-result" aria-label={`${result.skillName} 快捷结果`}>
+    {resultRows.map((rows, rowIndex) => <div className="quick-skill-result-row" key={rowIndex}>
+      {rows.map((item, index) => <span key={`${item.case_label}-${item.damage}-${index}`}>
+        <b>{item.damage}</b>
+        <small>{item.hp_results.map(({ damage_percent }) => `${Math.round(damage_percent)}%`).join(" / ")}</small>
+      </span>)}
+    </div>)}
+  </div>;
 }
 
 function uiTokenValues(configs: PickerConfigs) {
@@ -3142,16 +4621,48 @@ function BurstPanelPage({
 }
 
 function App() {
-  const [tab, setTab] = useState<"team" | "presets" | "settings">("team");
+  const [tab, setTab] = useState<"team" | "presets" | "replay" | "settings">("team");
   const [weather, setWeather] = useState<(typeof WEATHER_OPTIONS)[number]["value"]>("none");
   const [data, setData] = useState<AppState | null>(null);
   const [error, setError] = useState("");
   const [previewUiTokens, setPreviewUiTokens] = useState<UiTokenValues | null>(null);
+  const [overlayEnabled, setOverlayEnabled] = useState(false);
+  const [overlayAttached, setOverlayAttached] = useState(false);
+  const [teamDisplayMode, setTeamDisplayMode] = useState<"normal" | "plugin">("plugin");
+  const [fullscreenEnabled, setFullscreenEnabled] = useState(false);
+
+  async function toggleOverlay() {
+    const next = !overlayEnabled;
+    try {
+      const currentWindow = getCurrentWindow();
+      await currentWindow.setAlwaysOnTop(next);
+      setOverlayEnabled(next);
+    } catch (err) {
+      setError(asError(err));
+    }
+  }
+
+  async function toggleFullscreen() {
+    const next = !fullscreenEnabled;
+    try {
+      await getCurrentWindow().setFullscreen(next);
+      setFullscreenEnabled(next);
+    } catch (err) {
+      setError(asError(err));
+    }
+  }
+
+  function dragWindow(event: ReactPointerEvent<HTMLElement>) {
+    if ((event.target as HTMLElement).closest("button, input, select, textarea, a")) return;
+    void getCurrentWindow().startDragging().catch((err) => setError(asError(err)));
+  }
 
   async function load() {
     setError("");
     try {
-      setData(await invoke<AppState>("app_state"));
+      const nextData = await invoke<AppState>("app_state");
+      setData(nextData);
+      setTeamDisplayMode(nextData.configs.team_layout?.display_mode === "normal" ? "normal" : "plugin");
       setPreviewUiTokens(null);
     } catch (err) {
       setError(asError(err));
@@ -3162,20 +4673,60 @@ function App() {
     void load();
   }, []);
 
+  useEffect(() => {
+    document.documentElement.classList.toggle("overlay-attached", overlayAttached);
+    return () => document.documentElement.classList.remove("overlay-attached");
+  }, [overlayAttached]);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    void listen<boolean>("overlay-attachment-change", ({ payload }) => setOverlayAttached(payload))
+      .then((stop) => { unlisten = stop; })
+      .catch((err) => setError(asError(err)));
+    return () => unlisten?.();
+  }, []);
+
+  useEffect(() => {
+    const onTopmostChanged = (event: Event) => {
+      setOverlayEnabled(Boolean((event as CustomEvent<boolean>).detail));
+    };
+    window.addEventListener("overlay-topmost-change", onTopmostChanged);
+    return () => window.removeEventListener("overlay-topmost-change", onTopmostChanged);
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "F11") return;
+      event.preventDefault();
+      void toggleFullscreen();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [fullscreenEnabled]);
+
   const teamConfigs = data && previewUiTokens
     ? { ...data.configs, ui_tokens: { ...(data.configs.ui_tokens || {}), ...previewUiTokens } }
     : data?.configs;
 
   return (
-    <main className={tab === "presets" ? "app-shell preset-shell" : "app-shell"} style={data ? (previewUiTokens ? uiTokenStyleFromValues(previewUiTokens) : uiTokenStyle(data.configs)) : undefined}>
-      <header className="app-header">
+    <main className={`${tab === "presets" || tab === "replay" ? "app-shell preset-shell" : "app-shell"}${overlayAttached ? " overlay-attached" : ""}`} style={data ? (previewUiTokens ? uiTokenStyleFromValues(previewUiTokens) : uiTokenStyle(data.configs)) : undefined}>
+      <header className="app-header overlay-header" onPointerDown={dragWindow}>
         <nav className="tabs">
           <button className={tab === "team" ? "active" : ""} onClick={() => setTab("team")}>队伍面板</button>
           <button className={tab === "presets" ? "active" : ""} onClick={() => setTab("presets")}>精灵保存</button>
+          <button className={tab === "replay" ? "active" : ""} onClick={() => setTab("replay")}>对局回放</button>
           <button className={tab === "settings" ? "active" : ""} onClick={() => setTab("settings")}>界面配置</button>
           <button onClick={() => void load()}>刷新</button>
         </nav>
-        {tab === "team" ? <section className="weather-panel">
+        {teamDisplayMode === "plugin" ? <button
+          className={overlayEnabled ? "overlay-toggle overlay-header-toggle active" : "overlay-toggle overlay-header-toggle"}
+          title={`${overlayEnabled ? "关闭悬浮置顶" : "开启悬浮置顶"}；F11 切换全屏`}
+          aria-pressed={overlayEnabled}
+          onClick={() => void toggleOverlay()}
+        >
+          {overlayEnabled ? "取消置顶" : "悬浮置顶"}
+        </button> : null}
+        {tab === "team" && teamDisplayMode !== "plugin" ? <section className="weather-panel">
             <label>
               <span className="ui-field-title">天气</span>
               <select value={weather} onChange={(event) => setWeather(event.target.value as (typeof WEATHER_OPTIONS)[number]["value"])}>
@@ -3199,8 +4750,11 @@ function App() {
               configs={teamConfigs || data.configs}
               burstEffects={data.burstEffects}
               weather={weather}
+              onWeatherChange={setWeather}
               onPresetsChanged={(presets) => setData({ ...data, presets })}
               onConfigsChanged={(configs) => setData({ ...data, configs })}
+              onOverlayAttachmentChange={setOverlayAttached}
+              onDisplayModeChange={setTeamDisplayMode}
             />
           </div>
           <div className="battle-view" hidden={tab !== "presets"}>
@@ -3213,6 +4767,7 @@ function App() {
               onConfigsChanged={(configs) => setData({ ...data, configs })}
             />
           </div>
+          <div className="battle-view" hidden={tab !== "replay"}><ReplayPage /></div>
           <div className="battle-view" hidden={tab !== "settings"}>
             <InterfaceSettingsPage configs={data.configs} onConfigsChanged={(configs) => setData({ ...data, configs })} onPreviewValues={setPreviewUiTokens} burstEffects={data.burstEffects} />
           </div>
