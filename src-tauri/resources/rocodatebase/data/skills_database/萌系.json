@@ -67,7 +67,7 @@
     "element": "萌",
     "type": "状态",
     "skill_power": null,
-    "description": "自己获得萌化：速度永久+150。",
+    "description": "自己获得萌化：速度永久+130。",
     "effect": "normal"
   },
   {
@@ -145,16 +145,16 @@
     "element": "萌",
     "type": "魔攻",
     "skill_power": 30,
-    "description": "造成魔伤，3连击，自己获得萌化：威力永久+20。",
+    "description": "造成魔伤，3连击，自己获得萌化：威力永久+10。",
     "combo": 3,
     "buff_options": [
       {
-        "label": "自己威力 +20",
+        "label": "自己威力 +10",
         "effects": [
           {
             "target": "self",
             "field": "power_bonus",
-            "value": 20
+            "value": 10
           }
         ]
       }

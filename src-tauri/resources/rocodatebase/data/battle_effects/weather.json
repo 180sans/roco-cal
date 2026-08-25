@@ -14,7 +14,7 @@
       ]
     },
     { "id": "sandstorm", "label": "沙暴（地）", "effects": [] },
-    { "id": "snow", "label": "雪天（冰）", "effects": [] },
+    { "id": "blizzard", "label": "雪天（冰）", "effects": [] },
     { "id": "thunder", "label": "雷鸣（电）", "effects": [] }
   ]
 }

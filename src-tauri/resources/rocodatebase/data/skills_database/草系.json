@@ -342,7 +342,7 @@
     "element": "草",
     "type": "状态",
     "skill_power": null,
-    "description": "赋予敌方寄生。",
+    "description": "敌方获得3层寄生。",
     "effect": "normal"
   },
   {

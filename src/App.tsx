@@ -489,7 +489,7 @@ const WEATHER_OPTIONS = [
   { value: "none", label: "无" },
   { value: "rain", label: "雨天（水）" },
   { value: "sandstorm", label: "沙暴（地）" },
-  { value: "snow", label: "雪天（冰）" },
+  { value: "blizzard", label: "雪天（冰）" },
   { value: "thunder", label: "雷鸣（电）" },
 ] as const;
 

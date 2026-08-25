@@ -539,7 +539,18 @@ def _effect_matches_skill_filters(
     current_skill_effect=None,
     owner_elements=None,
     current_advantage=None,
+    weather="none",
 ):
+    context = effect.get("context")
+    if (
+        isinstance(context, dict)
+        and context.get("subject") == "weather"
+        and context.get("timing") == "current"
+        and isinstance(effect.get("context_mode"), str)
+        and weather != effect["context_mode"]
+    ):
+        return False
+
     filters = effect.get("filters")
     if not filters:
         return True
@@ -643,6 +654,7 @@ def _collect_trait_modifiers(
     skill_trigger_modes=None,
     owner_elements=None,
     current_advantage=None,
+    weather="none",
 ):
     modifiers = {
         "atk_buff_delta": 0.0,
@@ -690,6 +702,7 @@ def _collect_trait_modifiers(
             current_skill_effect=current_skill_effect,
             owner_elements=owner_elements,
             current_advantage=current_advantage,
+            weather=weather,
         ):
             continue
 
@@ -827,6 +840,7 @@ def resolve_effective_skill_combos(
             skill_trigger_modes=skill_trigger_modes,
             owner_elements=attacker_elements,
             current_advantage=advantage,
+            weather=weather,
         )
         defender_modifiers = _collect_trait_modifiers(
             defender_trait_runtime,
@@ -840,6 +854,7 @@ def resolve_effective_skill_combos(
             skill_trigger_modes=skill_trigger_modes,
             owner_elements=defender_elements,
             current_advantage=advantage,
+            weather=weather,
         )
         mark_modifiers = resolve_mark_modifiers(
             attacker_mark_state or {},
@@ -1052,6 +1067,7 @@ def battle_damage(
             skill_trigger_modes=skill_trigger_modes,
             owner_elements=attacker_elements,
             current_advantage=advantage,
+            weather=weather,
         )
         defender_trait_modifiers = _collect_trait_modifiers(
             defender_trait_runtime,
@@ -1065,6 +1081,7 @@ def battle_damage(
             skill_trigger_modes=skill_trigger_modes,
             owner_elements=defender_elements,
             current_advantage=advantage,
+            weather=weather,
         )
         attacker_mark_modifiers = resolve_mark_modifiers(
             attacker_mark_state or {},

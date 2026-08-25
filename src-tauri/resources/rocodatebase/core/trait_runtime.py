@@ -40,6 +40,8 @@ def _resolve_group_effects(group: dict[str, Any], count: int) -> list[dict[str, 
         base_effect = {key: value for key, value in effect.items() if key not in {"value", "values", "values_per_stack"}}
         if isinstance(group.get("context"), dict):
             base_effect["context"] = group["context"]
+        if isinstance(group.get("mode"), str):
+            base_effect["context_mode"] = group["mode"]
         values_per_stack = effect.get("values_per_stack")
         values = values_per_stack if isinstance(values_per_stack, dict) else effect.get("values")
         if isinstance(values, dict):
