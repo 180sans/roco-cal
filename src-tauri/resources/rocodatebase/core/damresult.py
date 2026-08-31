@@ -270,72 +270,6 @@ def calculate_damage_simple(
         "damage": damage
     }
 
-
-def generate_scenarios(atk_iv, atk_personality, def_iv, def_personality, hp_iv, hp_personality):
-    """
-    根据 iv 是否为 None，生成所有需要计算的场景组合。
-
-    当 iv 为 None 时，展开为多种情况；当 iv 已指定时，使用指定值。
-
-    返回列表，每个元素为 dict:
-    {
-        "atk_iv": int, "atk_personality": bool|None,
-        "def_iv": int, "def_personality": bool|None,
-        "hp_iv": int, "hp_personality": bool|None,
-        "label": str
-    }
-    """
-
-    # 攻击方场景
-    if atk_iv is None:
-        atk_scenarios = [
-            {"atk_iv": 10, "atk_personality": True, "atk_label": "加攻击天分加性格"},
-            {"atk_iv": 10, "atk_personality": None, "atk_label": "加攻击天分"},
-            {"atk_iv": 0, "atk_personality": None, "atk_label": "正常攻击"},
-            {"atk_iv": 0, "atk_personality": False, "atk_label": "减攻击性格"},
-        ]
-    else:
-        atk_scenarios = [
-            {"atk_iv": atk_iv, "atk_personality": atk_personality, "atk_label": "指定攻击"}
-        ]
-
-    # 防御方防御场景
-    if def_iv is None:
-        def_scenarios = [
-            {"def_iv": 10, "def_personality": None, "def_label": "加防御天分"},
-            {"def_iv": 0, "def_personality": None, "def_label": "正常防御"},
-            {"def_iv": 0, "def_personality": False, "def_label": "减防御性格"},
-        ]
-    else:
-        def_scenarios = [
-            {"def_iv": def_iv, "def_personality": def_personality, "def_label": "指定防御"}
-        ]
-
-    # 防御方生命场景
-    if hp_iv is None:
-        hp_scenarios = [
-            {"hp_iv": 10, "hp_personality": True, "hp_label": "加生命天分加性格"},
-            {"hp_iv": 10, "hp_personality": None, "hp_label": "加生命天分"},
-            {"hp_iv": 0, "hp_personality": None, "hp_label": "正常血量"},
-        ]
-    else:
-        hp_scenarios = [
-            {"hp_iv": hp_iv, "hp_personality": hp_personality, "hp_label": "指定血量"}
-        ]
-
-    # 笛卡尔积组合所有场景
-    from itertools import product
-    combinations = []
-    for atk_s, def_s, hp_s in product(atk_scenarios, def_scenarios, hp_scenarios):
-        combo = {}
-        combo.update(atk_s)
-        combo.update(def_s)
-        combo.update(hp_s)
-        combo["label"] = f"{atk_s['atk_label']} | {def_s['def_label']} | {hp_s['hp_label']}"
-        combinations.append(combo)
-
-    return combinations
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 skill_dir = os.path.join(BASE_DIR, "data", "skills_database")
 
@@ -370,7 +304,7 @@ def parse_personality(personality_bouns, personality_down):
     解析性格输入为 {attr: bonus_value} 字典。
 
     personality_bouns: None 或 str
-        - None: 无正面性格
+        - None: 正面性格未指定，由场景计算枚举可能的修正
         - "atk": atk 有正面性格，使用默认值
         - "atk:0.15": atk 有正面性格，加成 0.15
 
@@ -424,110 +358,126 @@ def get_personality_bonus_for_attr(personality_dict, attr_name):
     return None
 
 
-def _matches_default_attribute(default_iv, default_personality, configured_iv, configured_personality):
-    """Match explicit values against the default state's attribute category."""
-    if configured_iv is not None and bool(default_iv > 0) != bool(configured_iv > 0):
-        return False
-    if configured_personality is not None:
-        if default_personality is None or (default_personality > 0) != (configured_personality > 0):
-            return False
-    elif configured_iv is not None and default_personality is not None:
-        return False
-    return True
+def resolve_personality_candidates(personality_bouns, personality_down, attr_name):
+    """Return every still-possible personality modifier for one attribute."""
+    personality = parse_personality(personality_bouns, personality_down)
+    current_value = get_personality_bonus_for_attr(personality, attr_name)
+    if current_value is not None:
+        return [current_value]
+
+    has_positive_personality = any(value > 0 for value in personality.values())
+    has_negative_personality = any(value < 0 for value in personality.values())
+    candidates = []
+    if not has_positive_personality:
+        candidates.append(DEFAULT_PERSONALITY_BONUS)
+    candidates.append(0)
+    if not has_negative_personality:
+        candidates.append(DEFAULT_PERSONALITY_PENALTY)
+    return candidates
 
 
-def generate_atk_scenarios(atk_iv, atk_personality_bonus, atk_attr_name):
+def _with_special_personality_scenario(
+    scenarios,
+    personality_candidates,
+    configured_iv,
+    iv_key,
+    personality_key,
+    label_key,
+    attr_label,
+):
+    """Keep an explicitly configured personality that has no fixed display template."""
+    if len(personality_candidates) != 1 or personality_candidates[0] == 0 or scenarios:
+        return scenarios
+    return [{
+        iv_key: configured_iv if configured_iv is not None else 0,
+        personality_key: personality_candidates[0],
+        label_key: f"指定{attr_label}",
+    }]
+
+
+def generate_atk_scenarios(atk_iv, atk_personality_candidates, atk_attr_name):
     """
     生成攻击方场景。
 
     atk_iv: int 或 None (从 iv_dict 中按 atk_attr_name 取得)
-    atk_personality_bonus: 性格加成值，或 None
+    atk_personality_candidates: 当前攻击属性可能的性格修正值
     atk_attr_name: "atk" 或 "mag"
     """
     label_map = {"atk": "攻击", "mag": "魔攻"}
     attr_label = label_map.get(atk_attr_name, atk_attr_name)
-
     defaults = [
         {"atk_iv": 10, "atk_personality": DEFAULT_PERSONALITY_BONUS,
          "atk_label": f"加{attr_label}天分加性格"},
-        {"atk_iv": 10, "atk_personality": None,
+        {"atk_iv": 10, "atk_personality": 0,
          "atk_label": f"加{attr_label}天分"},
-        {"atk_iv": 0, "atk_personality": None,
+        {"atk_iv": 0, "atk_personality": 0,
          "atk_label": f"正常{attr_label}"},
-        {"atk_iv": 0, "atk_personality": DEFAULT_PERSONALITY_PENALTY,
-         "atk_label": f"减{attr_label}性格"},
     ]
     scenarios = [
-        {**scenario, "atk_iv": atk_iv if atk_iv is not None else scenario["atk_iv"],
-         "atk_personality": atk_personality_bonus if atk_personality_bonus is not None else scenario["atk_personality"]}
+        {**scenario, "atk_iv": atk_iv if atk_iv is not None else scenario["atk_iv"]}
         for scenario in defaults
-        if _matches_default_attribute(scenario["atk_iv"], scenario["atk_personality"], atk_iv, atk_personality_bonus)
+        if (atk_iv is None or bool(scenario["atk_iv"] > 0) == bool(atk_iv > 0))
+        and scenario["atk_personality"] in atk_personality_candidates
     ]
-    if scenarios:
-        return scenarios
-    return [{"atk_iv": atk_iv if atk_iv is not None else 0,
-             "atk_personality": atk_personality_bonus,
-             "atk_label": f"指定{attr_label}"}]
+    return _with_special_personality_scenario(
+        scenarios, atk_personality_candidates, atk_iv,
+        "atk_iv", "atk_personality", "atk_label", attr_label,
+    )
 
 
-def generate_def_scenarios(def_iv, def_personality_bonus, def_attr_name):
+def generate_def_scenarios(def_iv, def_personality_candidates, def_attr_name):
     """
     生成防御方防御场景。
 
     def_iv: int 或 None (从 iv_dict 中按 def_attr_name 取得)
-    def_personality_bonus: 性格加成值，或 None
+    def_personality_candidates: 当前防御属性可能的性格修正值
     def_attr_name: "def" 或 "res"
     """
     label_map = {"def": "防御", "res": "魔抗"}
     attr_label = label_map.get(def_attr_name, def_attr_name)
-
     defaults = [
-        {"def_iv": 10, "def_personality": None,
-         "def_label": f"加{attr_label}天分"},
-        {"def_iv": 0, "def_personality": None,
-         "def_label": f"正常{attr_label}"},
         {"def_iv": 0, "def_personality": DEFAULT_PERSONALITY_PENALTY,
          "def_label": f"减{attr_label}性格"},
+        {"def_iv": 0, "def_personality": 0,
+         "def_label": f"正常{attr_label}"},
+        {"def_iv": 10, "def_personality": 0,
+         "def_label": f"加{attr_label}天分"},
     ]
     scenarios = [
-        {**scenario, "def_iv": def_iv if def_iv is not None else scenario["def_iv"],
-         "def_personality": def_personality_bonus if def_personality_bonus is not None else scenario["def_personality"]}
+        {**scenario, "def_iv": def_iv if def_iv is not None else scenario["def_iv"]}
         for scenario in defaults
-        if _matches_default_attribute(scenario["def_iv"], scenario["def_personality"], def_iv, def_personality_bonus)
+        if (def_iv is None or bool(scenario["def_iv"] > 0) == bool(def_iv > 0))
+        and scenario["def_personality"] in def_personality_candidates
     ]
-    if scenarios:
-        return scenarios
-    return [{"def_iv": def_iv if def_iv is not None else 0,
-             "def_personality": def_personality_bonus,
-             "def_label": f"指定{attr_label}"}]
+    return _with_special_personality_scenario(
+        scenarios, def_personality_candidates, def_iv,
+        "def_iv", "def_personality", "def_label", attr_label,
+    )
 
 
-def generate_hp_scenarios(hp_iv, hp_personality_bonus):
+def generate_hp_scenarios(hp_iv, hp_personality_candidates):
     """
     生成防御方生命场景。
 
     hp_iv: int 或 None
-    hp_personality_bonus: 性格加成值，或 None
+    hp_personality_candidates: 当前生命属性可能的性格修正值
     """
     defaults = [
         {"hp_iv": 10, "hp_personality": DEFAULT_PERSONALITY_BONUS,
          "hp_label": "加生命天分加性格"},
-        {"hp_iv": 10, "hp_personality": None,
+        {"hp_iv": 10, "hp_personality": 0,
          "hp_label": "加生命天分"},
-        {"hp_iv": 0, "hp_personality": None,
-         "hp_label": "正常血量"},
     ]
     scenarios = [
-        {**scenario, "hp_iv": hp_iv if hp_iv is not None else scenario["hp_iv"],
-         "hp_personality": hp_personality_bonus if hp_personality_bonus is not None else scenario["hp_personality"]}
+        {**scenario, "hp_iv": hp_iv if hp_iv is not None else scenario["hp_iv"]}
         for scenario in defaults
-        if _matches_default_attribute(scenario["hp_iv"], scenario["hp_personality"], hp_iv, hp_personality_bonus)
+        if (hp_iv is None or bool(scenario["hp_iv"] > 0) == bool(hp_iv > 0))
+        and scenario["hp_personality"] in hp_personality_candidates
     ]
-    if scenarios:
-        return scenarios
-    return [{"hp_iv": hp_iv if hp_iv is not None else 0,
-             "hp_personality": hp_personality_bonus,
-             "hp_label": "指定血量"}]
+    return _with_special_personality_scenario(
+        scenarios, hp_personality_candidates, hp_iv,
+        "hp_iv", "hp_personality", "hp_label", "生命",
+    )
 
 
 def _effect_matches_skill_filters(
@@ -935,10 +885,10 @@ def battle_damage(
     参数说明:
       attacker_iv: 攻击方天分字典，键为 "hp","atk","mag","def","res","spd"，值为 int 或 None。
                    整个参数为 None 时等同于所有属性都为 None（自动展开场景）。
-      attacker_personality_bouns: 攻击方正面性格属性，如 "atk", "mag:0.15", 或 None 表示无正面性格。
+      attacker_personality_bouns: 攻击方正面性格属性，如 "atk", "mag:0.15"；None 表示未指定，自动枚举可能的性格修正。
       attacker_personality_down: 攻击方负面性格属性，如 "def", 或 None。
       defender_iv: 防御方天分字典，格式同上。
-      defender_personality_bouns: 防御方正面性格属性。
+      defender_personality_bouns: 防御方正面性格属性；None 表示未指定，自动枚举可能的性格修正。
       defender_personality_down: 防御方负面性格属性。
     """
 
@@ -989,8 +939,11 @@ def battle_damage(
         attacker_iv = {}
     atk_iv_value = attacker_iv.get(atk_attr_name)  # 攻击属性的天分
 
-    attacker_personality = parse_personality(attacker_personality_bouns, attacker_personality_down)
-    atk_personality_value = get_personality_bonus_for_attr(attacker_personality, atk_attr_name)
+    atk_personality_candidates = resolve_personality_candidates(
+        attacker_personality_bouns,
+        attacker_personality_down,
+        atk_attr_name,
+    )
 
     # 防御方
     if defender_iv is None:
@@ -998,14 +951,32 @@ def battle_damage(
     def_iv_value = defender_iv.get(def_attr_name)  # 防御属性的天分
     hp_iv_value = defender_iv.get("hp")            # 生命天分
 
-    defender_personality = parse_personality(defender_personality_bouns, defender_personality_down)
-    def_personality_value = get_personality_bonus_for_attr(defender_personality, def_attr_name)
-    hp_personality_value = get_personality_bonus_for_attr(defender_personality, "hp")
+    def_personality_candidates = resolve_personality_candidates(
+        defender_personality_bouns,
+        defender_personality_down,
+        def_attr_name,
+    )
+    hp_personality_candidates = resolve_personality_candidates(
+        defender_personality_bouns,
+        defender_personality_down,
+        "hp",
+    )
 
     # ========== 4. 生成场景 ==========
-    atk_scenarios = generate_atk_scenarios(atk_iv_value, atk_personality_value, atk_attr_name)
-    def_scenarios = generate_def_scenarios(def_iv_value, def_personality_value, def_attr_name)
-    hp_scenarios = generate_hp_scenarios(hp_iv_value, hp_personality_value)
+    atk_scenarios = generate_atk_scenarios(
+        atk_iv_value,
+        atk_personality_candidates,
+        atk_attr_name,
+    )
+    def_scenarios = generate_def_scenarios(
+        def_iv_value,
+        def_personality_candidates,
+        def_attr_name,
+    )
+    hp_scenarios = generate_hp_scenarios(
+        hp_iv_value,
+        hp_personality_candidates,
+    )
 
     # ========== 5. 按技能情况与 (atk, def) 场景计算伤害 ==========
     from core.will_power import manual_mark_modes, resolve_mark_modifiers

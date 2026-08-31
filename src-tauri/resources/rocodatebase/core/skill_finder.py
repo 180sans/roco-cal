@@ -46,68 +46,6 @@ BUFF_FIELDS = {
     "combo_mul",
 }
 
-_BUFF_FIELD_ALIASES = {
-    "物攻": "phys_atk_buff",
-    "物攻%": "phys_atk_buff",
-    "魔攻": "mag_atk_buff",
-    "魔攻%": "mag_atk_buff",
-    "物防": "phys_def_buff",
-    "物防%": "phys_def_buff",
-    "魔防": "mag_def_buff",
-    "魔防%": "mag_def_buff",
-    "威力%": "power_multiplier",
-    "技能威力%": "power_multiplier",
-    "全技能威力%": "power_multiplier",
-    "威力+": "power_bonus",
-    "技能威力+": "power_bonus",
-    "全技能威力+": "power_bonus",
-    "连击": "combo_plus",
-    "连击+": "combo_plus",
-    "连击数": "combo_plus",
-    "连击数+": "combo_plus",
-    "连击倍": "combo_mul",
-    "连击倍率": "combo_mul",
-}
-_BUFF_TARGET_ALIASES = {
-    "自己": "self",
-    "自身": "self",
-    "己方": "self",
-    "self": "self",
-    "敌方": "opponent",
-    "对方": "opponent",
-    "敌人": "opponent",
-    "对手": "opponent",
-    "enemy": "opponent",
-    "opponent": "opponent",
-    "both": "both",
-    "双方": "both",
-}
-_BUFF_VALUE_RE = re.compile(r"\s*(?:永久)?\s*([+-])\s*(\d+(?:\.\d+)?)\s*(%)?")
-_BUFF_STAT_RE = re.compile(
-    r"双攻和双防|双防和双攻|物攻和魔攻|魔攻和物攻|物攻和物防|物防和物攻|"
-    r"魔攻和魔防|魔防和魔攻|魔攻和物防|物防和魔攻|物攻和魔防|魔防和物攻|物攻魔攻|魔攻物攻|物攻魔防|魔防物攻|魔攻魔防|魔防魔攻|物防魔攻|魔攻物防|物防魔防|魔防物防|双攻|双防|物攻|魔攻|物防|魔防"
-)
-_BUFF_IGNORED_CONDITION_MARKERS = (
-    "应对",
-    "选择",
-    "若",
-    "每",
-    "下一次",
-    "下回合",
-    "本次",
-    "本技能",
-    "使用后",
-    "期间",
-    "位于",
-    "当",
-    "根据",
-    "携带",
-    "至多",
-    "系别",
-    "系技能",
-)
-
-
 class SkillRepository:
     """
     技能仓库 + 内存索引
@@ -186,13 +124,11 @@ def _normalize_buff_effect(effect: Any) -> dict[str, Any] | None:
     if not isinstance(effect, dict):
         return None
 
-    raw_target = str(effect.get("target", "self")).strip().lower()
-    target = _BUFF_TARGET_ALIASES.get(raw_target)
-    if target is None:
+    target = str(effect.get("target", "self")).strip()
+    if target not in {"self", "opponent", "both"}:
         return None
 
-    raw_field = str(effect.get("field", "")).strip()
-    field = _BUFF_FIELD_ALIASES.get(raw_field, raw_field)
+    field = str(effect.get("field", "")).strip()
     if field not in BUFF_FIELDS:
         return None
 
@@ -243,146 +179,10 @@ def _buff_option_label(effects: list[dict[str, Any]]) -> str:
     return " / ".join(labels)
 
 
-def _description_target(clause: str) -> str | None:
-    if "己方队伍" in clause or "队伍中的" in clause:
-        return None
-    has_self = any(token in clause for token in ("自己", "自身"))
-    has_opponent = any(token in clause for token in ("敌方", "对方", "敌人"))
-    if has_self and has_opponent:
-        return None
-    if has_opponent:
-        return "opponent"
-    if has_self:
-        return "self"
-    # A few skills use the concise form “获得全技能威力+40” without an
-    # explicit subject.  In that form the caster is the implied target.
-    if (
-        "获得" in clause
-        or "全技能威力" in clause
-        or "技能威力" in clause
-        or "连击数" in clause
-        or re.search(r"(?:威力|连击)\s*(?:永久)?\s*[+-]\s*\d", clause)
-    ):
-        return "self"
-    return None
-
-
-def _description_effects(description: str, include_conditional: bool = False) -> list[dict[str, Any]]:
-    effects: list[dict[str, Any]] = []
-    conditional_tail = False
-    previous_separator = ""
-    parts = re.split(r"([，。；;])", description or "")
-    for index in range(0, len(parts), 2):
-        clause = parts[index]
-        separator = parts[index + 1] if index + 1 < len(parts) else ""
-        clause = clause.strip()
-        if include_conditional:
-            # The quick Buff control deliberately exposes stat effects even
-            # when their original trigger was a choice, response, or other
-            # condition.  It still excludes one-off damage modifiers and
-            # element-restricted effects because the panel cannot represent
-            # them as persistent unit Buffs.
-            if not clause or any(marker in clause for marker in ("系别", "系技能", "至多")):
-                previous_separator = separator
-                continue
-        else:
-            if previous_separator in {"。", "；", ";"}:
-                conditional_tail = False
-            if not clause or conditional_tail:
-                if any(marker in clause for marker in _BUFF_IGNORED_CONDITION_MARKERS):
-                    conditional_tail = True
-                previous_separator = separator
-                continue
-            if any(marker in clause for marker in _BUFF_IGNORED_CONDITION_MARKERS):
-                conditional_tail = True
-                previous_separator = separator
-                continue
-        target = _description_target(clause)
-        if target is None:
-            previous_separator = separator
-            continue
-
-        # Stat groups share the value after the group, e.g. “双攻和双防-40%”.
-        for match in _BUFF_STAT_RE.finditer(clause):
-            value_match = _BUFF_VALUE_RE.match(clause, match.end())
-            if value_match is None:
-                continue
-            sign, number, _percent = value_match.groups()
-            value = float(number) * (-1 if sign == "-" else 1)
-            stat_group = match.group(0)
-            if stat_group in {"双攻", "物攻和魔攻", "魔攻和物攻", "物攻魔攻", "魔攻物攻"}:
-                fields = ("phys_atk_buff", "mag_atk_buff")
-            elif stat_group in {"双防", "物防和魔防", "魔防和物防", "物防魔防", "魔防物防"}:
-                fields = ("phys_def_buff", "mag_def_buff")
-            elif stat_group in {"物攻和物防", "物防和物攻"}:
-                fields = ("phys_atk_buff", "phys_def_buff")
-            elif stat_group in {"物攻和魔防", "物攻魔防", "魔防物攻", "魔防和物攻"}:
-                fields = ("phys_atk_buff", "mag_def_buff")
-            elif stat_group in {"魔攻和物防", "物防魔攻", "魔攻物防", "物防和魔攻"}:
-                fields = ("phys_def_buff", "mag_atk_buff")
-            elif stat_group in {"魔攻和魔防", "魔攻魔防", "魔防魔攻"}:
-                fields = ("mag_atk_buff", "mag_def_buff")
-            elif stat_group in {"双攻和双防", "双防和双攻"}:
-                fields = ("phys_atk_buff", "mag_atk_buff", "phys_def_buff", "mag_def_buff")
-            elif stat_group == "物攻":
-                fields = ("phys_atk_buff",)
-            elif stat_group == "魔攻":
-                fields = ("mag_atk_buff",)
-            elif stat_group == "物防":
-                fields = ("phys_def_buff",)
-            else:
-                fields = ("mag_def_buff",)
-            effects.extend({"target": target, "field": field, "value": value} for field in fields)
-
-        # The panel is a unit Buff panel, so one-off modifiers for "本次技能"
-        # or "本技能" must never be exposed as persistent Buffs.  Only an
-        # explicit "全技能威力" modifier affects the whole unit.
-        for match in re.finditer(r"(?:全技能威力|技能威力)\s*(?:永久)?\s*([+-])\s*(\d+(?:\.\d+)?)\s*(%)?", clause):
-            if "本次" in clause or "本技能" in clause:
-                continue
-            sign, number, percent = match.groups()
-            value = float(number) * (-1 if sign == "-" else 1)
-            field = "power_multiplier" if percent else "power_bonus"
-            effects.append({"target": target, "field": field, "value": value})
-
-        if "本次" not in clause and "本技能" not in clause and ("全技能威力翻倍" in clause or "全技能威力永久翻倍" in clause):
-            effects.append({"target": "self", "field": "power_multiplier", "value": 100})
-        for match in re.finditer(r"(?:全技能威力|技能威力)(?:变为|变成)\s*(\d+(?:\.\d+)?)倍", clause):
-            if "本次" in clause or "本技能" in clause:
-                continue
-            multiplier = float(match.group(1))
-            if multiplier > 0:
-                effects.append({"target": "self", "field": "power_multiplier", "value": (multiplier - 1) * 100})
-
-        for match in re.finditer(r"获得连击数\s*([+-])\s*(\d+(?:\.\d+)?)\s*(%)?", clause):
-            sign, number, percent = match.groups()
-            value = float(number) * (-1 if sign == "-" else 1)
-            if percent:
-                effects.append({"target": target, "field": "combo_mul", "value": 1 + value / 100})
-            else:
-                effects.append({"target": target, "field": "combo_plus", "value": value})
-        previous_separator = separator
-
-    normalized = []
-    seen: set[tuple[str, str, float]] = set()
-    for effect in effects:
-        item = _normalize_buff_effect(effect)
-        if item is None:
-            continue
-        key = (item["target"], item["field"], float(item["value"]))
-        if key in seen:
-            continue
-        seen.add(key)
-        normalized.append(item)
-    return normalized
-
-
 def resolve_buff_effects(skill_data: dict[str, Any] | None) -> list[dict[str, Any]]:
     """Return the panel-visible Buff effects for one skill.
 
-    ``buff_effects`` is the preferred data format.  Older entries without the
-    field are parsed conservatively from their description so the existing
-    library remains usable while new skills can state the target explicitly.
+    Only explicit ``buff_options`` or ``buff_effects`` data is supported.
     """
     options = resolve_buff_options(skill_data)
     return options[0]["effects"] if options else []
@@ -391,9 +191,9 @@ def resolve_buff_effects(skill_data: dict[str, Any] | None) -> list[dict[str, An
 def resolve_buff_options(skill_data: dict[str, Any] | None) -> list[dict[str, Any]]:
     """Return selectable Buff options for a skill.
 
-    A ``buff_options`` entry represents choices and conditional effects that
-    cannot be inferred safely from prose.  ``buff_effects`` and legacy text
-    are exposed as one default option for the quick-apply control.
+    A ``buff_options`` entry represents choices and conditional effects.
+    ``buff_effects`` is exposed as one default option for the quick-apply
+    control.  Descriptions are never parsed.
     """
     if not isinstance(skill_data, dict):
         return []
@@ -409,7 +209,7 @@ def resolve_buff_options(skill_data: dict[str, Any] | None) -> list[dict[str, An
             return []
         effects = [item for raw in raw_effects if (item := _normalize_buff_effect(raw)) is not None]
     else:
-        effects = _description_effects(str(skill_data.get("description") or ""), include_conditional=True)
+        return []
     return [{"label": _buff_option_label(effects), "effects": effects}] if effects else []
 
 
