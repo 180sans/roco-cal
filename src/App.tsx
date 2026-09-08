@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { cursorPosition, getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
-import { Fragment, type CSSProperties, type PointerEvent as ReactPointerEvent, type PointerEventHandler as ReactPointerEventHandler, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, type CSSProperties, type PointerEvent as ReactPointerEvent, type PointerEventHandler as ReactPointerEventHandler, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ReplayPage } from "./replay/ReplayPage";
 
 const STATS = ["hp", "atk", "mag", "def", "res", "spd"] as const;
@@ -458,7 +458,7 @@ type BattleResult = {
   starfall?: { stacks: number; power: number; damage: number } | null;
   hp_results: Array<{ hp_label: string; hp: number; damage_percent: number }>;
 };
-type QuickSkillResult = { skillName: string; skillPower?: number | null; results: BattleResult[] };
+type QuickSkillResult = { skillName: string; displayPower?: number | null; results: BattleResult[] };
 type WillpowerElementResult = { element: string; advantage: number; has_stab: boolean; results: BattleResult[] };
 type WillpowerResponse = { attack_type: "atk" | "mag"; elements: WillpowerElementResult[] };
 type RequiredPowerRow = { attack_type: "物攻" | "魔攻"; attacker_label: string; required_power: number };
@@ -931,11 +931,15 @@ function speedScenarios(value: UnitState, pets: Pet[]): SpeedScenario[] {
 
 function PluginResizeEdges({ onPointerDown }: { onPointerDown?: ReactPointerEventHandler<HTMLDivElement> }) {
   return <>
-    <div className="plugin-resize-edge top" onPointerDown={onPointerDown} />
-    <div className="plugin-resize-edge right" onPointerDown={onPointerDown} />
-    <div className="plugin-resize-edge bottom" onPointerDown={onPointerDown} />
-    <div className="plugin-resize-edge left" onPointerDown={onPointerDown} />
+    <div className="plugin-resize-edge top" data-resize-edge="top" onPointerDown={onPointerDown} />
+    <div className="plugin-resize-edge right" data-resize-edge="right" onPointerDown={onPointerDown} />
+    <div className="plugin-resize-edge bottom" data-resize-edge="bottom" onPointerDown={onPointerDown} />
+    <div className="plugin-resize-edge left" data-resize-edge="left" onPointerDown={onPointerDown} />
   </>;
+}
+
+function PluginDragZone() {
+  return <div className="plugin-drag-zone" aria-label="拖动面板" />;
 }
 
 function NumberInput({
@@ -1411,16 +1415,17 @@ function TeamActionPanel({
   }, []);
 
   function startDrag(event: ReactPointerEvent<HTMLElement>) {
-    if ((event.target as HTMLElement).closest("button, select, input")) return;
+    if ((event.target as HTMLElement).closest("button, select, input, textarea, [role=button], summary, .plugin-resize-edge")) return;
     event.preventDefault();
     dragRef.current = { pointerX: event.clientX, pointerY: event.clientY, x: position.x, y: position.y };
     const move = (moveEvent: PointerEvent) => {
       const start = dragRef.current;
       if (!start) return;
-      const next = clampToViewport(
-        start.x + moveEvent.clientX - start.pointerX,
-        start.y + moveEvent.clientY - start.pointerY,
-      );
+      const rawX = start.x + moveEvent.clientX - start.pointerX;
+      const rawY = start.y + moveEvent.clientY - start.pointerY;
+      const next = pluginMode
+        ? clampToViewport(snapToGrid(rawX), snapToGrid(rawY))
+        : clampToViewport(rawX, rawY);
       if (pluginMode) onLayoutChange?.(next);
       else setNormalPosition(next);
     };
@@ -1434,7 +1439,7 @@ function TeamActionPanel({
   }
 
   return (
-    <section ref={panelRef} className={pluginMode ? "team-action-floating" : "team-action-floating normal-team-action"} data-overlay-control data-plugin-resizable={pluginMode || undefined} data-plugin-overlay-id={pluginMode ? "action" : undefined} style={{ left: position.x, top: position.y, width: pluginMode && layout ? layout.width : undefined, height: pluginMode && layout ? layout.height : undefined }} onPointerDown={startDrag}>
+    <section ref={panelRef} className={pluginMode ? "team-action-floating" : "team-action-floating normal-team-action"} data-panel-state="armed" data-overlay-control data-plugin-resizable={pluginMode || undefined} data-plugin-overlay-id={pluginMode ? "action" : undefined} style={{ left: position.x, top: position.y, width: pluginMode && layout ? layout.width : undefined, height: pluginMode && layout ? layout.height : undefined, ...(pluginMode ? pluginContentStyle(layout) : {}) }} onPointerDown={startDrag}>
       {pluginMode ? <PluginResizeEdges /> : null}
       <div className="team-action-buttons">
         <button className="direction-button" title="切换攻击方向" onClick={onToggleDirection}>
@@ -1469,11 +1474,13 @@ type TeamRegionId =
   | "right-skills"
   | "weather";
 
-type TeamRegionPosition = { x: number; y: number; zIndex: number; width?: number; height?: number };
+type PluginContentOffset = { contentX?: number; contentY?: number };
+type TeamRegionPosition = { x: number; y: number; zIndex: number; width?: number; height?: number } & PluginContentOffset;
 type TeamRegionPositions = Record<TeamRegionId, TeamRegionPosition>;
-type PluginOverlayLayout = { x: number; y: number; width: number; height: number };
+type PluginOverlayLayout = { x: number; y: number; width: number; height: number } & PluginContentOffset;
 type PluginOverlayLayouts = Record<string, PluginOverlayLayout>;
 type DetectionReadoutLayouts = Record<"health" | "powers", { x: number; y: number }>;
+type DetectionReadoutCoordinateMode = "viewport-offset" | "page";
 type DetectionGroup = "battleStart" | "battleLive";
 type NumericOcrMode = "power" | "enemy_health" | "self_health";
 type DetectionRegion = { x: number; y: number; width: number; height: number };
@@ -1570,6 +1577,27 @@ function initialTeamRegionPositions(regionWidth: number, regionHeight: number): 
   };
 }
 
+function readPluginContentOffset(values: Record<string, unknown>): PluginContentOffset {
+  const contentX = Number(values.contentX);
+  const contentY = Number(values.contentY);
+  return {
+    ...(Number.isFinite(contentX) ? { contentX } : {}),
+    ...(Number.isFinite(contentY) ? { contentY } : {}),
+  };
+}
+
+function pluginContentStyle(layout?: PluginContentOffset): CSSProperties {
+  return {
+    "--plugin-content-x": `${layout?.contentX || 0}px`,
+    "--plugin-content-y": `${layout?.contentY || 0}px`,
+  } as CSSProperties;
+}
+
+function savedDetectionReadoutCoordinateMode(configs: PickerConfigs): DetectionReadoutCoordinateMode {
+  const saved = configs.team_layout?.detection_readouts as { coordinate_space?: unknown } | undefined;
+  return saved?.coordinate_space === "page" ? "page" : "viewport-offset";
+}
+
 function savedTeamRegionPositions(configs: PickerConfigs, regionWidth: number, regionHeight: number): TeamRegionPositions {
   const defaults = initialTeamRegionPositions(regionWidth, regionHeight);
   const saved = configs.team_layout?.regions;
@@ -1589,8 +1617,9 @@ function savedTeamRegionPositions(configs: PickerConfigs, regionWidth: number, r
         x: Math.max(0, x),
         y: Math.max(0, y),
         zIndex: Number.isFinite(zIndex) ? Math.max(1, zIndex) : positions[id].zIndex,
-        ...(Number.isFinite(width) ? { width: Math.max(72, width) } : {}),
-        ...(Number.isFinite(height) ? { height: Math.max(30, height) } : {}),
+        ...(Number.isFinite(width) ? { width: Math.max(1, width) } : {}),
+        ...(Number.isFinite(height) ? { height: Math.max(1, height) } : {}),
+        ...readPluginContentOffset(values),
       };
     }
     return positions;
@@ -1629,13 +1658,55 @@ function savedPluginOverlayLayouts(configs: PickerConfigs): PluginOverlayLayouts
     const y = Number(values.y);
     const width = Number(values.width);
     const height = Number(values.height);
+    const size = {
+      width: Number.isFinite(width) ? Math.max(1, width) : fallback.width,
+      height: Number.isFinite(height) ? Math.max(1, height) : fallback.height,
+    };
     return [[id, {
       x: Number.isFinite(x) ? Math.max(0, x) : fallback.x,
       y: Number.isFinite(y) ? Math.max(0, y) : fallback.y,
-      width: Number.isFinite(width) ? Math.max(72, width) : fallback.width,
-      height: Number.isFinite(height) ? Math.max(28, height) : fallback.height,
+      ...size,
+      ...readPluginContentOffset(values),
     }]];
   }));
+}
+
+/** 插件运行态的静默/唤醒三态：面板当前是否携带有效数值。 */
+type PanelState = "idle" | "armed";
+
+function panelState(armed: boolean): PanelState {
+  return armed ? "armed" : "idle";
+}
+
+/** 插件模式拖拽的吸附网格，单位 px。 */
+const OVERLAY_GRID = 8;
+const snapToGrid = (value: number) => Math.round(value / OVERLAY_GRID) * OVERLAY_GRID;
+
+/** D. 插件模式独立密度档。常规模式始终 100%。 */
+const PLUGIN_DENSITY_OPTIONS = [
+  { value: 1, label: "密度 100%" },
+  { value: 0.9, label: "密度 90%" },
+  { value: 0.8, label: "密度 80%" },
+  { value: 0.7, label: "密度 70%" },
+];
+
+/**
+ * 把 ui_tokens 按倍率缩放后重新声明一遍。CSS 自定义属性会继承，
+ * 所以在 .battle-page.plugin-mode 上重新定义即可覆盖整棵子树，
+ * 无需改动 ui-tokens.css / styles.css 里约 200 处消费点。
+ */
+function pluginDensityStyle(configs: PickerConfigs, density: number): CSSProperties | undefined {
+  if (density === 1) return undefined;
+  const values = uiTokenValues(configs);
+  return Object.fromEntries(
+    Object.entries(values)
+      // 窗口尺寸由 Rust 建窗时读取，不参与界面密度。
+      .filter(([key]) => key !== "window-width" && key !== "window-height")
+      .map(([key, value]) => {
+        const floor = key.endsWith("-font-size") ? 8 : 1;
+        return [`--${key}`, `${Math.max(floor, Math.round(value * density))}px`];
+      }),
+  ) as CSSProperties;
 }
 
 function TeamBattlePage({
@@ -1670,19 +1741,27 @@ function TeamBattlePage({
     savedTeamRegionPositions(configs, teamValues["team-region-width"], teamValues["team-region-height"]),
   );
   const [overlayLayouts, setOverlayLayouts] = useState<PluginOverlayLayouts>(() => savedPluginOverlayLayouts(configs));
+  const defaultOverlayLayoutsRef = useRef<PluginOverlayLayouts>({});
   const [detectionRegions, setDetectionRegions] = useState<DetectionRegions>(() => savedDetectionRegions(configs));
   const [detectionGroup, setDetectionGroup] = useState<DetectionGroup | null>(null);
   const [detectionMessage, setDetectionMessage] = useState("");
   const [detectionToast, setDetectionToast] = useState("");
   const [ocrTestMode, setOcrTestMode] = useState(configs.team_layout?.ocr_test_mode === true);
+  const [pluginDensity, setPluginDensity] = useState(() => {
+    const saved = Number(configs.team_layout?.plugin_density);
+    return PLUGIN_DENSITY_OPTIONS.some((option) => option.value === saved) ? saved : 1;
+  });
   const [detectedHealth, setDetectedHealth] = useState({ enemy: "-", self: "-" });
   const [detectedSkillPowers, setDetectedSkillPowers] = useState(["-", "-", "-", "-"]);
   const [detectionReadoutLayouts, setDetectionReadoutLayouts] = useState<DetectionReadoutLayouts>(() => savedDetectionReadoutLayouts(configs));
+  const [detectionReadoutCoordinateMode, setDetectionReadoutCoordinateMode] = useState<DetectionReadoutCoordinateMode>(() => savedDetectionReadoutCoordinateMode(configs));
   const [recognitionStatus, setRecognitionStatus] = useState<RecognitionStatus | null>(null);
   const recognitionBusyRef = useRef(false);
   const detectionRegionsRef = useRef(detectionRegions);
   const detectionRoiRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const detectionReadoutLayoutsRef = useRef(detectionReadoutLayouts);
+  const detectionReadoutLayerRef = useRef<HTMLDivElement | null>(null);
+  const detectionReadoutRefs = useRef<Record<keyof DetectionReadoutLayouts, HTMLElement | null>>({ health: null, powers: null });
   const [leftSlots, setLeftSlots] = useState<UnitState[]>(() => Array.from({ length: teamSlotCount }, blankUnit));
   const [rightSlots, setRightSlots] = useState<UnitState[]>(() => Array.from({ length: teamSlotCount }, blankUnit));
   const [leftIndex, setLeftIndex] = useState(0);
@@ -1717,6 +1796,9 @@ function TeamBattlePage({
   const [displayMode, setDisplayMode] = useState<"normal" | "plugin">(
     configs.team_layout?.display_mode === "normal" ? "normal" : "plugin",
   );
+  const [openPopover, setOpenPopover] = useState<{ left: string | null; right: string | null }>({ left: null, right: null });
+  // 运行态工具条默认收起，靠顶部把手召回（解绑窗口 / 天气 / 保存布局等无热键）。
+  const [toolbarOpen, setToolbarOpen] = useState(false);
   const activeBuffUnit = leftAttacks ? leftSlots[leftIndex] : rightSlots[rightIndex];
   const activeBuffOpponent = leftAttacks ? rightSlots[rightIndex] : leftSlots[leftIndex];
   const activeBuffOtherBonuses = leftAttacks ? leftOtherBonuses : rightOtherBonuses;
@@ -1729,6 +1811,11 @@ function TeamBattlePage({
     return () => window.clearTimeout(timer);
   }, [error]);
 
+  // 退出混合模式时收起运行态工具条。
+  useEffect(() => {
+    if (displayMode !== "plugin" || !mixedMode) setToolbarOpen(false);
+  }, [displayMode, mixedMode]);
+
   useEffect(() => {
     detectionRegionsRef.current = detectionRegions;
   }, [detectionRegions]);
@@ -1736,6 +1823,66 @@ function TeamBattlePage({
   useEffect(() => {
     detectionReadoutLayoutsRef.current = detectionReadoutLayouts;
   }, [detectionReadoutLayouts]);
+
+  // 旧版识别结果框保存的是「右/下边距偏移」。首次进入新坐标层时，
+  // 先读取它们当前的实际像素位置，再转换为稳定的左上角坐标。
+  useLayoutEffect(() => {
+    if (displayMode !== "plugin" || detectionReadoutCoordinateMode !== "viewport-offset") return;
+    const layer = detectionReadoutLayerRef.current;
+    const health = detectionReadoutRefs.current.health;
+    const powers = detectionReadoutRefs.current.powers;
+    if (!layer || !health || !powers) return;
+    const layerBounds = layer.getBoundingClientRect();
+    const next = {
+      health: {
+        x: Math.round(health.getBoundingClientRect().left - layerBounds.left),
+        y: Math.round(health.getBoundingClientRect().top - layerBounds.top),
+      },
+      powers: {
+        x: Math.round(powers.getBoundingClientRect().left - layerBounds.left),
+        y: Math.round(powers.getBoundingClientRect().top - layerBounds.top),
+      },
+    };
+    detectionReadoutLayoutsRef.current = next;
+    setDetectionReadoutLayouts(next);
+    setDetectionReadoutCoordinateMode("page");
+  }, [displayMode, detectionReadoutCoordinateMode]);
+
+  // 页面坐标是相对于结果框层的坐标。旧配置可能来自旧的 team-layout，
+  // 其 y 值会落在当前窗口底部之外；首次加载时把它限制在当前可视区域内。
+  useLayoutEffect(() => {
+    if (displayMode !== "plugin" || detectionReadoutCoordinateMode !== "page") return;
+    const layer = detectionReadoutLayerRef.current;
+    const health = detectionReadoutRefs.current.health;
+    const powers = detectionReadoutRefs.current.powers;
+    if (!layer || !health || !powers) return;
+
+    const layerBounds = layer.getBoundingClientRect();
+    const minX = 8;
+    const minY = 8;
+    const visibleRight = Math.max(layerBounds.left + minX, window.innerWidth - minX);
+    const visibleBottom = Math.max(layerBounds.top + minY, window.innerHeight - minX);
+    const clampReadout = (id: keyof DetectionReadoutLayouts, element: HTMLElement) => {
+      const current = detectionReadoutLayouts[id];
+      const bounds = element.getBoundingClientRect();
+      const width = Math.max(1, bounds.width);
+      const height = Math.max(1, bounds.height);
+      const maxX = Math.max(minX, visibleRight - layerBounds.left - width);
+      const maxY = Math.max(minY, visibleBottom - layerBounds.top - height);
+      return {
+        x: Math.min(Math.max(minX, current.x), maxX),
+        y: Math.min(Math.max(minY, current.y), maxY),
+      };
+    };
+    const next = {
+      health: clampReadout("health", health),
+      powers: clampReadout("powers", powers),
+    };
+    if (next.health.x === detectionReadoutLayouts.health.x && next.health.y === detectionReadoutLayouts.health.y
+      && next.powers.x === detectionReadoutLayouts.powers.x && next.powers.y === detectionReadoutLayouts.powers.y) return;
+    detectionReadoutLayoutsRef.current = next;
+    setDetectionReadoutLayouts(next);
+  }, [displayMode, detectionReadoutCoordinateMode, targetAttached, detectionReadoutLayouts]);
 
   function moveRegion(id: TeamRegionId, position: Partial<TeamRegionPosition>) {
     setRegionPositions((current) => ({ ...current, [id]: { ...current[id], ...position } }));
@@ -1749,6 +1896,30 @@ function TeamBattlePage({
 
   useEffect(() => () => window.clearTimeout(targetStatusTimerRef.current), []);
 
+  function togglePopover(side: "left" | "right", id: string, next: boolean) {
+    setOpenPopover((current) => ({ ...current, [side]: next ? id : current[side] === id ? null : current[side] }));
+  }
+
+  // 展开的浮层：Esc 或点击浮层与触发控件之外的任何位置都收起。
+  useEffect(() => {
+    if (!openPopover.left && !openPopover.right) return;
+    const close = () => setOpenPopover({ left: null, right: null });
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest(".trait-expanded-content, .team-buff-grid, .trait-summary-button, .team-buff-panel summary, .modal-backdrop")) return;
+      close();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("pointerdown", onPointerDown, true);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("pointerdown", onPointerDown, true);
+    };
+  }, [openPopover.left, openPopover.right]);
+
   function focusRegion(id: TeamRegionId) {
     setRegionPositions((current) => {
       const topZIndex = Math.max(...Object.values(current).map((item) => item.zIndex), 0) + 1;
@@ -1757,14 +1928,19 @@ function TeamBattlePage({
   }
 
   function overlayLayout(id: string) {
-    return overlayLayouts[id] || defaultPluginOverlayLayout(id);
+    const defaultLayout = defaultOverlayLayoutsRef.current[id] || (defaultOverlayLayoutsRef.current[id] = defaultPluginOverlayLayout(id));
+    return overlayLayouts[id] || defaultLayout;
   }
 
   function updateOverlayLayout(id: string, partial: Partial<PluginOverlayLayout>) {
     setOverlayLayouts((current) => {
-      const previous = current[id] || defaultPluginOverlayLayout(id);
+      const previous = current[id] || defaultOverlayLayoutsRef.current[id] || (defaultOverlayLayoutsRef.current[id] = defaultPluginOverlayLayout(id));
       const next = { ...previous, ...partial };
-      if (previous.x === next.x && previous.y === next.y && previous.width === next.width && previous.height === next.height) return current;
+      if (
+        previous.x === next.x && previous.y === next.y
+        && previous.width === next.width && previous.height === next.height
+        && previous.contentX === next.contentX && previous.contentY === next.contentY
+      ) return current;
       return { ...current, [id]: next };
     });
   }
@@ -1904,6 +2080,18 @@ function TeamBattlePage({
       setDetectionMessage(enabled ? "测试模式已开启：识别输入将保存到本地" : "测试模式已关闭");
     } catch (error) {
       setOcrTestMode(previous);
+      setError(asError(error));
+    }
+  }
+
+  async function changePluginDensity(density: number) {
+    const previous = pluginDensity;
+    setPluginDensity(density);
+    try {
+      const result = await invoke<{ configs: PickerConfigs }>("save_picker_config", { payload: { section: "team_layout", values: { plugin_density: density } } });
+      onConfigsChanged(result.configs);
+    } catch (error) {
+      setPluginDensity(previous);
       setError(asError(error));
     }
   }
@@ -2101,6 +2289,16 @@ function TeamBattlePage({
     window.addEventListener("pointermove", move); window.addEventListener("pointerup", stop);
   }
 
+  function detectionReadoutStyle(id: keyof DetectionReadoutLayouts): CSSProperties {
+    const layout = detectionReadoutLayouts[id];
+    if (detectionReadoutCoordinateMode === "page") {
+      return { bottom: "auto", left: layout.x, right: "auto", top: layout.y, transform: "none" };
+    }
+    return id === "health"
+      ? { transform: `translate(${layout.x}px, ${layout.y}px)` }
+      : { transform: `translate(-50%, 0) translate(${layout.x}px, ${layout.y}px)` };
+  }
+
   function startRecognitionStatusDrag(event: ReactPointerEvent<HTMLElement>) {
     if ((event.target as HTMLElement).closest("button, input, select")) return;
     event.preventDefault();
@@ -2123,18 +2321,35 @@ function TeamBattlePage({
   useEffect(() => {
     if (displayMode !== "plugin") return;
     const startResize = (event: PointerEvent) => {
-      const resizeEdge = (event.target as HTMLElement).closest<HTMLElement>(".plugin-resize-edge");
-      const panel = resizeEdge?.closest<HTMLElement>("[data-plugin-resizable]");
-      if (!resizeEdge || !panel) return;
+      const path = event.composedPath();
+      const resizeEdge = path.find((node): node is HTMLElement => node instanceof HTMLElement && node.classList.contains("plugin-resize-edge"));
+      const panel = resizeEdge?.closest<HTMLElement>("[data-plugin-resizable]")
+        || path.find((node): node is HTMLElement => node instanceof HTMLElement && node.matches("[data-plugin-resizable]"));
+      if (!panel) return;
       const rect = panel.getBoundingClientRect();
-      const edges = {
-        left: resizeEdge.classList.contains("left"),
-        right: resizeEdge.classList.contains("right"),
-        top: resizeEdge.classList.contains("top"),
-        bottom: resizeEdge.classList.contains("bottom"),
+      const edge = resizeEdge?.dataset.resizeEdge;
+      const targetIsPanel = event.target === panel;
+      const distances = {
+        left: Math.abs(event.clientX - rect.left),
+        right: Math.abs(rect.right - event.clientX),
+        top: Math.abs(event.clientY - rect.top),
+        bottom: Math.abs(rect.bottom - event.clientY),
       };
+      const nearest = (Object.entries(distances) as Array<["left" | "right" | "top" | "bottom", number]>)
+        .sort(([, first], [, second]) => first - second)[0];
+      const activeEdge = edge || (targetIsPanel && nearest && nearest[1] <= 8 ? nearest[0] : null);
+      if (!activeEdge) return;
+      const edges = {
+        left: activeEdge === "left",
+        right: activeEdge === "right",
+        top: activeEdge === "top",
+        bottom: activeEdge === "bottom",
+      };
+      if (!edges.left && !edges.right && !edges.top && !edges.bottom) return;
       event.preventDefault();
       event.stopPropagation();
+      resizeEdge?.setPointerCapture?.(event.pointerId);
+      panel.dataset.pluginResizing = "true";
       const regionClasses: Array<[TeamRegionId, string]> = [
         ["left-roster", "team-left-roster"], ["right-roster", "team-right-roster"],
         ["left-bonus-tools", "team-left-bonus-toolbar"], ["right-bonus-tools", "team-right-bonus-toolbar"],
@@ -2144,23 +2359,55 @@ function TeamBattlePage({
       const explicitOverlayId = panel.dataset.pluginOverlayId;
       const overlayClass = [...panel.classList].find((className) => /^team-(left|right)-(trait|evolution|skill-\d+)$/.test(className));
       const overlayId = explicitOverlayId || overlayClass?.replace("team-", "");
-      const saved = regionId ? regionPositions[regionId] : overlayId ? overlayLayout(overlayId) : { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
-      const start = { pointerX: event.clientX, pointerY: event.clientY, x: saved.x, y: saved.y, width: rect.width, height: rect.height };
+      const currentLayout: PluginContentOffset | undefined = regionId
+        ? regionPositions[regionId]
+        : overlayId
+          ? overlayLayouts[overlayId] || defaultPluginOverlayLayout(overlayId)
+          : undefined;
+      const parentRect = panel.offsetParent instanceof HTMLElement && (
+        Boolean(regionId) || (!targetAttached && displayMode === "plugin")
+      )
+        ? panel.offsetParent.getBoundingClientRect()
+        : null;
+      const coordinateOffset = parentRect ? { x: parentRect.left, y: parentRect.top } : { x: 0, y: 0 };
+      const start = {
+        pointerX: event.clientX,
+        pointerY: event.clientY,
+        left: rect.left - coordinateOffset.x,
+        right: rect.right - coordinateOffset.x,
+        top: rect.top - coordinateOffset.y,
+        bottom: rect.bottom - coordinateOffset.y,
+        contentX: currentLayout?.contentX || 0,
+        contentY: currentLayout?.contentY || 0,
+      };
       const move = (moveEvent: PointerEvent) => {
         const dx = moveEvent.clientX - start.pointerX;
         const dy = moveEvent.clientY - start.pointerY;
-        const width = Math.max(72, start.width + (edges.left ? -dx : edges.right ? dx : 0));
-        const height = Math.max(30, start.height + (edges.top ? -dy : edges.bottom ? dy : 0));
-        const x = start.x + (edges.left ? start.width - width : 0);
-        const y = start.y + (edges.top ? start.height - height : 0);
-        if (regionId) moveRegion(regionId, { x, y, width, height });
-        else if (overlayId) updateOverlayLayout(overlayId, { x, y, width, height });
+        let left = start.left;
+        let right = start.right;
+        let top = start.top;
+        let bottom = start.bottom;
+        if (edges.left) left = Math.min(start.right - 1, start.left + dx);
+        if (edges.right) right = Math.max(start.left + 1, start.right + dx);
+        if (edges.top) top = Math.min(start.bottom - 1, start.top + dy);
+        if (edges.bottom) bottom = Math.max(start.top + 1, start.bottom + dy);
+        const x = left;
+        const y = top;
+        const width = right - left;
+        const height = bottom - top;
+        const contentX = edges.left ? start.contentX - (left - start.left) : start.contentX;
+        const contentY = edges.top ? start.contentY - (top - start.top) : start.contentY;
+        if (regionId) moveRegion(regionId, { x, y, width, height, contentX, contentY });
+        else if (overlayId) updateOverlayLayout(overlayId, { x, y, width, height, contentX, contentY });
         else {
           panel.style.width = `${width}px`;
           panel.style.height = `${height}px`;
+          panel.style.setProperty("--plugin-content-x", `${contentX}px`);
+          panel.style.setProperty("--plugin-content-y", `${contentY}px`);
         }
       };
       const stop = () => {
+        delete panel.dataset.pluginResizing;
         window.removeEventListener("pointermove", move);
         window.removeEventListener("pointerup", stop);
         window.removeEventListener("pointercancel", stop);
@@ -2189,6 +2436,7 @@ function TeamBattlePage({
         setRegionPositions(savedTeamRegionPositions(data.configs, teamValues["team-region-width"], teamValues["team-region-height"]));
         setOverlayLayouts(savedPluginOverlayLayouts(data.configs));
         setDetectionReadoutLayouts(savedDetectionReadoutLayouts(data.configs));
+        setDetectionReadoutCoordinateMode(savedDetectionReadoutCoordinateMode(data.configs));
       }
     } catch (err) {
       setError(asError(err));
@@ -2199,7 +2447,15 @@ function TeamBattlePage({
     setLayoutMessage("");
     try {
       const data = await invoke<{ configs: PickerConfigs }>("save_picker_config", {
-        payload: { section: "team_layout", values: { regions: regionPositions, overlays: overlayLayouts, detection_regions: detectionRegions, detection_readouts: detectionReadoutLayouts } },
+        payload: {
+          section: "team_layout",
+          values: {
+            regions: regionPositions,
+            overlays: overlayLayouts,
+            detection_regions: detectionRegions,
+            detection_readouts: { ...detectionReadoutLayouts, coordinate_space: "page" },
+          },
+        },
       });
       onConfigsChanged(data.configs);
       setLayoutMessage("布局已保存");
@@ -2215,7 +2471,10 @@ function TeamBattlePage({
 
   function resetLayout() {
     setRegionPositions(initialTeamRegionPositions(teamValues["team-region-width"], teamValues["team-region-height"]));
+    setOverlayLayouts({});
     setDetectionRegions(DEFAULT_DETECTION_REGIONS);
+    setDetectionReadoutLayouts({ health: { x: 0, y: 0 }, powers: { x: 0, y: 0 } });
+    setDetectionReadoutCoordinateMode("viewport-offset");
     setLayoutMessage("已恢复默认布局，点击保存后写入个人配置");
   }
 
@@ -2317,9 +2576,14 @@ function TeamBattlePage({
     const token = mixedModeTokenRef.current;
     let lastIgnore: boolean | null = null;
     let syncing = false;
+    let pointerActive = false;
     const syncHitTarget = async () => {
       if (syncing) return;
       if (token !== mixedModeTokenRef.current) return;
+      // Keep the overlay interactive for the whole drag. Otherwise moving a
+      // panel changes the element under the cursor and the 80ms hit-test can
+      // turn click-through on in the middle of the gesture.
+      if (pointerActive) return;
       syncing = true;
       try {
         const currentWindow = getCurrentWindow();
@@ -2332,7 +2596,11 @@ function TeamBattlePage({
         const x = (cursor.x - origin.x) / scaleFactor;
         const y = (cursor.y - origin.y) / scaleFactor;
         const element = document.elementFromPoint(x, y);
-        const interactive = Boolean(element?.closest("button, input, select, textarea, [data-overlay-control], [role=dialog]"));
+        // A plugin panel is an interactive region as a whole: its headers,
+        // empty space, drag handles, and controls must all receive events.
+        const interactive = Boolean(element?.closest(
+          "[data-overlay-control], button, input, select, textarea, summary, [role=button], [role=dialog], [contenteditable=true]",
+        ));
         const ignore = !interactive;
         if (token !== mixedModeTokenRef.current || ignore === lastIgnore) return;
         await invoke("update_overlay_click_through", { enabled: ignore });
@@ -2343,12 +2611,27 @@ function TeamBattlePage({
         syncing = false;
       }
     };
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("[data-overlay-control]")) pointerActive = true;
+    };
+    const onPointerEnd = () => {
+      if (!pointerActive) return;
+      pointerActive = false;
+      void syncHitTarget();
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("pointerup", onPointerEnd, true);
+    document.addEventListener("pointercancel", onPointerEnd, true);
     void syncHitTarget();
     const timer = window.setInterval(() => void syncHitTarget(), 80);
     return () => {
       cancelled = true;
       mixedModeTokenRef.current += 1;
       window.clearInterval(timer);
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("pointerup", onPointerEnd, true);
+      document.removeEventListener("pointercancel", onPointerEnd, true);
       // Vite 热更新会卸载此 effect；同时恢复原生窗口交互，避免残留点击穿透。
       void invoke("update_overlay_click_through", { enabled: false }).catch(() => undefined);
     };
@@ -2394,7 +2677,9 @@ function TeamBattlePage({
   function startTeamRegionDrag(event: ReactPointerEvent<HTMLDivElement>) {
     if (displayMode !== "plugin") return;
     const target = event.target as HTMLElement;
-    if (target.closest("button, input, select, textarea, a")) return;
+    if (target.closest("button, input, select, textarea, a, [role=button], .plugin-resize-edge")) return;
+    // 展开浮层是面板的子节点，但在视觉上是独立层，不应触发面板拖动。
+    if (target.closest(".trait-expanded-content, .team-buff-grid")) return;
     if (target.closest("summary") && !target.closest(".team-region-drag-handle")) return;
     const regionClasses: Array<[TeamRegionId, string]> = [
       ["left-roster", "team-left-roster"],
@@ -2417,8 +2702,8 @@ function TeamBattlePage({
     const start = { pointerX: event.clientX, pointerY: event.clientY, x: regionPositions[id].x, y: regionPositions[id].y };
     const workspace = event.currentTarget;
     const move = (moveEvent: PointerEvent) => {
-      const nextX = start.x + moveEvent.clientX - start.pointerX;
-      const nextY = start.y + moveEvent.clientY - start.pointerY;
+      const nextX = snapToGrid(start.x + moveEvent.clientX - start.pointerX);
+      const nextY = snapToGrid(start.y + moveEvent.clientY - start.pointerY);
       moveRegion(id, {
         x: Math.min(Math.max(0, nextX), Math.max(0, workspace.clientWidth - region.offsetWidth)),
         y: Math.min(Math.max(0, nextY), Math.max(0, workspace.clientHeight - region.offsetHeight)),
@@ -2436,6 +2721,10 @@ function TeamBattlePage({
 
   const regionWidth = (id: TeamRegionId, fallback: string) => regionPositions[id].width ? `${regionPositions[id].width}px` : fallback;
   const regionHeight = (id: TeamRegionId, fallback: string) => regionPositions[id].height ? `${regionPositions[id].height}px` : fallback;
+  const regionContentVars = (id: TeamRegionId, prefix: string) => ({
+    [`--${prefix}-content-x`]: `${regionPositions[id].contentX || 0}px`,
+    [`--${prefix}-content-y`]: `${regionPositions[id].contentY || 0}px`,
+  });
   const teamLayoutStyle = {
     "--left-roster-x": `${regionPositions["left-roster"].x}px`,
     "--left-roster-y": `${regionPositions["left-roster"].y}px`,
@@ -2478,6 +2767,15 @@ function TeamBattlePage({
     "--right-buff-height": regionHeight("right-buff", "auto"),
     "--weather-width": regionWidth("weather", "var(--weather-panel-width)"),
     "--weather-height": regionHeight("weather", "auto"),
+    ...regionContentVars("left-roster", "left-roster"),
+    ...regionContentVars("right-roster", "right-roster"),
+    ...regionContentVars("left-bonus-tools", "left-bonus"),
+    ...regionContentVars("right-bonus-tools", "right-bonus"),
+    ...regionContentVars("left-buff", "left-buff"),
+    ...regionContentVars("right-buff", "right-buff"),
+    ...regionContentVars("left-skills", "left-skills"),
+    ...regionContentVars("right-skills", "right-skills"),
+    ...regionContentVars("weather", "weather"),
   } as CSSProperties;
 
   function resizeSlots(count: number) {
@@ -2734,8 +3032,37 @@ function TeamBattlePage({
     setRightSlots(nextRight);
   }
 
+  const bonusesArmed = (bonuses: TeamOtherBonuses) =>
+    bonuses.dedication_power_stacks > 0 ||
+    bonuses.dedication_combo_stacks > 0 ||
+    bonuses.charge_mark_stacks > 0 ||
+    bonuses.charge_mark_triggered ||
+    bonuses.attack_mark_stacks > 0 ||
+    bonuses.momentum_mark_stacks > 0 ||
+    bonuses.starfall_mark_stacks > 0 ||
+    bonuses.burst_triggered_effect_ids.length > 0;
+
+  const pluginUnattached = displayMode === "plugin" && !targetAttached;
+  const pluginSkillCardCount = Math.max(DEFAULT_SKILL_CARD_COUNT, teamSkillCardCount);
+  const leftPluginSkillSlots = skillCardSlots(leftSlots[leftIndex].skills, pluginSkillCardCount);
+  const rightPluginSkillSlots = skillCardSlots(rightSlots[rightIndex].skills, pluginSkillCardCount);
+
   return (
-    <section className={`battle-page ${displayMode === "plugin" ? "plugin-mode immersive-mode" : "normal-mode"}${mixedMode ? " mixed-active" : ""}`}>
+    <section
+      className={`battle-page ${displayMode === "plugin" ? "plugin-mode immersive-mode" : "normal-mode"}${pluginUnattached ? " plugin-unattached" : ""}${mixedMode ? " mixed-active" : ""}${mixedMode && toolbarOpen ? " toolbar-open" : ""}`}
+      style={displayMode === "plugin" ? pluginDensityStyle(configs, pluginDensity) : undefined}
+    >
+      {displayMode === "plugin" && mixedMode ? (
+        <button
+          className="overlay-toolbar-handle"
+          data-overlay-control
+          aria-expanded={toolbarOpen}
+          title={toolbarOpen ? "收起工具条" : "展开工具条"}
+          onClick={() => setToolbarOpen((current) => !current)}
+        >
+          {toolbarOpen ? "▲" : "▼"}
+        </button>
+      ) : null}
       <div className="team-layout-actions" data-overlay-control>
         <div className="team-layout-actions-main">
           <div className="mode-switch" role="group" aria-label="界面模式">
@@ -2771,9 +3098,9 @@ function TeamBattlePage({
             <button onClick={resetLayout}>恢复默认布局</button>
             <button onClick={syncReplayDetectionSizes}>同步回放框尺寸</button>
             <label className="overlay-target-input">
-              <span>天气</span>
-              <select value={weather} onChange={(event) => onWeatherChange(event.target.value as (typeof WEATHER_OPTIONS)[number]["value"])}>
-                {WEATHER_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              <span>密度</span>
+              <select value={pluginDensity} onChange={(event) => void changePluginDensity(Number(event.target.value))}>
+                {PLUGIN_DENSITY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </label>
             <button className={detectionGroup === "battleStart" ? "active" : ""} onClick={() => setDetectionGroup((current) => current === "battleStart" ? null : "battleStart")}>战斗开始框</button>
@@ -2786,12 +3113,16 @@ function TeamBattlePage({
         {targetStatus || layoutMessage || detectionMessage ? <span>{targetStatus || layoutMessage || detectionMessage}</span> : null}
       </div>
       <div className="team-layout" style={teamLayoutStyle} onPointerDown={startTeamRegionDrag}>
-        {displayMode === "plugin" && detectionToast ? <div className="detection-toast" role="status">{detectionToast}</div> : null}
         {displayMode === "plugin" && recognitionStatus ? <section className="recognition-status-panel" data-overlay-control style={{ left: overlayLayout("recognition-status").x, top: overlayLayout("recognition-status").y }} onPointerDown={startRecognitionStatusDrag} role="status" aria-live="polite">
           <strong>{recognitionStatus.label}</strong>
           <span>{recognitionStatus.detail}</span>
           <small>{recognitionStatus.progress}</small>
         </section> : null}
+        {displayMode === "plugin" ? <div ref={detectionReadoutLayerRef} className="plugin-readout-layer" data-overlay-control>
+          <section ref={(element) => { detectionReadoutRefs.current.health = element; }} className="battle-health-readout draggable-readout" data-overlay-control style={detectionReadoutStyle("health")} onPointerDown={(event) => startReadoutDrag(event, "health")}><span>敌方 HP {detectedHealth.enemy}</span><span>我方 HP {detectedHealth.self}</span></section>
+          <section ref={(element) => { detectionReadoutRefs.current.powers = element; }} className="battle-power-readout draggable-readout" data-overlay-control style={detectionReadoutStyle("powers")} onPointerDown={(event) => startReadoutDrag(event, "powers")}>{detectedSkillPowers.map((power, index) => <span key={index}>技能{index + 1} {power}</span>)}</section>
+        </div> : null}
+        {displayMode === "plugin" && detectionToast ? <div className="detection-toast" role="status">{detectionToast}</div> : null}
         {displayMode === "plugin" ? <div className={`detection-calibration ${detectionGroup || "hidden"}`} data-overlay-control>
           {[...BATTLE_START_IMAGE_KEYS, ...BATTLE_LIVE_IMAGE_KEYS, ...BATTLE_LIVE_NUMBER_KEYS].map((key) => {
             const region = detectionRegions[key];
@@ -2799,20 +3130,16 @@ function TeamBattlePage({
             return <button key={key} ref={(element) => { detectionRoiRefs.current[key] = element; }} className={`detection-roi ${key.includes("Image") ? "image" : "number"}${visible ? "" : " hidden"}`} style={{ left: `${region.x}%`, top: `${region.y}%`, width: `${region.width}%`, height: `${region.height}%` }} onPointerDown={(event) => startDetectionPointer(event, key)} title={`拖动 ${detectionLabel(key)}；拖动边缘缩放`}><span>{detectionLabel(key)}</span></button>;
           })}
         </div> : null}
-        {displayMode === "plugin" ? <>
-          <section className="battle-health-readout draggable-readout" data-overlay-control style={{ transform: `translate(${detectionReadoutLayouts.health.x}px, ${detectionReadoutLayouts.health.y}px)` }} onPointerDown={(event) => startReadoutDrag(event, "health")}><span>敌方 HP {detectedHealth.enemy}</span><span>我方 HP {detectedHealth.self}</span></section>
-          <section className="battle-power-readout draggable-readout" data-overlay-control style={{ transform: `translate(-50%, 0) translate(${detectionReadoutLayouts.powers.x}px, ${detectionReadoutLayouts.powers.y}px)` }} onPointerDown={(event) => startReadoutDrag(event, "powers")}>{detectedSkillPowers.map((power, index) => <span key={index}>技能{index + 1} {power}</span>)}</section>
-        </> : null}
-        <Roster pluginMode={displayMode === "plugin"} className="team-left-roster" title="队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={leftSlots} activeIndex={leftIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("left", groupName)} onSelect={setLeftIndex} onPatchSlot={(partial) => patchSlot("left", leftIndex, partial)} onPatchSlotAt={(index, partial) => patchSlot("left", index, partial)} onChoose={(index) => { setLeftIndex(index); setPetPicker({ side: "left", index }); }} onClear={(index) => setSlot("left", index, blankUnit())} />
-        <Roster pluginMode={displayMode === "plugin"} className="team-right-roster" title="队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={rightSlots} activeIndex={rightIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("right", groupName)} onSelect={setRightIndex} onPatchSlot={(partial) => patchSlot("right", rightIndex, partial)} onPatchSlotAt={(index, partial) => patchSlot("right", index, partial)} onChoose={(index) => { setRightIndex(index); setPetPicker({ side: "right", index }); }} onClear={(index) => setSlot("right", index, blankUnit())} />
+        <Roster panelState={panelState(leftSlots.some((slot) => Boolean(slot.name)))} pluginMode={displayMode === "plugin"} className="team-left-roster" title="队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={leftSlots} activeIndex={leftIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("left", groupName)} onSelect={setLeftIndex} onPatchSlot={(partial) => patchSlot("left", leftIndex, partial)} onPatchSlotAt={(index, partial) => patchSlot("left", index, partial)} onChoose={(index) => { setLeftIndex(index); setPetPicker({ side: "left", index }); }} onClear={(index) => setSlot("left", index, blankUnit())} />
+        <Roster panelState={panelState(rightSlots.some((slot) => Boolean(slot.name)))} pluginMode={displayMode === "plugin"} className="team-right-roster" title="队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={rightSlots} activeIndex={rightIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("right", groupName)} onSelect={setRightIndex} onPatchSlot={(partial) => patchSlot("right", rightIndex, partial)} onPatchSlotAt={(index, partial) => patchSlot("right", index, partial)} onChoose={(index) => { setRightIndex(index); setPetPicker({ side: "right", index }); }} onClear={(index) => setSlot("right", index, blankUnit())} />
         {displayMode === "plugin" ? <>
           <SpeedLine left={leftSlots[leftIndex]} right={rightSlots[rightIndex]} pets={pets} layout={overlayLayout("speed-line")} onLayoutChange={(partial) => updateOverlayLayout("speed-line", partial)} />
-          <FloatingTeamPanel className="team-left-trait" layout={overlayLayout("left-trait")} onLayoutChange={(partial) => updateOverlayLayout("left-trait", partial)}><TeamTraitEditor value={leftSlots[leftIndex]} pets={pets} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onChange={(partial) => patchSlot("left", leftIndex, partial)} /></FloatingTeamPanel>
-          <FloatingTeamPanel className="team-right-trait" layout={overlayLayout("right-trait")} onLayoutChange={(partial) => updateOverlayLayout("right-trait", partial)}><TeamTraitEditor value={rightSlots[rightIndex]} pets={pets} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onChange={(partial) => patchSlot("right", rightIndex, partial)} /></FloatingTeamPanel>
-          <FloatingTeamPanel className="team-left-evolution" layout={overlayLayout("left-evolution")} onLayoutChange={(partial) => updateOverlayLayout("left-evolution", partial)}><TeamEvolutionControls value={leftSlots[leftIndex]} pets={pets} onChange={(partial) => patchSlot("left", leftIndex, partial)} /></FloatingTeamPanel>
-          <FloatingTeamPanel className="team-right-evolution" layout={overlayLayout("right-evolution")} onLayoutChange={(partial) => updateOverlayLayout("right-evolution", partial)}><TeamEvolutionControls value={rightSlots[rightIndex]} pets={pets} onChange={(partial) => patchSlot("right", rightIndex, partial)} /></FloatingTeamPanel>
+          <FloatingTeamPanel panelState={panelState(leftSlots[leftIndex]?.trait_triggered || leftSlots[leftIndex]?.trait_stacks > 0)} className="trait-floating-panel team-left-trait" layout={overlayLayout("left-trait")} onLayoutChange={(partial) => updateOverlayLayout("left-trait", partial)}><TeamTraitEditor expanded={openPopover.left === "trait"} onExpandedChange={(next) => togglePopover("left", "trait", next)} value={leftSlots[leftIndex]} pets={pets} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onChange={(partial) => patchSlot("left", leftIndex, partial)} /></FloatingTeamPanel>
+          <FloatingTeamPanel panelState={panelState(rightSlots[rightIndex]?.trait_triggered || rightSlots[rightIndex]?.trait_stacks > 0)} className="trait-floating-panel team-right-trait" layout={overlayLayout("right-trait")} onLayoutChange={(partial) => updateOverlayLayout("right-trait", partial)}><TeamTraitEditor expanded={openPopover.right === "trait"} onExpandedChange={(next) => togglePopover("right", "trait", next)} value={rightSlots[rightIndex]} pets={pets} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onChange={(partial) => patchSlot("right", rightIndex, partial)} /></FloatingTeamPanel>
+          <FloatingTeamPanel panelState={panelState(leftSlots[leftIndex]?.devolution > 0 || Boolean(leftSlots[leftIndex]?.mega))} className="team-left-evolution" layout={overlayLayout("left-evolution")} onLayoutChange={(partial) => updateOverlayLayout("left-evolution", partial)}><TeamEvolutionControls value={leftSlots[leftIndex]} pets={pets} onChange={(partial) => patchSlot("left", leftIndex, partial)} /></FloatingTeamPanel>
+          <FloatingTeamPanel panelState={panelState(rightSlots[rightIndex]?.devolution > 0 || Boolean(rightSlots[rightIndex]?.mega))} className="team-right-evolution" layout={overlayLayout("right-evolution")} onLayoutChange={(partial) => updateOverlayLayout("right-evolution", partial)}><TeamEvolutionControls value={rightSlots[rightIndex]} pets={pets} onChange={(partial) => patchSlot("right", rightIndex, partial)} /></FloatingTeamPanel>
         </> : null}
-        <section className="team-bonus-toolbar team-left-bonus-toolbar" data-overlay-control data-plugin-resizable={displayMode === "plugin" || undefined} aria-label="己方其他加成">
+        <section className="team-bonus-toolbar team-left-bonus-toolbar" data-panel-state={panelState(bonusesArmed(leftOtherBonuses))} data-overlay-control data-plugin-resizable={displayMode === "plugin" || undefined} aria-label="己方其他加成">
           {displayMode === "plugin" ? <PluginResizeEdges /> : null}
           <button className="bonus-tool-button willpower" onClick={() => void calculateWillpower()}>愿力</button>
           {(["dedication", "marks", "thunderstorm"] as const).map((tool) => (
@@ -2821,7 +3148,7 @@ function TeamBattlePage({
             </button>
           ))}
         </section>
-        <section className="team-bonus-toolbar team-right-bonus-toolbar" data-overlay-control data-plugin-resizable={displayMode === "plugin" || undefined} aria-label="敌方其他加成">
+        <section className="team-bonus-toolbar team-right-bonus-toolbar" data-panel-state={panelState(bonusesArmed(rightOtherBonuses))} data-overlay-control data-plugin-resizable={displayMode === "plugin" || undefined} aria-label="敌方其他加成">
           {displayMode === "plugin" ? <PluginResizeEdges /> : null}
           <button className="bonus-tool-button willpower" onClick={() => void calculateWillpower()}>愿力</button>
           {(["dedication", "marks", "thunderstorm"] as const).map((tool) => (
@@ -2830,20 +3157,20 @@ function TeamBattlePage({
             </button>
           ))}
         </section>
-        <TeamBuffPanel className="team-left-buff" title="己方 buff" value={leftSlots[leftIndex]} onChange={(partial) => patchSlot("left", leftIndex, partial)} />
-        <TeamBuffPanel className="team-right-buff" title="敌方 buff" value={rightSlots[rightIndex]} onChange={(partial) => patchSlot("right", rightIndex, partial)} />
+        <TeamBuffPanel className="team-left-buff" title="buff" expanded={displayMode === "plugin" ? openPopover.left === "buff" : undefined} onExpandedChange={(next) => togglePopover("left", "buff", next)} onMove={(delta) => moveRegion("left-buff", { x: regionPositions["left-buff"].x + delta.x, y: regionPositions["left-buff"].y + delta.y })} value={leftSlots[leftIndex]} onChange={(partial) => patchSlot("left", leftIndex, partial)} />
+        <TeamBuffPanel className="team-right-buff" title="buff" expanded={displayMode === "plugin" ? openPopover.right === "buff" : undefined} onExpandedChange={(next) => togglePopover("right", "buff", next)} onMove={(delta) => moveRegion("right-buff", { x: regionPositions["right-buff"].x + delta.x, y: regionPositions["right-buff"].y + delta.y })} value={rightSlots[rightIndex]} onChange={(partial) => patchSlot("right", rightIndex, partial)} />
         {displayMode === "plugin" ? <>
-          {Array.from({ length: teamSkillCardCount }, (_, skillIndex) => (
-            <TeamSkillCards key={`left-skill-${skillIndex}`} pluginMode className={`team-left-skill-${skillIndex}`} title={`技能 ${skillIndex + 1}`} cardCount={teamSkillCardCount} onlyIndex={skillIndex} floating layout={overlayLayout(`left-skill-${skillIndex}`)} onLayoutChange={(partial) => updateOverlayLayout(`left-skill-${skillIndex}`, partial)} value={leftSlots[leftIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onApplySkill={leftAttacks ? (skill) => void applyBuff(skill) : undefined} quickResult={leftAttacks ? quickSkillResults?.find((item) => item.skillName === skillCardSlots(leftSlots[leftIndex].skills, teamSkillCardCount)[skillIndex]) || null : null} onChange={(partial) => patchSlot("left", leftIndex, partial)} />
+          {Array.from({ length: pluginSkillCardCount }, (_, skillIndex) => (
+            <TeamSkillCards key={`left-skill-${skillIndex}`} panelState={panelState(Boolean(leftPluginSkillSlots[skillIndex]))} pluginMode className={`team-left-skill-${skillIndex}`} title={`技能 ${skillIndex + 1}`} cardCount={pluginSkillCardCount} onlyIndex={skillIndex} floating layout={overlayLayout(`left-skill-${skillIndex}`)} onLayoutChange={(partial) => updateOverlayLayout(`left-skill-${skillIndex}`, partial)} value={leftSlots[leftIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onApplySkill={leftAttacks ? (skill) => void applyBuff(skill) : undefined} quickResult={leftAttacks ? quickSkillResults?.find((item) => item.skillName === leftPluginSkillSlots[skillIndex]) || null : null} onChange={(partial) => patchSlot("left", leftIndex, partial)} />
           ))}
-          {Array.from({ length: teamSkillCardCount }, (_, skillIndex) => (
-            <TeamSkillCards key={`right-skill-${skillIndex}`} pluginMode className={`team-right-skill-${skillIndex}`} title={`技能 ${skillIndex + 1}`} cardCount={teamSkillCardCount} onlyIndex={skillIndex} floating layout={overlayLayout(`right-skill-${skillIndex}`)} onLayoutChange={(partial) => updateOverlayLayout(`right-skill-${skillIndex}`, partial)} value={rightSlots[rightIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onApplySkill={!leftAttacks ? (skill) => void applyBuff(skill) : undefined} quickResult={!leftAttacks ? quickSkillResults?.find((item) => item.skillName === skillCardSlots(rightSlots[rightIndex].skills, teamSkillCardCount)[skillIndex]) || null : null} onChange={(partial) => patchSlot("right", rightIndex, partial)} />
+          {Array.from({ length: pluginSkillCardCount }, (_, skillIndex) => (
+            <TeamSkillCards key={`right-skill-${skillIndex}`} panelState={panelState(Boolean(rightPluginSkillSlots[skillIndex]))} pluginMode className={`team-right-skill-${skillIndex}`} title={`技能 ${skillIndex + 1}`} cardCount={pluginSkillCardCount} onlyIndex={skillIndex} floating layout={overlayLayout(`right-skill-${skillIndex}`)} onLayoutChange={(partial) => updateOverlayLayout(`right-skill-${skillIndex}`, partial)} value={rightSlots[rightIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onApplySkill={!leftAttacks ? (skill) => void applyBuff(skill) : undefined} quickResult={!leftAttacks ? quickSkillResults?.find((item) => item.skillName === rightPluginSkillSlots[skillIndex]) || null : null} onChange={(partial) => patchSlot("right", rightIndex, partial)} />
           ))}
         </> : <>
           <TeamSkillCards className="team-left-skills" title="己方技能卡片" cardCount={teamSkillCardCount} value={leftSlots[leftIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onApplySkill={leftAttacks ? (skill) => void applyBuff(skill) : undefined} onChange={(partial) => patchSlot("left", leftIndex, partial)} />
           <TeamSkillCards className="team-right-skills" title="敌方技能卡片" cardCount={teamSkillCardCount} value={rightSlots[rightIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onApplySkill={!leftAttacks ? (skill) => void applyBuff(skill) : undefined} onChange={(partial) => patchSlot("right", rightIndex, partial)} />
         </>}
-        {displayMode === "plugin" ? <section className="weather-panel team-weather" data-overlay-control data-plugin-resizable aria-label="天气">
+        {displayMode === "plugin" ? <section className="weather-panel team-weather" data-panel-state={panelState(weather !== "none")} data-overlay-control data-plugin-resizable aria-label="天气">
           <PluginResizeEdges />
           <label>
             <span className="ui-field-title">天气</span>
@@ -2852,31 +3179,32 @@ function TeamBattlePage({
             </select>
           </label>
         </section> : null}
-      </div>
-      <TeamActionPanel pluginMode={displayMode === "plugin"} layout={displayMode === "plugin" ? overlayLayout("action") : undefined} onLayoutChange={(partial) => updateOverlayLayout("action", partial)} leftAttacks={leftAttacks} onToggleDirection={() => setLeftAttacks((value) => !value)} onCalculate={() => void calculate()} onApplyBuff={() => void applyBuff()} onResetBattle={resetBattle} targetHp={targetHp} onTargetHpChange={setTargetHp} onCalculateRequiredPower={() => void calculateRequiredPower()} buffOptions={buffOptions} selectedBuffOption={selectedBuffOption} onSelectBuffOption={setSelectedBuffOption} />
-      {bonusTool ? (
-        <BattleBonusToolPanel
-          tool={bonusTool}
-          side={bonusSide}
-          value={bonusSide === "left" ? leftOtherBonuses : rightOtherBonuses}
-          burstEffects={burstEffects}
-          markFields={bonusSide === "left" ? leftMarkFields : rightMarkFields}
-          onMarkFieldsChange={bonusSide === "left" ? setLeftMarkFields : setRightMarkFields}
-          onChange={bonusSide === "left"
-            ? (partial) => setLeftOtherBonuses((current) => ({ ...current, ...partial }))
-            : (partial) => setRightOtherBonuses((current) => ({ ...current, ...partial }))}
-          onClose={() => setBonusTool(null)}
+        <TeamActionPanel pluginMode={displayMode === "plugin"} layout={displayMode === "plugin" ? overlayLayout("action") : undefined} onLayoutChange={(partial) => updateOverlayLayout("action", partial)} leftAttacks={leftAttacks} onToggleDirection={() => setLeftAttacks((value) => !value)} onCalculate={() => void calculate()} onApplyBuff={() => void applyBuff()} onResetBattle={resetBattle} targetHp={targetHp} onTargetHpChange={setTargetHp} onCalculateRequiredPower={() => void calculateRequiredPower()} buffOptions={buffOptions} selectedBuffOption={selectedBuffOption} onSelectBuffOption={setSelectedBuffOption} />
+        {bonusTool ? (
+          <BattleBonusToolPanel
+            tool={bonusTool}
+            pluginMode={displayMode === "plugin"}
+            side={bonusSide}
+            value={bonusSide === "left" ? leftOtherBonuses : rightOtherBonuses}
+            burstEffects={burstEffects}
+            markFields={bonusSide === "left" ? leftMarkFields : rightMarkFields}
+            onMarkFieldsChange={bonusSide === "left" ? setLeftMarkFields : setRightMarkFields}
+            onChange={bonusSide === "left"
+              ? (partial) => setLeftOtherBonuses((current) => ({ ...current, ...partial }))
+              : (partial) => setRightOtherBonuses((current) => ({ ...current, ...partial }))}
+            onClose={() => setBonusTool(null)}
+          />
+        ) : null}
+        <ResultView
+          results={results}
+          error={error}
+          context={battleContext}
+          willpower={willpower}
+          selectedWillpowerElement={selectedWillpowerElement}
+          onSelectWillpowerElement={selectWillpowerElement}
         />
-      ) : null}
-      <ResultView
-        results={results}
-        error={error}
-        context={battleContext}
-        willpower={willpower}
-        selectedWillpowerElement={selectedWillpowerElement}
-        onSelectWillpowerElement={selectWillpowerElement}
-      />
-      {requiredPower ? <RequiredPowerView value={requiredPower} context={battleContext} /> : null}
+        {requiredPower ? <RequiredPowerView value={requiredPower} context={battleContext} /> : null}
+      </div>
       {petPicker ? (
         <PickerModal
           mode="pet"
@@ -3200,6 +3528,7 @@ function TeamSkillCards({
   onApplySkill,
   quickResult,
   onChange,
+  panelState: state,
 }: {
   title: string;
   className?: string;
@@ -3216,6 +3545,7 @@ function TeamSkillCards({
   onApplySkill?: (skill: string) => void;
   quickResult?: QuickSkillResult | null;
   onChange: (partial: Partial<UnitState>) => void;
+  panelState?: PanelState;
 }) {
   const cards = (onlyIndex === undefined ? skillCardSlots(value.skills, cardCount) : [skillCardSlots(value.skills, Math.max(cardCount, value.skills.length))[onlyIndex] || ""]).map((name) => (name ? { name } : null));
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
@@ -3227,14 +3557,14 @@ function TeamSkillCards({
   const controlSkill = onlyIndex === undefined ? currentSkill : cards[0]?.name || "";
 
   function startFloatingDrag(event: ReactPointerEvent<HTMLElement>) {
-    if (!floating || (event.target as HTMLElement).closest("button, input, select, textarea")) return;
+    if (!floating || (event.target as HTMLElement).closest("button, input, select, textarea, [role=button], summary, .plugin-resize-edge")) return;
     event.preventDefault();
     const start = { pointerX: event.clientX, pointerY: event.clientY, ...(layout || defaultPluginOverlayLayout(className)) };
     const move = (moveEvent: PointerEvent) => {
       if (Math.abs(moveEvent.clientX - start.pointerX) > 3 || Math.abs(moveEvent.clientY - start.pointerY) > 3) suppressCardClickRef.current = true;
       onLayoutChange?.({
-        x: Math.max(0, start.x + moveEvent.clientX - start.pointerX),
-        y: Math.max(0, start.y + moveEvent.clientY - start.pointerY),
+        x: Math.max(0, snapToGrid(start.x + moveEvent.clientX - start.pointerX)),
+        y: Math.max(0, snapToGrid(start.y + moveEvent.clientY - start.pointerY)),
       });
     };
     const stop = () => {
@@ -3268,7 +3598,10 @@ function TeamSkillCards({
   useEffect(() => {
     if (!floating || !panelRef.current || !onLayoutChange) return;
     const panel = panelRef.current;
-    const observer = new ResizeObserver(() => onLayoutChange({ width: panel.offsetWidth, height: panel.offsetHeight }));
+    const observer = new ResizeObserver(() => {
+      if (panel.dataset.pluginResizing === "true") return;
+      onLayoutChange({ width: panel.offsetWidth, height: panel.offsetHeight });
+    });
     observer.observe(panel);
     return () => observer.disconnect();
   }, [floating, onLayoutChange]);
@@ -3301,34 +3634,33 @@ function TeamSkillCards({
   }
 
   return (
-    <section ref={panelRef} className={`team-skill-panel ${floating ? "skill-card-floating" : ""} ${className}`.trim()} data-overlay-control data-plugin-resizable={floating || undefined} style={floating && layout ? { left: layout.x, top: layout.y, width: layout.width, height: layout.height } : undefined} onPointerDown={floating ? startFloatingDrag : undefined} onClickCapture={(event) => {
+    <section ref={panelRef} className={`team-skill-panel ${floating ? "skill-card-floating" : ""} ${className}`.trim()} data-panel-state={state} data-overlay-control data-plugin-resizable={floating || undefined} style={floating && layout ? { left: layout.x, top: layout.y, width: layout.width, height: layout.height, ...pluginContentStyle(layout) } : undefined} onPointerDown={floating ? startFloatingDrag : undefined} onClickCapture={(event) => {
       if (!suppressCardClickRef.current) return;
       event.preventDefault();
       event.stopPropagation();
       suppressCardClickRef.current = false;
     }}>
       {floating ? <PluginResizeEdges /> : null}
-      <h2>{title}</h2>
-      <TeamSkillCardGrid
-        cards={cards}
-        emptySkillOffset={onlyIndex || 0}
-        currentSkill={value.current_skill}
-        onPick={(current_skill) => onChange({ current_skill: value.current_skill === current_skill ? "" : current_skill })}
-        onChoose={setPickerIndex}
-        onClear={clearSkillAt}
-        onApply={onApplySkill}
-        pluginMode={pluginMode}
-        quickResult={quickResult}
-      />
-      {pluginMode && quickResult ? <QuickSkillResultDisplay result={quickResult} /> : null}
-      {pluginMode && controlSkill ? (
-        <div className="plugin-skill-controls">
+      <div className={floating ? "plugin-panel-content" : undefined}>
+        <h2>{title}</h2>
+        <TeamSkillCardGrid
+          cards={cards}
+          emptySkillOffset={onlyIndex ?? 0}
+          currentSkill={value.current_skill}
+          onPick={(current_skill) => onChange({ current_skill: value.current_skill === current_skill ? "" : current_skill })}
+          onChoose={setPickerIndex}
+          onClear={clearSkillAt}
+          onApply={onApplySkill}
+          pluginMode={pluginMode}
+          quickResult={quickResult}
+        />
+        {pluginMode && controlSkill ? (
+          <div className="plugin-skill-controls">
           {skillInfo?.stackable.map((trigger) => {
             const stacks = value.skill_trigger_stacks[controlSkill] || [];
             const stackCount = stacks[trigger.index] ?? 0;
             return (
               <div className="skill-stack-control" key={trigger.index}>
-                <FieldLabel>{skillInfo.stackable.length > 1 ? trigger.label : "叠加"}</FieldLabel>
                 <NumberInput
                   value={stackCount}
                   min={0}
@@ -3359,8 +3691,10 @@ function TeamSkillCards({
               {skillInfo.usage_mode_options.map((option) => <option key={option.index} value={option.index}>{option.label}</option>)}
             </select>
           </div>) : null}
-        </div>
-      ) : null}
+          </div>
+        ) : null}
+        {pluginMode && quickResult ? <QuickSkillResultDisplay result={quickResult} /> : null}
+      </div>
       {pickerIndex !== null ? (
         <PickerModal
           mode="skill"
@@ -3542,6 +3876,7 @@ function BonusToolContent({
 
 function BattleBonusToolPanel({
   tool,
+  pluginMode,
   side,
   value,
   burstEffects,
@@ -3551,6 +3886,7 @@ function BattleBonusToolPanel({
   onClose,
 }: {
   tool: BonusTool;
+  pluginMode: boolean;
   side: "left" | "right";
   value: TeamOtherBonuses;
   burstEffects: BurstEffectItem[];
@@ -3574,13 +3910,14 @@ function BattleBonusToolPanel({
   }
 
   useEffect(() => {
+    if (pluginMode) return;
     const keepVisible = () => setPosition((current) => clampToViewport(current.x, current.y));
     window.addEventListener("resize", keepVisible);
     return () => window.removeEventListener("resize", keepVisible);
-  }, []);
+  }, [pluginMode]);
 
   function startDrag(event: ReactPointerEvent<HTMLElement>) {
-    if ((event.target as HTMLElement).closest("button")) return;
+    if ((event.target as HTMLElement).closest("button, input, select, textarea, [role=button], summary")) return;
     event.preventDefault();
     dragRef.current = { pointerX: event.clientX, pointerY: event.clientY, x: position.x, y: position.y };
     const move = (moveEvent: PointerEvent) => {
@@ -3658,7 +3995,7 @@ function TeamSkillCardGrid({
       {cards.map((skill, index) => (
         <div
           key={skill ? `${skill.name}-${index}` : `empty-${index}`}
-          className={skill?.name === currentSkill ? "skill-card selected team-skill-card" : "skill-card team-skill-card"}
+          className={`${skill?.name === currentSkill ? "skill-card selected" : "skill-card"} team-skill-card${skill ? "" : " is-empty"}`}
           role="button"
           tabIndex={0}
           title={skill ? [skill.name, skillDescriptions[skill.name]].filter(Boolean).join("\n") : "空技能"}
@@ -3674,7 +4011,7 @@ function TeamSkillCardGrid({
           }}
         >
           <strong>{skill?.name || `空技能${emptySkillOffset + index + 1}`}</strong>
-          {quickResult && quickResult.skillName === skill?.name && quickResult.skillPower !== null && quickResult.skillPower !== undefined ? <span className="quick-skill-power">威力 {quickResult.skillPower}</span> : null}
+          {quickResult && quickResult.skillName === skill?.name && quickResult.displayPower !== null && quickResult.displayPower !== undefined ? <span className="quick-skill-power">{quickResult.displayPower}</span> : null}
           {!pluginMode ? <div className="skill-card-actions">
             <button className="slot-action" onClick={(event) => { event.stopPropagation(); skill ? onClear(index) : onChoose(index); }}>
               {skill ? "取消" : "选择"}
@@ -3686,81 +4023,151 @@ function TeamSkillCardGrid({
   );
 }
 
+type BuffFieldKey =
+  | "phys_atk_buff"
+  | "mag_atk_buff"
+  | "phys_def_buff"
+  | "mag_def_buff"
+  | "power_multiplier"
+  | "power_bonus"
+  | "combo_plus"
+  | "combo_mul"
+  | "usage_time_plus";
+
+type BuffField = {
+  key: BuffFieldKey;
+  /** 输入框前的完整标签。 */
+  label: string;
+  /** 收起态摘要里的短标签。 */
+  short: string;
+  suffix: string;
+  min: number;
+  max: number;
+  step?: number;
+  /** 默认值，非默认即视为生效。连击倍的默认是 1 而不是 0。 */
+  base?: number;
+  labelClassName?: string;
+  inputClassName?: string;
+};
+
+const BUFF_GROUPS: Array<{ title: string; fields: BuffField[] }> = [
+  { title: "攻击", fields: [
+    { key: "phys_atk_buff", label: "物攻%", short: "物攻", suffix: "%", min: -300, max: 300, step: 10 },
+    { key: "mag_atk_buff", label: "魔攻%", short: "魔攻", suffix: "%", min: -300, max: 300, step: 10 },
+  ] },
+  { title: "防御", fields: [
+    { key: "phys_def_buff", label: "物防%", short: "物防", suffix: "%", min: -300, max: 300, step: 10 },
+    { key: "mag_def_buff", label: "魔防%", short: "魔防", suffix: "%", min: -300, max: 300, step: 10 },
+  ] },
+  { title: "威力", fields: [
+    { key: "power_multiplier", label: "威力%", short: "威力", suffix: "%", min: -100, max: 1000, step: 10 },
+    { key: "power_bonus", label: "威力+", short: "威力", suffix: "", min: -500, max: 500, step: 10 },
+  ] },
+  { title: "连击", fields: [
+    { key: "combo_plus", label: "连击+", short: "连击", suffix: "", min: -20, max: 20 },
+    { key: "combo_mul", label: "连击倍", short: "连击倍", suffix: "x", min: 1, max: 10, base: 1 },
+  ] },
+  { title: "其他", fields: [
+    { key: "usage_time_plus", label: "使用+", short: "使用", suffix: "", min: 0, max: 20, labelClassName: "buff-usage-label", inputClassName: "buff-usage-input" },
+  ] },
+];
+
+const BUFF_FIELDS = BUFF_GROUPS.flatMap((group) => group.fields);
+
+const BUFF_RESET = Object.fromEntries(BUFF_FIELDS.map((field) => [field.key, field.base ?? 0])) as Record<BuffFieldKey, number>;
+
 function TeamBuffPanel({
   title,
   className = "",
   value,
   onChange,
+  expanded: expandedProp,
+  onExpandedChange,
+  onMove,
 }: {
   title: string;
   className?: string;
   value: UnitState;
   onChange: (partial: Partial<UnitState>) => void;
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
+  onMove?: (delta: { x: number; y: number }) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const activeBuffs = [
-    ["物攻", value.phys_atk_buff, "%"],
-    ["魔攻", value.mag_atk_buff, "%"],
-    ["物防", value.phys_def_buff, "%"],
-    ["魔防", value.mag_def_buff, "%"],
-    ["威力", value.power_multiplier, "%"],
-    ["威力", value.power_bonus, ""],
-    ["连击", value.combo_plus, ""],
-    ["连击倍", value.combo_mul === 1 ? 0 : value.combo_mul, "x"],
-    ["使用", value.usage_time_plus, ""],
-  ].filter(([, amount]) => Number(amount) !== 0) as Array<[string, number, string]>;
+  const [localExpanded, setLocalExpanded] = useState(false);
+  const suppressSummaryClickRef = useRef(false);
+  const expanded = expandedProp ?? localExpanded;
+  const setExpanded = (next: boolean) => (expandedProp === undefined ? setLocalExpanded(next) : onExpandedChange?.(next));
+  const isActive = (field: BuffField) => value[field.key] !== (field.base ?? 0);
+  const activeBuffs = BUFF_FIELDS.filter(isActive);
+
+  function startSummaryInteraction(event: ReactPointerEvent<HTMLElement>) {
+    if (!onMove || (event.target as HTMLElement).closest("button")) return;
+    event.stopPropagation();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    let moved = false;
+    const move = (moveEvent: PointerEvent) => {
+      const delta = { x: moveEvent.clientX - startX, y: moveEvent.clientY - startY };
+      if (!moved && Math.hypot(delta.x, delta.y) < 4) return;
+      moved = true;
+      suppressSummaryClickRef.current = true;
+      moveEvent.preventDefault();
+      onMove(delta);
+    };
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+      if (!moved) suppressSummaryClickRef.current = false;
+      window.setTimeout(() => { suppressSummaryClickRef.current = false; }, 0);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+  }
+
   return (
-    <details className={`team-buff-panel ${className}`.trim()} data-overlay-control data-plugin-resizable open={expanded}>
+    <details className={`team-buff-panel ${className}`.trim()} data-panel-state={panelState(activeBuffs.length > 0)} data-overlay-control data-plugin-resizable open={expanded}>
       <PluginResizeEdges />
-      <summary onClick={(event) => {
+      <summary onPointerDown={startSummaryInteraction} onClick={(event) => {
         event.preventDefault();
-        if ((event.target as HTMLElement).closest("button, .team-region-drag-handle")) return;
-        setExpanded((current) => !current);
+        if (suppressSummaryClickRef.current || (event.target as HTMLElement).closest("button")) return;
+        setExpanded(!expanded);
       }}>
           <span className="team-buff-summary-title">
-          <span className="team-region-drag-handle" title="拖动 Buff 区域" aria-label="拖动 Buff 区域">::</span>
           <span>{title}</span>
           </span>
-          {activeBuffs.length ? <span className="buff-summary-values">{activeBuffs.map(([label, amount, suffix]) => `${label}${amount > 0 ? "+" : ""}${amount}${suffix}`).join(" ")}</span> : null}
+          {activeBuffs.length ? <span className="buff-summary-values">{activeBuffs.map((field) => <span key={field.key}>{field.short}{value[field.key] > 0 ? "+" : ""}{value[field.key]}{field.suffix}</span>)}</span> : null}
         <button
           className="compact-button buff-reset-button"
           onClick={(event) => {
             event.preventDefault();
-            onChange({
-              phys_atk_buff: 0,
-              mag_atk_buff: 0,
-              phys_def_buff: 0,
-              mag_def_buff: 0,
-              power_multiplier: 0,
-              power_bonus: 0,
-              combo_plus: 0,
-              combo_mul: 1,
-              usage_time_plus: 0,
-            });
+            onChange(BUFF_RESET);
           }}
         >
           重置
         </button>
       </summary>
       <div className="buff-grid team-buff-grid">
-        <FieldLabel>物攻%</FieldLabel>
-        <NumberInput value={value.phys_atk_buff} min={-300} max={300} step={10} onChange={(phys_atk_buff) => onChange({ phys_atk_buff })} />
-        <FieldLabel>魔攻%</FieldLabel>
-        <NumberInput value={value.mag_atk_buff} min={-300} max={300} step={10} onChange={(mag_atk_buff) => onChange({ mag_atk_buff })} />
-        <FieldLabel>物防%</FieldLabel>
-        <NumberInput value={value.phys_def_buff} min={-300} max={300} step={10} onChange={(phys_def_buff) => onChange({ phys_def_buff })} />
-        <FieldLabel>魔防%</FieldLabel>
-        <NumberInput value={value.mag_def_buff} min={-300} max={300} step={10} onChange={(mag_def_buff) => onChange({ mag_def_buff })} />
-        <FieldLabel>威力%</FieldLabel>
-        <NumberInput value={value.power_multiplier} min={-100} max={1000} step={10} onChange={(power_multiplier) => onChange({ power_multiplier })} />
-        <FieldLabel>威力+</FieldLabel>
-        <NumberInput value={value.power_bonus} min={-500} max={500} step={10} onChange={(power_bonus) => onChange({ power_bonus })} />
-        <FieldLabel>连击+</FieldLabel>
-        <NumberInput value={value.combo_plus} min={-20} max={20} onChange={(combo_plus) => onChange({ combo_plus })} />
-        <FieldLabel>连击倍</FieldLabel>
-        <NumberInput value={value.combo_mul} min={1} max={10} onChange={(combo_mul) => onChange({ combo_mul })} />
-        <FieldLabel className="buff-usage-label">使用+</FieldLabel>
-        <NumberInput className="buff-usage-input" value={value.usage_time_plus} min={0} max={20} onChange={(usage_time_plus) => onChange({ usage_time_plus })} />
+        {BUFF_GROUPS.map((group) => (
+          <div className="buff-group" key={group.title}>
+            <div className="buff-group-fields">
+              {group.fields.map((field) => (
+                <div className={`buff-field${isActive(field) ? " is-active" : ""}`} key={field.key}>
+                  <FieldLabel className={field.labelClassName}>{field.label}</FieldLabel>
+                  <NumberInput
+                    className={field.inputClassName}
+                    value={value[field.key]}
+                    min={field.min}
+                    max={field.max}
+                    step={field.step}
+                    onChange={(next) => onChange({ [field.key]: next } as Partial<UnitState>)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </details>
   );
@@ -3773,6 +4180,8 @@ function TeamTraitEditor({
   configs,
   onChange,
   onConfigsChanged,
+  expanded: expandedProp,
+  onExpandedChange,
 }: {
   value: UnitState;
   pets: Pet[];
@@ -3780,10 +4189,14 @@ function TeamTraitEditor({
   configs: PickerConfigs;
   onChange: (partial: Partial<UnitState>) => void;
   onConfigsChanged: (configs: PickerConfigs) => void;
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 }) {
   const [picker, setPicker] = useState(false);
   const [traitRuntime, setTraitRuntime] = useState<any>(null);
-  const [expanded, setExpanded] = useState(false);
+  const [localExpanded, setLocalExpanded] = useState(false);
+  const expanded = expandedProp ?? localExpanded;
+  const setExpanded = (next: boolean) => (expandedProp === undefined ? setLocalExpanded(next) : onExpandedChange?.(next));
   const traitQuery = value.trait_override_query || value.name;
   const selectedMegaForm = value.trait_override_query ? null : value.mega_form;
   const resolveMega = !value.trait_override_query && Boolean(value.mega || selectedMegaForm);
@@ -3815,7 +4228,7 @@ function TeamTraitEditor({
 
   return (
     <section className="team-slot-section">
-      <button className="trait-summary-button compact" onClick={() => setExpanded(!expanded)}>
+      <button className="trait-summary-button compact" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
         <strong className="ui-field-title">{traitLabel}</strong>
         <span>{expanded ? "收起" : "展开"}</span>
       </button>
@@ -3854,9 +4267,9 @@ function TeamTraitEditor({
       </div>
       {expanded ? (
         <div className="trait-expanded-content">
-          <div className="inline-row trait-action-row"><button className="compact-button trait-select-button" onClick={() => setPicker(true)}>选特</button></div>
           {traitDetail ? <p className="trait-text">{traitDetail}</p> : null}
-          {traitRuntime?.note ? <p className="muted">{traitRuntime.note}</p> : null}
+          {traitRuntime?.note ? <p className="muted trait-note">{traitRuntime.note}</p> : null}
+          <div className="inline-row trait-action-row"><button className="compact-button trait-select-button" onClick={() => setPicker(true)}>选特</button></div>
         </div>
       ) : null}
       {picker ? (
@@ -3948,16 +4361,20 @@ function TeamIvEditor({
   );
 }
 
-function FloatingTeamPanel({ className, layout, onLayoutChange, children }: { className: string; layout: PluginOverlayLayout; onLayoutChange: (partial: Partial<PluginOverlayLayout>) => void; children: ReactNode }) {
+function FloatingTeamPanel({ className, layout, onLayoutChange, panelState: state, children }: { className: string; layout: PluginOverlayLayout; onLayoutChange: (partial: Partial<PluginOverlayLayout>) => void; panelState?: PanelState; children: ReactNode }) {
   const panelRef = useRef<HTMLElement | null>(null);
+  const isSpeedLine = className.split(/\s+/).includes("speed-line");
+  const speedLineContentWidth = useRef(Math.max(1, layout.width - 18));
 
   function startDrag(event: ReactPointerEvent<HTMLElement>) {
-    if ((event.target as HTMLElement).closest("button, input, select, textarea")) return;
+    if ((event.target as HTMLElement).closest("button, input, select, textarea, [role=button], summary, .plugin-resize-edge")) return;
+    // 展开浮层视觉上是独立层，点它不应拖动宿主面板。
+    if ((event.target as HTMLElement).closest(".trait-expanded-content")) return;
     event.preventDefault();
     const start = { pointerX: event.clientX, pointerY: event.clientY, ...layout };
     const move = (moveEvent: PointerEvent) => onLayoutChange({
-      x: Math.max(0, start.x + moveEvent.clientX - start.pointerX),
-      y: Math.max(0, start.y + moveEvent.clientY - start.pointerY),
+      x: Math.max(0, snapToGrid(start.x + moveEvent.clientX - start.pointerX)),
+      y: Math.max(0, snapToGrid(start.y + moveEvent.clientY - start.pointerY)),
     });
     const stop = () => {
       window.removeEventListener("pointermove", move);
@@ -3970,15 +4387,18 @@ function FloatingTeamPanel({ className, layout, onLayoutChange, children }: { cl
   useEffect(() => {
     if (!panelRef.current) return;
     const panel = panelRef.current;
-    const observer = new ResizeObserver(() => onLayoutChange({ width: panel.offsetWidth, height: panel.offsetHeight }));
+    const observer = new ResizeObserver(() => {
+      if (panel.dataset.pluginResizing === "true") return;
+      onLayoutChange({ width: panel.offsetWidth, height: panel.offsetHeight });
+    });
     observer.observe(panel);
     return () => observer.disconnect();
   }, [onLayoutChange]);
 
-  return <section ref={panelRef} className={`floating-team-panel ${className}`} data-overlay-control data-plugin-resizable style={{ left: layout.x, top: layout.y, width: layout.width, height: layout.height }} onPointerDown={startDrag}>
+  return <section ref={panelRef} className={`floating-team-panel ${className}`} data-panel-state={isSpeedLine ? undefined : state} data-overlay-control data-plugin-resizable style={{ left: layout.x, top: layout.y, width: layout.width, height: layout.height, ...pluginContentStyle(layout), ...(isSpeedLine ? { "--speed-line-content-width": `${speedLineContentWidth.current}px` } : {}) }} onPointerDown={startDrag}>
     <div className="plugin-drag-zone" aria-label="拖动面板" />
     <PluginResizeEdges />
-    {children}
+    {isSpeedLine ? children : <div className="plugin-panel-content">{children}</div>}
   </section>;
 }
 
@@ -4011,6 +4431,7 @@ function Roster({
   onChoose,
   onClear,
   pluginMode,
+  panelState: state,
 }: {
   title: string;
   className?: string;
@@ -4028,6 +4449,7 @@ function Roster({
   onChoose: (index: number) => void;
   onClear: (index: number) => void;
   pluginMode: boolean;
+  panelState?: PanelState;
 }) {
   const activeSlot = slots[activeIndex] || blankUnit();
   const controlAfterIndex = Math.min(activeIndex % 2 === 0 ? activeIndex + 1 : activeIndex, slots.length - 1);
@@ -4045,7 +4467,7 @@ function Roster({
   }
 
   return (
-    <section className={`roster ${className}`.trim()} data-overlay-control data-plugin-resizable={pluginMode || undefined}>
+    <section className={`roster ${className}`.trim()} data-panel-state={state} data-overlay-control data-plugin-resizable={pluginMode || undefined}>
       {pluginMode ? <PluginResizeEdges /> : null}
       <header className="roster-header">
         <h2>{title}</h2>
@@ -4070,7 +4492,7 @@ function Roster({
           <Fragment key={index}>
             <div className="slot-cell" onMouseEnter={() => pluginMode && openPopover(index)} onMouseLeave={schedulePopoverClose}>
               <div
-                className={index === activeIndex ? "slot active" : "slot"}
+                className={`${index === activeIndex ? "slot active" : "slot"}${slot.name ? "" : " is-empty"}`}
                 role="button"
                 tabIndex={0}
                 onClick={() => {
@@ -4373,7 +4795,7 @@ function QuickSkillResultDisplay({ result }: { result: QuickSkillResult }) {
   return <div className="quick-skill-result" aria-label={`${result.skillName} 快捷结果`}>
     {resultRows.map((rows, rowIndex) => <div className="quick-skill-result-row" key={rowIndex}>
       {rows.map((item, index) => <span key={`${item.case_label}-${item.damage}-${index}`}>
-        <b>{item.damage}</b>
+        <b>{item.damage}{item.is_triggered ? "*" : ""}</b>
         <small>{item.hp_results.map(({ damage_percent }) => `${Math.round(damage_percent)}%`).join(" / ")}</small>
       </span>)}
     </div>)}

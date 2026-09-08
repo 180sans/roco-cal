@@ -538,10 +538,12 @@ def calculate_quick_skills(payload: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(skill_data, dict) or skill_data.get("type") not in {"物攻", "魔攻"}:
             continue
         attacker_args = _attacker_args({**attacker, "current_skill": skill_name})
+        results = battle_damage(**attacker_args, **defender_args, weather=weather)
         items.append({
             "skillName": skill_name,
-            "skillPower": skill_data.get("skill_power"),
-            "results": battle_damage(**attacker_args, **defender_args, weather=weather),
+            # 技能卡显示的是计算后的威力，不是技能数据库里的原始威力。
+            "displayPower": results[0].get("effective_power") if results else None,
+            "results": results,
         })
     return {"items": items}
 

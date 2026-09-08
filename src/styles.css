@@ -240,57 +240,286 @@ select {
 }
 
 body:has(.battle-page.mixed-active) .app-header,
-.battle-page.mixed-active .team-layout-actions {
+.battle-page.mixed-active:not(.toolbar-open) .team-layout-actions {
   display: none;
 }
 
-/* 沉浸态使用统一淡黑底和白字，兼顾可读性与游戏画面。 */
+/* F. 运行态召回把手：工具条里的解绑窗口 / 天气 / 保存布局都没有热键，必须留一个入口。 */
+.overlay-toolbar-handle {
+  background: rgba(18, 26, 36, 0.62) !important;
+  border: 1px solid rgba(154, 178, 202, 0.28) !important;
+  border-radius: 0 0 6px 6px !important;
+  border-top: none !important;
+  color: rgba(230, 237, 246, 0.72) !important;
+  cursor: pointer;
+  font-size: 9px;
+  height: 12px;
+  left: 50%;
+  line-height: 1;
+  opacity: 0.35;
+  padding: 0;
+  position: fixed;
+  top: 0;
+  transform: translateX(-50%);
+  transition: opacity 0.15s ease;
+  width: 46px;
+  z-index: 60;
+}
+
+.overlay-toolbar-handle:hover,
+.overlay-toolbar-handle[aria-expanded="true"] {
+  background: rgba(18, 26, 36, 0.95) !important;
+  color: #e6edf6 !important;
+  opacity: 1;
+}
+
+/* 头部已隐藏，工具条上提贴住把手。 */
+.overlay-attached .battle-page.mixed-active.toolbar-open .team-layout-actions {
+  top: 14px;
+}
+
+/* ===========================================================================
+   插件叠加层配色
+   取常规模式已有的石板蓝 + 青绿（#17212b / #536474 / #d8e0e8 / #246b58），
+   全层统一「深底 + 浅字」，不再黑底面板套白底卡片来回反色。
+   层级靠同色相的不同透明度台阶表达，不靠明暗互换。
+   可读性交给 backdrop-filter（只压暗背后的游戏画面），
+   不用 text-shadow / filter / opacity —— 那三样会让字发虚。
+   =========================================================================== */
+.battle-page.immersive-mode {
+  --ov-panel: rgba(18, 26, 36, 0.68);
+  --ov-panel-border: rgba(154, 178, 202, 0.3);
+  --ov-panel-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  --ov-veil: blur(3px) saturate(0.75) brightness(0.62);
+  --ov-text: #e6edf6;
+  --ov-text-muted: #a7b6c8;
+  --ov-field: rgba(226, 238, 252, 0.13);
+  --ov-field-border: rgba(196, 216, 238, 0.3);
+  --ov-field-text: #f2f7fd;
+  --ov-accent: #8fdcb8;
+  --ov-accent-bg: rgba(36, 107, 88, 0.62);
+  --ov-accent-border: rgba(143, 220, 184, 0.7);
+  --ov-side-left: rgba(120, 180, 236, 0.62);
+  --ov-side-right: rgba(236, 146, 158, 0.62);
+}
+
+/* 未绑定时操作栏仍位于普通页面流中，保持和绑定态一致的深色对比度，
+   同时抬高层级，避免插件浮层覆盖操作入口。 */
+.app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions {
+  align-items: flex-start;
+  background: var(--ov-panel);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--ov-panel-border);
+  border-radius: 8px;
+  box-shadow: var(--ov-panel-shadow);
+  color: var(--ov-text);
+  padding: 8px 10px;
+  position: relative;
+  z-index: 25;
+}
+
+/* 未绑定时也使用和绑定态相同的网格排版；操作栏自身换行后，
+   普通文档流会把下方的插件布局整体推到操作栏底部。 */
+.app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions .team-layout-actions-main,
+.app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions .team-layout-actions-more-grid {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions :is(button, input, select) {
+  background: var(--ov-field) !important;
+  border: 1px solid var(--ov-field-border) !important;
+  color: var(--ov-field-text) !important;
+}
+
+.app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions :is(summary, label, span) {
+  color: var(--ov-text) !important;
+}
+
+.app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions button.active,
+.app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions .mode-switch button.active {
+  background: var(--ov-accent-bg) !important;
+  border-color: var(--ov-accent-border) !important;
+  color: #f0fff8 !important;
+}
+
+/* 未绑定插件态使用页面坐标系，所有插件面板随 app-shell 一起滚动。
+   绑定后不带 plugin-unattached，继续使用窗口级 fixed 坐标。 */
+.battle-page.plugin-mode.plugin-unattached {
+  position: relative;
+}
+
+.battle-page.plugin-mode.plugin-unattached :is(
+  .team-action-floating,
+  .floating-team-panel,
+  .skill-card-floating,
+  .bonus-tool-floating,
+  .result-floating,
+  .required-power-panel,
+  .recognition-status-panel
+) {
+  position: absolute;
+}
+
 .battle-page.immersive-mode .team-layout > .roster,
 .battle-page.immersive-mode .team-layout > .team-bonus-toolbar,
 .battle-page.immersive-mode .team-layout > .team-buff-panel,
 .battle-page.immersive-mode .team-layout > .team-weather,
 .battle-page.immersive-mode .team-action-floating,
-.battle-page.immersive-mode .floating-team-panel,
+.battle-page.immersive-mode .floating-team-panel:not(.speed-line),
 .battle-page.immersive-mode .skill-card-floating {
-  background: rgba(0, 0, 0, 0.36) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
-  box-shadow: none;
+  background: var(--ov-panel) !important;
+  border-color: var(--ov-panel-border) !important;
+  box-shadow: var(--ov-panel-shadow);
 }
 
-.battle-page.immersive-mode .floating-team-panel .trait-summary-button.compact {
-  background: transparent;
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #fff;
+.battle-page.immersive-mode .team-layout > .roster :is(h2, h3, p, strong, summary, label, .field-label, .ui-field-title),
+.battle-page.immersive-mode .team-layout > .team-bonus-toolbar :is(h2, h3, p, strong, summary, label, .field-label, .ui-field-title),
+.battle-page.immersive-mode .team-layout > .team-buff-panel :is(h2, h3, p, strong, summary, label, .field-label, .ui-field-title),
+.battle-page.immersive-mode .team-layout > .team-weather :is(h2, h3, p, strong, summary, label, .field-label, .ui-field-title),
+.battle-page.immersive-mode .floating-team-panel:not(.speed-line) :is(h2, h3, p, strong, summary, label, .field-label, .ui-field-title),
+.battle-page.immersive-mode .skill-card-floating :is(h2, h3, p, strong, summary, label, .field-label, .ui-field-title) {
+  color: var(--ov-text);
 }
 
-.battle-page.immersive-mode .floating-team-panel .trait-summary-button strong,
-.battle-page.immersive-mode .floating-team-panel .trait-summary-button span {
-  color: #fff;
+.battle-page.immersive-mode .team-layout .muted,
+.battle-page.immersive-mode .floating-team-panel:not(.speed-line) .muted,
+.battle-page.immersive-mode .skill-card-floating .muted {
+  color: var(--ov-text-muted);
 }
 
-.battle-page.immersive-mode .team-layout > .roster :is(h2, h3, p, strong, summary, label, .field-label, .ui-field-title, .muted),
-.battle-page.immersive-mode .team-layout > .team-bonus-toolbar :is(h2, h3, p, strong, summary, label, .field-label, .ui-field-title, .muted),
-.battle-page.immersive-mode .team-layout > .team-buff-panel :is(h2, h3, p, strong, summary, label, .field-label, .ui-field-title, .muted),
-.battle-page.immersive-mode .team-layout > .team-weather :is(h2, h3, p, strong, summary, label, .field-label, .ui-field-title, .muted),
-.battle-page.immersive-mode .floating-team-panel :is(h2, h3, p, strong, summary, label, .field-label, .ui-field-title, .muted),
-.battle-page.immersive-mode .skill-card-floating :is(h2, h3, p, strong, summary, label, .field-label, .ui-field-title, .muted) {
-  color: #fff;
+/* ---------------------------------------------------------------------------
+   C. 空态隐藏：运行态只把队伍里的空槽位藏掉，技能空位仍保留编号。
+   只动可见性，不动几何尺寸 —— 面板宽高是用户拖出来并落盘的，
+   随数据变化会让排好的布局漂移，也会污染 resize 的持久化值。
+   --------------------------------------------------------------------------- */
+.battle-page.plugin-mode.mixed-active .slot.is-empty {
+  opacity: 0;
 }
 
-/* 具有独立边框的内容卡片改用浅色层，和外层深色面板形成清晰层级。 */
-.battle-page.immersive-mode .roster .slot,
-.battle-page.immersive-mode .floating-team-panel .team-slot-section,
-.battle-page.immersive-mode .floating-team-panel .team-slot-section .trait-summary-button,
-.battle-page.immersive-mode .skill-card-floating .team-skill-card {
-  background: rgba(255, 255, 255, 0.72) !important;
-  border-color: rgba(255, 255, 255, 0.5) !important;
-  color: #17212b;
+/* 悬停宿主面板时浮回来，否则无法点空位选精灵 / 选技能。 */
+.battle-page.plugin-mode.mixed-active [data-panel-state]:hover .slot.is-empty,
+.battle-page.plugin-mode.mixed-active [data-panel-state]:focus-within .slot.is-empty {
+  opacity: 1;
 }
 
-.battle-page.immersive-mode .roster .slot :is(strong, span, p, .field-label, .ui-field-title),
-.battle-page.immersive-mode .floating-team-panel .team-slot-section :is(strong, span, p, label, .field-label, .ui-field-title, .muted),
-.battle-page.immersive-mode .skill-card-floating .team-skill-card :is(strong, span, p, label, .field-label, .ui-field-title, .muted) {
-  color: #17212b;
+/* ===========================================================================
+   P1/P2 展开浮层
+   特性说明与 buff 输入网格展开后不再原地撑开，而是脱离宿主面板的固定尺寸
+   （FloatingTeamPanel 内联 height、team-buff-panel 的 --*-buff-height）浮出成独立层。
+   仅插件模式生效；常规模式与预设页保持原地展开。
+   =========================================================================== */
+
+/* 展开时解除宿主面板的裁剪，并抬到其他面板之上。 */
+.battle-page.plugin-mode .floating-team-panel:has(.trait-expanded-content) {
+  overflow: visible;
+  z-index: 40;
+}
+
+.battle-page.plugin-mode .team-buff-panel[open] {
+  overflow: visible;
+  min-height: 0 !important;
+  z-index: 40;
+}
+
+.battle-page.plugin-mode .trait-expanded-content,
+.battle-page.plugin-mode .team-buff-grid {
+  background: rgba(20, 28, 39, 0.94);
+  border: 0;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  color: var(--ov-text);
+  left: 0;
+  margin: 0;
+  max-height: min(320px, calc(100vh - 32px));
+  max-width: min(360px, calc(100vw - 24px));
+  min-width: 250px;
+  overflow: auto;
+  padding: 10px;
+  position: absolute;
+  top: calc(100% + 7px);
+  z-index: 60;
+}
+
+.battle-page.plugin-mode .team-buff-grid {
+  background: rgba(20, 28, 39, 0.94);
+  border: 1px solid var(--ov-panel-border);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  box-sizing: border-box;
+  gap: 7px 8px;
+  min-width: min(280px, calc(100vw - 24px));
+  padding: 10px;
+  top: 0;
+  width: min(360px, calc(100vw - 24px));
+}
+
+.battle-page.plugin-mode .team-left-buff .team-buff-grid {
+  left: calc(100% + 8px);
+}
+
+.battle-page.plugin-mode .team-right-buff .team-buff-grid {
+  right: calc(100% + 8px);
+}
+
+/* 右侧面板反向对齐，避免贴边溢出屏幕。 */
+.battle-page.plugin-mode .team-right-trait .trait-expanded-content,
+.battle-page.plugin-mode .team-right-buff .team-buff-grid {
+  left: auto;
+  right: calc(100% + 8px);
+}
+
+/* 指回宿主面板的小箭头。画在宿主上而不是浮层上，
+   否则会被浮层自身的 overflow: auto 裁掉。 */
+.battle-page.plugin-mode .floating-team-panel:has(.trait-expanded-content)::after,
+.battle-page.plugin-mode .team-buff-panel[open]::after {
+  display: none;
+}
+
+/* 浮层内正文放宽，展开后不再是十几行的窄条。 */
+.battle-page.plugin-mode .trait-expanded-content .trait-text {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 42ch;
+}
+
+/* 备注与效果描述、动作行之间给出分隔。 */
+.battle-page.plugin-mode .trait-expanded-content .trait-note {
+  border-top: 1px solid rgba(128, 148, 168, 0.3);
+  margin: 0;
+  padding-top: 6px;
+}
+
+.battle-page.plugin-mode .trait-expanded-content .trait-action-row {
+  border-top: 1px solid rgba(128, 148, 168, 0.3);
+  padding-top: 7px;
+}
+
+/* 浮层里的 buff 分组比收起态松一档，可读性优先。 */
+.battle-page.plugin-mode .team-buff-grid .buff-group {
+  grid-template-columns: 1fr;
+}
+
+/* 触发控件在展开态高亮，明确浮层的从属关系。 */
+.battle-page.plugin-mode .trait-summary-button,
+.battle-page.plugin-mode .trait-summary-button[aria-expanded="true"] {
+  border: 0 !important;
+}
+
+.battle-page.plugin-mode .trait-summary-button[aria-expanded="true"] {
+  background: var(--ov-accent-bg) !important;
+}
+
+.battle-page.plugin-mode .team-buff-panel[open] > summary {
+  background: var(--ov-accent-bg);
+  border-radius: 6px;
+  padding: 2px 4px;
 }
 
 .preset-shell {
@@ -1110,6 +1339,27 @@ body:has(.battle-page.mixed-active) .app-header,
 .recognition-status-panel strong { font-size: 13px; }
 .recognition-status-panel span { font-size: 12px; }
 .recognition-status-panel small { color: #a9d7ff; font-size: 11px; }
+.plugin-readout-layer {
+  height: 100vh;
+  left: 0;
+  overflow: visible;
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  width: 100vw;
+  z-index: 1500;
+}
+
+.battle-page.plugin-mode.plugin-unattached .plugin-readout-layer {
+  position: absolute;
+}
+
+.plugin-readout-layer .draggable-readout {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
+
 .battle-health-readout {
   position: absolute;
   right: 8px;
@@ -1138,6 +1388,18 @@ body:has(.battle-page.mixed-active) .app-header,
   background: rgba(255, 255, 255, 0.78);
   color: #222;
   font-size: 12px;
+}
+
+.battle-page.immersive-mode.plugin-mode :is(.battle-health-readout, .battle-power-readout) {
+  backdrop-filter: var(--ov-veil);
+  background: var(--ov-panel) !important;
+  border-color: var(--ov-panel-border);
+  box-shadow: var(--ov-panel-shadow);
+  color: var(--ov-text) !important;
+}
+
+.battle-page.immersive-mode.plugin-mode :is(.battle-health-readout, .battle-power-readout) span {
+  color: var(--ov-text) !important;
 }
 .draggable-readout { cursor: move; touch-action: none; user-select: none; }
 
@@ -1274,7 +1536,6 @@ body:has(.battle-page.mixed-active) .app-header,
 .plugin-mode .required-power-panel { background: rgba(255, 255, 255, 0.22); }
 
 .plugin-mode .roster {
-  opacity: 0.82;
   transition: opacity 140ms ease, transform 140ms ease;
   width: 190px;
 }
@@ -1314,11 +1575,56 @@ body:has(.battle-page.mixed-active) .app-header,
   border: 0;
   border-radius: 0;
   box-shadow: none;
-  min-height: 28px;
-  min-width: 72px;
+  min-height: 0;
+  min-width: 0;
   overflow: visible;
   padding: 0;
   resize: none;
+}
+
+/* 所有插件可缩放面板统一按外框尺寸计算，缩放时不被内容的默认最小尺寸撑回去。 */
+.battle-page.plugin-mode [data-plugin-resizable] {
+  box-sizing: border-box;
+  min-height: 0 !important;
+  min-width: 0 !important;
+}
+
+/* 插件坐标和面板尺寸都是像素值。窗口变小时允许滚动或裁切，
+   不用 viewport 的 max-height / min() 改写面板尺寸。 */
+.battle-page.plugin-mode .floating-team-panel,
+.battle-page.plugin-mode .required-power-panel {
+  max-height: none;
+}
+
+.battle-page.plugin-mode .bonus-tool-floating {
+  max-height: 410px;
+}
+
+.battle-page.plugin-mode .result-floating {
+  max-height: 365px;
+}
+
+.battle-page.plugin-mode .bonus-tool-floating.dedication {
+  height: var(--dedication-panel-height);
+  width: var(--dedication-panel-width);
+}
+
+.battle-page.plugin-mode .bonus-tool-floating.marks {
+  height: var(--marks-panel-height);
+  width: var(--marks-panel-width);
+}
+
+.battle-page.plugin-mode .bonus-tool-floating.thunderstorm {
+  height: var(--thunderstorm-panel-height);
+  width: var(--thunderstorm-panel-width);
+}
+
+.battle-page.plugin-mode .result-floating {
+  width: 435px;
+}
+
+.battle-page.plugin-mode .required-power-panel {
+  width: 390px;
 }
 
 .plugin-mode .team-layout > .team-left-roster { height: var(--left-roster-height); width: var(--left-roster-width); }
@@ -1328,6 +1634,20 @@ body:has(.battle-page.mixed-active) .app-header,
 .plugin-mode .team-layout > .team-left-buff { height: var(--left-buff-height); width: var(--left-buff-width); }
 .plugin-mode .team-layout > .team-right-buff { height: var(--right-buff-height); width: var(--right-buff-width); }
 .plugin-mode .team-layout > .team-weather { height: var(--weather-height); width: var(--weather-width); }
+
+.plugin-mode .team-layout > .team-left-roster { --plugin-content-x: var(--left-roster-content-x); --plugin-content-y: var(--left-roster-content-y); }
+.plugin-mode .team-layout > .team-right-roster { --plugin-content-x: var(--right-roster-content-x); --plugin-content-y: var(--right-roster-content-y); }
+.plugin-mode .team-layout > .team-left-bonus-toolbar { --plugin-content-x: var(--left-bonus-content-x); --plugin-content-y: var(--left-bonus-content-y); }
+.plugin-mode .team-layout > .team-right-bonus-toolbar { --plugin-content-x: var(--right-bonus-content-x); --plugin-content-y: var(--right-bonus-content-y); }
+.plugin-mode .team-layout > .team-left-buff { --plugin-content-x: var(--left-buff-content-x); --plugin-content-y: var(--left-buff-content-y); }
+.plugin-mode .team-layout > .team-right-buff { --plugin-content-x: var(--right-buff-content-x); --plugin-content-y: var(--right-buff-content-y); }
+.plugin-mode .team-layout > .team-left-skills { --plugin-content-x: var(--left-skills-content-x); --plugin-content-y: var(--left-skills-content-y); }
+.plugin-mode .team-layout > .team-right-skills { --plugin-content-x: var(--right-skills-content-x); --plugin-content-y: var(--right-skills-content-y); }
+.plugin-mode .team-layout > .team-weather { --plugin-content-x: var(--weather-content-x); --plugin-content-y: var(--weather-content-y); }
+
+.battle-page.plugin-mode [data-plugin-resizable] > :not(.plugin-resize-edge):not(.plugin-drag-zone) {
+  transform: translate(var(--plugin-content-x, 0), var(--plugin-content-y, 0));
+}
 
 .plugin-mode [class*="team-left-"]:hover {
   outline: 1px solid rgba(111, 173, 222, 0.92);
@@ -1671,8 +1991,8 @@ body:has(.plugin-mode) .app-header .weather-panel {
 .plugin-mode .team-layout > .team-buff-panel,
 .plugin-mode .team-layout > .team-weather,
 .plugin-mode .team-action-floating {
-  min-height: 30px;
-  min-width: 72px;
+  min-height: 0;
+  min-width: 0;
   overflow: visible;
   resize: none;
 }
@@ -1706,24 +2026,27 @@ body:has(.plugin-mode) .app-header .weather-panel {
 }
 
 .plugin-resize-edge {
+  pointer-events: auto;
   position: absolute;
-  z-index: 8;
+  z-index: 100;
 }
 
 .plugin-resize-edge.top,
 .plugin-resize-edge.bottom {
-  height: 6px;
+  height: 8px;
   left: 0;
   right: 0;
+  touch-action: none;
+  z-index: 1000;
 }
 
 .plugin-resize-edge.top {
   cursor: ns-resize;
-  top: -3px;
+  top: -4px;
 }
 
 .plugin-resize-edge.bottom {
-  bottom: -3px;
+  bottom: -4px;
   cursor: ns-resize;
 }
 
@@ -1731,17 +2054,19 @@ body:has(.plugin-mode) .app-header .weather-panel {
 .plugin-resize-edge.right {
   bottom: 0;
   top: 0;
-  width: 6px;
+  width: 8px;
+  touch-action: none;
+  z-index: 1000;
 }
 
 .plugin-resize-edge.left {
   cursor: ew-resize;
-  left: -3px;
+  left: -4px;
 }
 
 .plugin-resize-edge.right {
   cursor: ew-resize;
-  right: -3px;
+  right: -4px;
 }
 
 /* 保留右下角拖拽缩放，隐藏 WebView 默认绘制的系统图标。 */
@@ -2047,6 +2372,12 @@ body:has(.plugin-mode) .app-header .weather-panel {
   list-style: none;
 }
 
+.team-buff-panel summary {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
 .team-buff-summary-title {
   align-items: center;
   display: inline-flex;
@@ -2055,11 +2386,17 @@ body:has(.plugin-mode) .app-header .weather-panel {
 
 .buff-summary-values {
   color: #257154;
-  display: block;
+  display: grid;
   font-size: 11px;
+  gap: 1px;
   line-height: 1.35;
-  margin: 3px 0 0 20px;
+  margin: 0;
   overflow-wrap: anywhere;
+}
+
+.buff-summary-values span {
+  display: block;
+  white-space: nowrap;
 }
 
 .team-region-drag-handle {
@@ -2161,6 +2498,19 @@ body:has(.plugin-mode) .app-header .weather-panel {
 .number-stepper button:hover {
   background: #e8f3ef;
   color: #174b3d;
+}
+
+/* 步进箭头贴在输入框内部，再描一次边就是框中框。 */
+.battle-page.immersive-mode.plugin-mode .number-stepper button {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0;
+  color: var(--ov-text-muted) !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .number-stepper button:hover {
+  background: rgba(226, 238, 252, 0.2) !important;
+  color: var(--ov-field-text) !important;
 }
 
 .check-row {
@@ -2288,8 +2638,8 @@ body:has(.plugin-mode) .app-header .weather-panel {
   box-shadow: none;
   cursor: move;
   max-height: none;
-  min-height: 46px;
-  min-width: 128px;
+  min-height: 0;
+  min-width: 0;
   overflow: visible;
   padding: 0;
   position: fixed;
@@ -2311,7 +2661,7 @@ body:has(.plugin-mode) .app-header .weather-panel {
   flex-direction: row;
   gap: 3px;
   height: auto;
-  min-height: 30px;
+  min-height: 0;
   padding: 4px;
   width: 100%;
 }
@@ -2372,7 +2722,7 @@ body:has(.plugin-mode) .app-header .weather-panel {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  left: calc(100% + 6px);
+  left: calc(100% + 10px);
   position: absolute;
   top: 0;
   width: max-content;
@@ -2405,11 +2755,11 @@ body:has(.plugin-mode) .app-header .weather-panel {
 }
 
 .battle-page.immersive-mode .quick-skill-result :is(span, b) {
-  color: #17212b;
+  color: var(--ov-field-text);
 }
 
 .battle-page.immersive-mode .quick-skill-result small {
-  color: #384958;
+  color: var(--ov-text-muted);
 }
 
 .skill-card-actions {
@@ -2473,8 +2823,8 @@ body:has(.plugin-mode) .app-header .weather-panel {
 
 .battle-page.immersive-mode .roster .slot.active,
 .plugin-mode .roster .slot.active {
-  background: rgba(255, 224, 224, 0.8) !important;
-  border-color: #d14b4b !important;
+  background: var(--ov-accent-bg) !important;
+  border-color: var(--ov-accent-border) !important;
 }
 
 .team-skill-card .slot-action {
@@ -3067,14 +3417,72 @@ body:has(.plugin-mode) .app-header .weather-panel {
 }
 
 .buff-grid {
+  display: grid;
+  gap: 6px;
+}
+
+/* 每组一行：左侧组名 + 右侧该组的字段对。 */
+.buff-group {
   align-items: center;
   display: grid;
   gap: 6px;
-  grid-template-columns: auto var(--buff-width) auto var(--buff-width);
+  grid-template-columns: 2em 1fr;
+}
+
+.buff-group-title {
+  color: #8494a5;
+  font-size: 11px;
+  letter-spacing: 1px;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.buff-group-fields {
+  align-items: center;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.buff-field {
+  align-items: center;
+  border-radius: 5px;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: auto var(--buff-width);
+  justify-content: start;
+  min-width: 0;
+  padding: 2px 3px;
+}
+
+/* 非默认值的项高亮，展开后一眼能看出哪些真的在生效。 */
+.buff-field.is-active {
+  background: rgba(37, 113, 84, 0.12);
+  box-shadow: inset 2px 0 0 #257154;
+}
+
+.buff-field.is-active .field-label {
+  color: #1c5a43;
+  font-weight: 700;
 }
 
 .buff-grid .number-input-control {
   width: var(--buff-width);
+}
+
+/* 插件模式下浮层是深色底，高亮换成同色相的亮青绿。 */
+.battle-page.plugin-mode .buff-group-title {
+  color: var(--ov-text-muted);
+}
+
+.battle-page.plugin-mode .buff-field.is-active {
+  background: rgba(143, 220, 184, 0.14);
+  box-shadow: inset 2px 0 0 var(--ov-accent);
+}
+
+.battle-page.plugin-mode .buff-field.is-active .field-label {
+  color: var(--ov-accent) !important;
+  font-weight: 700;
 }
 
 .buff-grid .num-input {
@@ -3808,23 +4216,27 @@ body:has(.plugin-mode) .app-header .weather-panel {
 
 }
 
-/* Plugin mixed mode uses a consistent two-level contrast system. */
+/* 插件叠加层：外层玻璃面板。backdrop-filter 只压暗背后的游戏画面，
+   文字层本身不加任何 filter / text-shadow，避免发虚。 */
 .battle-page.immersive-mode.plugin-mode :is(
   .team-layout > .roster,
   .team-layout > .team-bonus-toolbar,
   .team-layout > .team-buff-panel,
-  .team-layout > .team-skill-panel,
   .team-layout > .team-weather,
   .team-action-floating,
   .bonus-tool-floating,
   .result-panel,
   .required-power-panel,
   .floating-team-panel:not(.speed-line),
+  .slot-iv-popover,
   .skill-card-floating
 ) {
-  background: rgba(0, 0, 0, 0.48) !important;
-  border-color: rgba(255, 255, 255, 0.38) !important;
-  color: #fff !important;
+  backdrop-filter: var(--ov-veil);
+  background: var(--ov-panel) !important;
+  border: 1px solid var(--ov-panel-border) !important;
+  border-radius: 8px;
+  box-shadow: var(--ov-panel-shadow);
+  color: var(--ov-text) !important;
 }
 
 .battle-page.immersive-mode.plugin-mode :is(
@@ -3838,59 +4250,102 @@ body:has(.plugin-mode) .app-header .weather-panel {
   .result-panel,
   .required-power-panel,
   .floating-team-panel:not(.speed-line),
+  .slot-iv-popover,
   .skill-card-floating
-) > :is(h2, h3, p, strong, summary, label, span, .field-label, .ui-field-title, .muted) {
-  color: #fff !important;
+) :is(h2, h3, p, div, strong, summary, label, span, .field-label, .ui-field-title) {
+  color: var(--ov-text) !important;
 }
 
+/* 速度线沿用插件模式其他外层控件的配色，不套浅色控件主题。 */
+.battle-page.immersive-mode.plugin-mode .speed-line {
+  backdrop-filter: var(--ov-veil) !important;
+  background: var(--ov-panel) !important;
+  border: 1px solid var(--ov-panel-border) !important;
+  box-shadow: var(--ov-panel-shadow) !important;
+  color: var(--ov-text) !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .speed-line :is(div, strong, span) {
+  background: transparent !important;
+  color: var(--ov-text) !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .muted {
+  color: var(--ov-text-muted) !important;
+}
+
+/* 内层卡片与控件：同色相往上抬一档，不反色。
+   只有「叶子」控件和并列的卡片描边。容器（.team-slot-section /
+   .number-input-control）不描边，否则会出现面板框套卡片框套控件框的重复框。 */
 .battle-page.immersive-mode.plugin-mode :is(
   .roster .slot,
   .team-skill-card,
-  .floating-team-panel .team-slot-section,
   .trait-summary-button,
-  .number-input-control,
   button,
   input,
   select,
   textarea
 ) {
-  background: rgba(255, 255, 255, 0.76) !important;
-  border-color: rgba(255, 255, 255, 0.56) !important;
-  color: #111 !important;
+  background: var(--ov-field) !important;
+  border: 1px solid var(--ov-field-border) !important;
+  border-radius: 6px;
+  color: var(--ov-field-text) !important;
+}
+
+/* 纯布局容器，不是卡片，不画框。 */
+.battle-page.immersive-mode.plugin-mode :is(
+  .floating-team-panel .team-slot-section,
+  .number-input-control,
+  .trait-control-grid,
+  .trait-status-row,
+  .trait-stack-control,
+  .skill-stack-control,
+  .buff-group,
+  .buff-group-fields,
+  .buff-field,
+  .skill-number-row,
+  .team-skill-inline-controls,
+  .plugin-skill-controls,
+  .bonus-tool-fields,
+  .other-bonus-controls,
+  .team-buff-summary-title,
+  .speed-line-sides,
+  .inline-row
+) {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }
 
 .battle-page.immersive-mode.plugin-mode :is(
   .roster .slot,
   .team-skill-card,
   .floating-team-panel .team-slot-section,
-  .trait-summary-button,
-  .number-input-control
-) :is(h2, h3, p, strong, summary, label, span, .field-label, .ui-field-title, .muted) {
-  color: #111 !important;
+  .trait-summary-button
+) :is(h2, h3, p, strong, summary, label, span, .field-label, .ui-field-title) {
+  color: var(--ov-field-text) !important;
 }
 
-/* The speed line and IV popup are outer plugin panels, not inner frames. */
-.battle-page.immersive-mode.plugin-mode .speed-line,
-.battle-page.immersive-mode.plugin-mode .slot-iv-popover {
-  background: rgba(0, 0, 0, 0.48) !important;
-  border-color: rgba(255, 255, 255, 0.38) !important;
-  color: #fff !important;
+/* 原生下拉的弹出列表不继承祖先配色，必须单独给底色。 */
+.battle-page.immersive-mode.plugin-mode option {
+  background: #16202c;
+  color: var(--ov-field-text);
 }
 
-.battle-page.immersive-mode.plugin-mode .speed-line :is(div, strong, span),
-.battle-page.immersive-mode.plugin-mode .slot-iv-popover :is(details, summary, div, label, span, .ui-field-title) {
-  background: transparent !important;
-  color: #fff !important;
+.battle-page.immersive-mode.plugin-mode :is(button, .roster .slot, .team-skill-card, .trait-summary-button):hover {
+  background: rgba(226, 238, 252, 0.22) !important;
+  border-color: rgba(196, 216, 238, 0.48) !important;
 }
 
-.battle-page.immersive-mode.plugin-mode .slot-iv-popover :is(select, option, button, input, textarea) {
-  background: rgba(255, 255, 255, 0.76) !important;
-  border-color: rgba(255, 255, 255, 0.56) !important;
-  color: #111 !important;
+.battle-page.immersive-mode.plugin-mode :is(input, select, textarea):focus {
+  border-color: var(--ov-accent-border) !important;
+  outline: none;
 }
 
-/* IV labels are descriptions in the outer popup, not inner controls. */
+/* 天赋弹窗内部是说明文本，不是控件，保持透明。 */
 .battle-page.immersive-mode.plugin-mode .slot-iv-popover :is(
+  details,
+  summary,
   .team-iv-details,
   .iv-editor-content,
   .iv-grid > label,
@@ -3899,88 +4354,93 @@ body:has(.plugin-mode) .app-header .weather-panel {
   .ui-field-title
 ) {
   background: transparent !important;
-  color: #fff !important;
+  color: var(--ov-text) !important;
 }
 
-/* Selection state takes precedence over the neutral inner-frame color. */
+/* 选中态用品牌青绿，是全层唯一的强调色。 */
 .battle-page.immersive-mode.plugin-mode .roster .slot.active,
 .battle-page.immersive-mode.plugin-mode .team-skill-card.selected {
-  background: rgba(255, 224, 224, 0.8) !important;
-  border-color: #d14b4b !important;
-  color: #17212b !important;
+  background: var(--ov-accent-bg) !important;
+  border-color: var(--ov-accent-border) !important;
+  color: #f0fff8 !important;
+}
+
+/* 浮动技能面板不再给技能文字套内框；选中态只保留整块绿色底色。 */
+.battle-page.immersive-mode.plugin-mode .skill-card-floating .team-skill-card,
+.battle-page.immersive-mode.plugin-mode .skill-card-floating .team-skill-card:hover {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .skill-card-floating .team-skill-card.selected,
+.battle-page.immersive-mode.plugin-mode .skill-card-floating .team-skill-card.selected:hover {
+  background: var(--ov-accent-bg) !important;
+  border: 0 !important;
 }
 
 .battle-page.immersive-mode.plugin-mode .roster .slot.active :is(strong, span, p, label, .field-label, .ui-field-title),
 .battle-page.immersive-mode.plugin-mode .team-skill-card.selected :is(strong, span, p, label, .field-label, .ui-field-title) {
-  color: #17212b !important;
+  color: #f0fff8 !important;
 }
 
-/* The result matrix uses black grid lines as data separators, including in mixed mode. */
-.battle-page.immersive-mode.plugin-mode .result-matrix {
-  border-color: #111 !important;
-}
-
-.battle-page.immersive-mode.plugin-mode :is(
-  .result-matrix-corner,
-  .result-matrix-header,
-  .result-matrix-row-label,
-  .result-matrix-cell
-) {
-  border-bottom-color: #111 !important;
-  border-right-color: #111 !important;
-}
-
-.battle-page.immersive-mode.plugin-mode .result-matrix-edge-right {
-  border-right: 0 !important;
-}
-
-.battle-page.immersive-mode.plugin-mode .result-matrix-edge-bottom {
-  border-bottom: 0 !important;
-}
-
-/* Pet and skill pickers use the same two-level contrast as plugin panels. */
+/* 精灵 / 技能选择器沿用同一套层级，只是底色更实。 */
 .battle-page.immersive-mode.plugin-mode .picker-modal {
-  background: rgba(0, 0, 0, 0.72) !important;
-  border: 1px solid rgba(255, 255, 255, 0.38);
-  color: #fff !important;
+  backdrop-filter: blur(10px) saturate(0.8) brightness(0.55);
+  background: rgba(18, 26, 36, 0.88) !important;
+  border: 1px solid var(--ov-panel-border) !important;
+  border-radius: 10px;
+  color: var(--ov-text) !important;
 }
 
-.battle-page.immersive-mode.plugin-mode .picker-modal :is(
-  h2,
-  .field-label,
-  .ui-field-title,
-  .picker-hint
-) {
-  color: #fff !important;
+.battle-page.immersive-mode.plugin-mode .picker-modal :is(h2, .field-label, .ui-field-title, .picker-hint) {
+  color: var(--ov-text) !important;
 }
 
-.battle-page.immersive-mode.plugin-mode .picker-modal :is(
-  button,
-  input,
-  select,
-  .compact-picker-card
-) {
-  background: rgba(255, 255, 255, 0.84) !important;
-  border-color: rgba(255, 255, 255, 0.62) !important;
-  color: #111 !important;
+.battle-page.immersive-mode.plugin-mode .picker-modal :is(button, input, select, .compact-picker-card) {
+  background: var(--ov-field) !important;
+  border: 1px solid var(--ov-field-border) !important;
+  color: var(--ov-field-text) !important;
 }
 
 .battle-page.immersive-mode.plugin-mode .picker-modal .compact-picker-card :is(strong, span, em) {
-  color: #111 !important;
+  color: var(--ov-field-text) !important;
   opacity: 1;
 }
 
 .battle-page.immersive-mode.plugin-mode .picker-modal .segmented button.active,
 .battle-page.immersive-mode.plugin-mode .picker-modal .filter-toggle.active {
-  background: rgba(215, 235, 228, 0.96) !important;
-  border-color: #5f9c87 !important;
-  color: #123b2f !important;
+  background: var(--ov-accent-bg) !important;
+  border-color: var(--ov-accent-border) !important;
+  color: #f0fff8 !important;
 }
 
-/* Grid gaps provide stable black separators that button theme rules cannot override. */
+/* 左右阵营用一条描边区分，是叠加层里唯一的方位信息，
+   必须盖过上面统一的面板 / 控件描边。 */
+.battle-page.immersive-mode.plugin-mode :is(
+  .team-left-roster,
+  .team-left-bonus-toolbar,
+  .team-left-buff,
+  .team-left-trait
+),
+.battle-page.immersive-mode.plugin-mode [class*="team-left-skill-"] .team-skill-card {
+  border-color: var(--ov-side-left) !important;
+}
+
+.battle-page.immersive-mode.plugin-mode :is(
+  .team-right-roster,
+  .team-right-bonus-toolbar,
+  .team-right-buff,
+  .team-right-trait
+),
+.battle-page.immersive-mode.plugin-mode [class*="team-right-skill-"] .team-skill-card {
+  border-color: var(--ov-side-right) !important;
+}
+
+/* 结果矩阵靠 1px 间隙当分隔线，颜色跟随面板描边而不是纯黑。 */
 .battle-page.immersive-mode.plugin-mode .result-matrix {
-  background: #111 !important;
-  border: 1px solid #111 !important;
+  background: var(--ov-panel-border) !important;
+  border: 1px solid var(--ov-panel-border) !important;
   gap: 1px;
   padding: 0;
 }
@@ -3992,4 +4452,298 @@ body:has(.plugin-mode) .app-header .weather-panel {
   .result-matrix-cell
 ) {
   border: 0 !important;
+}
+
+/* 浮动特性 / 技能是透明定位容器，边框只保留在真正的卡片或控件上。 */
+.battle-page.immersive-mode.plugin-mode :is(.floating-team-panel, .skill-card-floating) .team-slot-section,
+.battle-page.immersive-mode.plugin-mode :is(.floating-team-panel, .skill-card-floating) .trait-expanded-content,
+.battle-page.immersive-mode.plugin-mode .skill-card-floating .team-skill-card {
+  border: 0 !important;
+}
+
+/* 布局编辑态的阵营 hover outline 不属于特性内容，运行时不能显示成内框。 */
+.battle-page.plugin-mode .floating-team-panel[class*="team-left-"]:hover,
+.battle-page.plugin-mode .floating-team-panel[class*="team-right-"]:hover {
+  outline: none !important;
+}
+
+/* 只移除特性摘要的边框，所有背景、文字和阴影沿用原有配色。 */
+.battle-page.immersive-mode.plugin-mode .team-left-trait .trait-summary-button,
+.battle-page.immersive-mode.plugin-mode .team-right-trait .trait-summary-button,
+.battle-page.immersive-mode.plugin-mode .team-left-trait .trait-summary-button:hover,
+.battle-page.immersive-mode.plugin-mode .team-right-trait .trait-summary-button:hover {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+/* 队伍卡片里的“取消”只是动作文字，不再单独绘制按钮内框。 */
+.battle-page.immersive-mode.plugin-mode .roster .slot-action,
+.battle-page.immersive-mode.plugin-mode .roster .slot-action:hover {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+/* 插件面板拖动时禁止 WebView 把面板文字当成文本选区。 */
+.battle-page.plugin-mode :is(
+  .team-layout > .roster,
+  .team-layout > .team-bonus-toolbar,
+  .team-layout > .team-buff-panel,
+  .team-layout > .team-weather,
+  .team-action-floating,
+  .floating-team-panel:not(.speed-line),
+  .skill-card-floating,
+  .bonus-tool-floating,
+  .result-floating,
+  .required-power-panel
+) {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.battle-page.plugin-mode :is(input, textarea, [contenteditable="true"]) {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* 摘要只是展开入口，展开后的内容区域才是需要保留的内容框。 */
+.battle-page.immersive-mode.plugin-mode .team-left-trait .trait-summary-button,
+.battle-page.immersive-mode.plugin-mode .team-right-trait .trait-summary-button,
+.battle-page.immersive-mode.plugin-mode .team-left-trait .trait-summary-button:hover,
+.battle-page.immersive-mode.plugin-mode .team-right-trait .trait-summary-button:hover {
+  border: 0 !important;
+}
+
+/* 萌化控件保留可读字号，并用左右边框标识所属阵营。 */
+.battle-page.plugin-mode .floating-team-panel.team-left-evolution {
+  border: 1px solid transparent !important;
+  box-sizing: border-box;
+  padding: 10px 8px 2px !important;
+}
+
+.battle-page.plugin-mode .floating-team-panel.team-right-evolution {
+  border: 1px solid transparent !important;
+  box-sizing: border-box;
+  padding: 10px 8px 2px !important;
+}
+
+.battle-page.plugin-mode .floating-team-panel.team-left-evolution:hover {
+  outline: 1px solid rgba(111, 173, 222, 0.9) !important;
+  outline-offset: 1px;
+}
+
+.battle-page.plugin-mode .floating-team-panel.team-right-evolution:hover {
+  outline: 1px solid rgba(224, 133, 142, 0.9) !important;
+  outline-offset: 1px;
+}
+
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .slot-evolution-row,
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .slot-evolution-row * {
+  font-size: 13px !important;
+}
+
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .slot-evolution-row {
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .slot-devolution-control {
+  position: relative;
+}
+
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .plugin-drag-zone {
+  height: 0;
+  pointer-events: none;
+}
+
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .slot-devolution-control .number-stepper {
+  bottom: 2px;
+  pointer-events: auto;
+  right: 0;
+  top: 2px;
+  width: 18px;
+  z-index: 12;
+}
+
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .slot-devolution-control .number-stepper button {
+  font-size: 8px !important;
+  min-height: 10px;
+  padding: 1px 0;
+}
+
+/*
+   可缩放插件浮层分成两层：外层只负责固定尺寸和唯一的面板边框，
+   内容层按控件自身宽度排版。这样外框缩小时，按钮可以溢出显示，
+   但不会被压缩，也不会再套出第二层内容边框。
+*/
+.battle-page.plugin-mode :is(.floating-team-panel:not(.speed-line), .skill-card-floating) {
+  box-sizing: border-box;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+}
+
+.battle-page.immersive-mode.plugin-mode :is(.floating-team-panel:not(.speed-line), .skill-card-floating) {
+  background: var(--ov-panel) !important;
+  border: 1px solid var(--ov-panel-border) !important;
+  border-radius: 8px;
+  box-shadow: var(--ov-panel-shadow);
+}
+
+/* 技能浮层按单技能显示，标题“技能 1/2...”只是重复信息，不占用布局空间。 */
+.battle-page.plugin-mode .skill-card-floating .plugin-panel-content > h2 {
+  display: none;
+}
+
+/* 萌化栏默认使用通用外框色，鼠标移入时才显示阵营色。 */
+.battle-page.plugin-mode .floating-team-panel.team-left-evolution:hover {
+  border-color: rgba(111, 173, 222, 0.9) !important;
+}
+
+.battle-page.plugin-mode .floating-team-panel.team-right-evolution:hover {
+  border-color: rgba(224, 133, 142, 0.9) !important;
+}
+
+.battle-page.plugin-mode :is(.floating-team-panel, .skill-card-floating) > .plugin-panel-content {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  box-sizing: border-box;
+  display: block;
+  max-width: none;
+  min-width: max-content;
+  overflow: visible;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: max-content;
+}
+
+/* 内容容器不画框；真正的 button / input / select 仍保留自己的边框。 */
+.battle-page.immersive-mode.plugin-mode .floating-team-panel .plugin-panel-content > .team-slot-section,
+.battle-page.immersive-mode.plugin-mode .floating-team-panel .plugin-panel-content > .team-slot-section .trait-control-grid,
+.battle-page.immersive-mode.plugin-mode .floating-team-panel .plugin-panel-content > .team-slot-section .trait-status-row {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  max-width: none;
+  min-width: max-content;
+  width: max-content;
+}
+
+.battle-page.plugin-mode .floating-team-panel .trait-status-row {
+  flex-wrap: nowrap;
+}
+
+.battle-page.immersive-mode.plugin-mode .floating-team-panel .plugin-panel-content :is(button, input, select, textarea) {
+  border: 1px solid var(--ov-field-border) !important;
+}
+
+/* 萌化控件使用固定内容列，不能用 1fr 把间距交给外框宽度。 */
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .plugin-panel-content,
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .slot-evolution-row,
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .slot-evolution-control {
+  max-width: none;
+  min-width: max-content;
+  width: max-content;
+}
+
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .slot-evolution-row {
+  grid-template-columns: max-content max-content max-content;
+}
+
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution):hover {
+  outline: none !important;
+  outline-offset: 0;
+}
+
+/* 技能卡片和控制栏按自身宽度排列，外框宽度不参与分配。 */
+.battle-page.plugin-mode .skill-card-floating .skill-card-grid,
+.battle-page.plugin-mode .skill-card-floating .plugin-skill-controls {
+  max-width: none;
+  min-width: max-content;
+  width: max-content;
+}
+
+.battle-page.plugin-mode .skill-card-floating .plugin-panel-content > .quick-skill-result {
+  left: calc(100% + 4px);
+  position: absolute;
+  top: 0;
+  transform: none !important;
+  z-index: 30;
+}
+
+/* 速度线的两列宽度取首次渲染值；收缩外框时只让边线变窄。 */
+.battle-page.plugin-mode .speed-line > .speed-line-sides {
+  max-width: none;
+  width: var(--speed-line-content-width, auto);
+}
+
+.battle-page.immersive-mode.plugin-mode .quick-skill-result span {
+  background: rgba(18, 26, 36, 0.9) !important;
+  border: 1px solid var(--ov-panel-border) !important;
+  color: var(--ov-text) !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .quick-skill-result b {
+  color: var(--ov-field-text) !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .quick-skill-result small {
+  color: var(--ov-text-muted) !important;
+}
+
+.battle-page.plugin-mode .skill-card-floating .team-skill-card {
+  align-items: center;
+  background: transparent !important;
+  border: 0 !important;
+  box-sizing: border-box;
+  box-shadow: none !important;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  height: var(--skill-card-height) !important;
+  justify-content: normal;
+  max-width: none;
+  min-height: var(--skill-card-height) !important;
+  min-width: var(--skill-card-width);
+  gap: 6px;
+  overflow: visible;
+  padding: 4px 8px;
+  position: relative;
+  width: var(--skill-card-width);
+}
+
+.battle-page.plugin-mode .skill-card-floating .team-skill-card strong {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.battle-page.plugin-mode .skill-card-floating .quick-skill-power {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: center;
+  margin: 0;
+  position: static;
+  transform: none;
+  white-space: nowrap;
+}
+
+.battle-page.plugin-mode .skill-card-floating .plugin-skill-controls {
+  border: 0 !important;
+  display: flex;
+  flex-wrap: nowrap;
+  grid-template-columns: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.battle-page.plugin-mode .skill-card-floating .skill-stack-control {
+  flex: 0 0 auto;
+  min-width: max-content;
+  width: max-content;
 }
