@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { cursorPosition, getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
+import { createPortal } from "react-dom";
 import { Fragment, type CSSProperties, type PointerEvent as ReactPointerEvent, type PointerEventHandler as ReactPointerEventHandler, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ReplayPage } from "./replay/ReplayPage";
 
@@ -492,9 +493,10 @@ const WEATHER_OPTIONS = [
   { value: "blizzard", label: "雪天（冰）" },
   { value: "thunder", label: "雷鸣（电）" },
 ] as const;
+const SKILL_TYPE_FILTERS = ["物攻", "魔攻", "防御", "状态"] as const;
 
-function petMatchesPickerFilters(pet: Pet, element: string, finalOnly: boolean) {
-  return (!element || pet.elements.includes(element)) && (!finalOnly || pet.isFinal);
+function petMatchesPickerFilters(pet: Pet, elements: string[], finalOnly: boolean) {
+  return elements.every((element) => pet.elements.includes(element)) && (!finalOnly || pet.isFinal);
 }
 
 function buildPetLookup(pets: Pet[]) {
@@ -1126,6 +1128,13 @@ function PickerModal({
   const config = configs[section] || {};
   const [query, setQuery] = useState("");
   const [element, setElement] = useState((config.element as string) || "");
+  const [petElements, setPetElements] = useState<string[]>(() => {
+    const savedElements = Array.isArray(config.selected_elements)
+      ? config.selected_elements.filter((value): value is string => typeof value === "string" && Boolean(value))
+      : [];
+    return (savedElements.length ? savedElements : [(config.element as string) || ""]).filter(Boolean).slice(-2);
+  });
+  const [skillType, setSkillType] = useState((config.skill_type as string) || "");
   const [sortDesc, setSortDesc] = useState(Boolean(config.sort_desc));
   const [finalOnly, setFinalOnly] = useState(Boolean(config.final_only));
   const configuredPetTab = config.active_tab === "preset" || config.active_tab === "library" ? config.active_tab : null;
@@ -1143,7 +1152,7 @@ function PickerModal({
     .filter((preset) => !normalizedQuery || `${preset.id}${preset.name}${preset.key}`.toLowerCase().includes(normalizedQuery))
     .filter((preset) => {
       const pet = petFromPreset(preset, petLookup);
-      return !pet || petMatchesPickerFilters(pet, element, finalOnly);
+      return !pet || petMatchesPickerFilters(pet, petElements, finalOnly);
     });
   const sourcePets = mode === "trait" ? traits : pets;
   const petMatchesSearch = (pet: Pet) => {
@@ -1173,7 +1182,7 @@ function PickerModal({
   }
   const filteredPets = sourcePets
     .filter((pet) => !normalizedQuery || petMatchesSearch(pet) || matchingEvolutionForms.has(pet.label))
-    .filter((pet) => petMatchesPickerFilters(pet, element, finalOnly))
+    .filter((pet) => petMatchesPickerFilters(pet, mode === "pet" ? petElements : element ? [element] : [], finalOnly))
     .sort((a, b) => {
       const idA = Number(a.id) || Number.MAX_SAFE_INTEGER;
       const idB = Number(b.id) || Number.MAX_SAFE_INTEGER;
@@ -1187,7 +1196,8 @@ function PickerModal({
       if (!element) return true;
       const detail = skill.detail || skill;
       return detail.element === element;
-    });
+    })
+    .filter((skill) => mode !== "skill" || skillTab !== "library" || !skillType || skillDetail(skill).type === skillType);
 
   async function saveConfig(values: Record<string, unknown>) {
     const data = await invoke<{ configs: PickerConfigs }>("save_picker_config", {
@@ -1196,8 +1206,8 @@ function PickerModal({
     onConfigsChanged(data.configs);
   }
 
-  return (
-    <div className="modal-backdrop" onMouseDown={(event) => {
+  return createPortal(
+    <div className={`modal-backdrop${mode === "skill" || mode === "pet" ? " skill-picker-backdrop" : ""}${document.documentElement.classList.contains("overlay-attached") ? " overlay-attached-picker" : ""}`} onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
       <section className="picker-modal compact-picker" onMouseDown={(event) => event.stopPropagation()}>
@@ -1252,14 +1262,6 @@ function PickerModal({
                 </button>
               </div>
             ) : null}
-            <select className="element-filter" value={element} onChange={(event) => setElement(event.target.value)}>
-              <option value="">全部属性</option>
-              {elements.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
             {mode !== "skill" ? (
               <>
                 <button
@@ -1285,8 +1287,44 @@ function PickerModal({
                 </button>
               </>
             ) : (
-              <button onClick={() => void saveConfig({ element })}>保存筛选</button>
+              <button onClick={() => void saveConfig({ element, skill_type: skillType })}>保存筛选</button>
             )}
+          </div>
+          <div className={`picker-filter-row${mode === "skill" && skillTab === "library" ? " with-skill-types" : ""}`}>
+            <div className="picker-element-grid" aria-label="属性筛选">
+              {elements.map((item) => {
+                const selected = mode === "pet" ? petElements.includes(item) : element === item;
+                return <button
+                  key={item}
+                  className={selected ? "active" : ""}
+                  aria-pressed={selected}
+                  onClick={() => {
+                    if (mode !== "pet") {
+                      setElement(item);
+                      return;
+                    }
+                    setPetElements((current) => current.includes(item) ? current : [...current.slice(0, 1), item]);
+                  }}
+                  onDoubleClick={() => {
+                    if (mode === "pet") setPetElements((current) => current.filter((value) => value !== item));
+                    else setElement("");
+                  }}
+                >
+                  {item}
+                </button>;
+              })}
+            </div>
+            {mode === "skill" && skillTab === "library" ? <div className="picker-skill-type-grid" aria-label="技能类型筛选">
+              {SKILL_TYPE_FILTERS.map((item) => <button
+                key={item}
+                className={skillType === item ? "active" : ""}
+                aria-pressed={skillType === item}
+                onClick={() => setSkillType(item)}
+                onDoubleClick={() => setSkillType("")}
+              >
+                {item}
+              </button>)}
+            </div> : null}
           </div>
           {mode === "pet" && onPickPreset && presets.length ? (
             <div className="picker-tools-sub">
@@ -1299,7 +1337,8 @@ function PickerModal({
               <button
                 onClick={() =>
                   void saveConfig({
-                    element,
+                    element: petElements[0] || "",
+                    selected_elements: petElements,
                     sort_desc: sortDesc,
                     final_only: finalOnly,
                     active_tab: petTab,
@@ -1312,7 +1351,7 @@ function PickerModal({
             </div>
           ) : mode !== "skill" ? (
             <div className="picker-tools-sub">
-              <button onClick={() => void saveConfig({ element, sort_desc: sortDesc, final_only: finalOnly })}>
+              <button onClick={() => void saveConfig({ element: mode === "pet" ? petElements[0] || "" : element, selected_elements: mode === "pet" ? petElements : undefined, sort_desc: sortDesc, final_only: finalOnly })}>
                 保存配置
               </button>
             </div>
@@ -1349,7 +1388,8 @@ function PickerModal({
               ))}
         </div>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

@@ -3973,6 +3973,17 @@ body:has(.plugin-mode) .app-header .weather-panel {
   z-index: 20;
 }
 
+.skill-picker-backdrop {
+  --ov-panel-border: rgba(154, 178, 202, 0.3);
+  --ov-field: rgba(226, 238, 252, 0.13);
+  --ov-field-border: rgba(196, 216, 238, 0.3);
+  --ov-field-text: #f2f7fd;
+  --ov-text: #e6edf6;
+  --ov-accent-bg: rgba(36, 107, 88, 0.62);
+  --ov-accent-border: rgba(143, 220, 184, 0.7);
+  z-index: 2000;
+}
+
 .picker-modal {
   background: #fff;
   border-radius: 8px;
@@ -4020,10 +4031,42 @@ body:has(.plugin-mode) .app-header .weather-panel {
   padding: 0 8px;
 }
 
-.compact-picker .element-filter {
-  flex: 0 0 86px;
-  height: 28px;
+.picker-filter-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.picker-filter-row.with-skill-types {
+  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) 112px;
+}
+
+.picker-element-grid {
+  display: grid;
+  gap: 4px 6px;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-rows: repeat(2, 20px);
+}
+
+.picker-element-grid button,
+.picker-skill-type-grid button {
+  font-size: 12px;
+  height: 20px;
+  min-width: 0;
   padding: 0 4px;
+}
+
+.picker-skill-type-grid {
+  display: grid;
+  gap: 4px 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, 20px);
+}
+
+:is(.picker-element-grid, .picker-skill-type-grid) button.active {
+  background: #246b58;
+  border-color: #246b58;
+  color: #fff;
 }
 
 .compact-picker .filter-toggle {
@@ -4053,8 +4096,25 @@ body:has(.plugin-mode) .app-header .weather-panel {
   gap: 6px;
   grid-auto-rows: 58px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: scroll;
   padding-right: 2px;
+  scrollbar-gutter: stable;
+}
+
+.compact-picker-grid::-webkit-scrollbar {
+  width: 10px;
+}
+
+.compact-picker-grid::-webkit-scrollbar-thumb {
+  background: #9aa8b5;
+  border: 2px solid transparent;
+  border-radius: 5px;
+  background-clip: padding-box;
+}
+
+.compact-picker-grid::-webkit-scrollbar-thumb:hover {
+  background-color: #667789;
 }
 
 .compact-picker-card {
@@ -4410,6 +4470,35 @@ body:has(.plugin-mode) .app-header .weather-panel {
 
 .battle-page.immersive-mode.plugin-mode .picker-modal .segmented button.active,
 .battle-page.immersive-mode.plugin-mode .picker-modal .filter-toggle.active {
+  background: var(--ov-accent-bg) !important;
+  border-color: var(--ov-accent-border) !important;
+  color: #f0fff8 !important;
+}
+
+.overlay-attached-picker.skill-picker-backdrop .picker-modal {
+  backdrop-filter: blur(10px) saturate(0.8) brightness(0.55);
+  background: rgba(18, 26, 36, 0.88) !important;
+  border: 1px solid var(--ov-panel-border) !important;
+  border-radius: 10px;
+  color: var(--ov-text) !important;
+}
+
+.overlay-attached-picker.skill-picker-backdrop .picker-modal :is(h2, .field-label, .ui-field-title, .picker-hint) {
+  color: var(--ov-text) !important;
+}
+
+.overlay-attached-picker.skill-picker-backdrop .picker-modal :is(button, input, select, .compact-picker-card) {
+  background: var(--ov-field) !important;
+  border: 1px solid var(--ov-field-border) !important;
+  color: var(--ov-field-text) !important;
+}
+
+.overlay-attached-picker.skill-picker-backdrop .picker-modal .compact-picker-card :is(strong, span, em) {
+  color: var(--ov-field-text) !important;
+  opacity: 1;
+}
+
+.overlay-attached-picker.skill-picker-backdrop .picker-modal :is(.segmented, .picker-element-grid, .picker-skill-type-grid) button.active {
   background: var(--ov-accent-bg) !important;
   border-color: var(--ov-accent-border) !important;
   color: #f0fff8 !important;
