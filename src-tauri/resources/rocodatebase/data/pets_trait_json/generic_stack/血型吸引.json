@@ -1,0 +1,30 @@
+{
+  "特性": {
+    "名称": "血型吸引",
+    "效果": "敌方每携带1种系别的技能，自己攻击时威力+10。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "skill_type_count",
+                    "context": {
+                        "subject": "emeny",
+                        "timing": "current"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": false,
+                        "hint": "敌方携带精灵系别数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "power_bonus",
+                            "value_per_stack": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+  }

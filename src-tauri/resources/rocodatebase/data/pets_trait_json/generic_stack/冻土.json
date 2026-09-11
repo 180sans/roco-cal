@@ -1,0 +1,35 @@
+{
+  "特性": {
+    "名称": "冻土",
+    "效果": "每携带1个冰系技能进入战斗，地系技能威力+10%。",
+    "battle_effect": {
+      "affects_battle": true,
+      "effect_groups": [
+        {
+          "mode": "ice_skill_count",
+          "context": {
+            "subject": "self",
+            "timing": "current"
+          },
+          "stack": {
+            "enabled": true,
+            "input": true,
+            "permanent": false,
+            "hint": "冰系技能数量"
+          },
+          "effects": [
+            {
+              "kind": "power_multiplier",
+              "filters": {
+                "skill_elements": [
+                  "冰"
+                ]
+              },
+              "value": 0.1
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -186,14 +186,6 @@
     {
       "skill_name": "气势一击",
       "unlock_condition": "[技能石]气势一击"
-    },
-    {
-      "skill_name": "分类：精灵",
-      "unlock_condition": null
-    },
-    {
-      "skill_name": "炼金台下方的智慧树苗",
-      "unlock_condition": null
     }
   ]
 }
