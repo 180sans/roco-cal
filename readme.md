@@ -116,7 +116,7 @@
 
 
 ## 下载
-[下载 Windows 安装程序](https://github.com/180sans/roco-cal/releases/download/v0.1.0/Roco.Datacal_0.1.0_x64-setup.exe)
+[下载 Windows 安装程序](https://github.com/180sans/roco-cal/releases)
 下载后直接安装即可。
 
 > 注意：由于当前版本尚未进行代码签名，Windows SmartScreen 可能提示“Windows 已保护你的电脑”，安装程序也可能显示为“未认证”。
