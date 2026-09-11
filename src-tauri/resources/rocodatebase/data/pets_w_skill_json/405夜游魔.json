@@ -6,12 +6,12 @@
     "翼",
     "恶"
   ],
-  "种族资质": 598,
-  "hp": 126,
-  "atk": 99,
-  "mag": 98,
-  "def": 97,
-  "res": 123,
+  "种族资质": 618,
+  "hp": 132,
+  "atk": 103,
+  "mag": 101,
+  "def": 100,
+  "res": 127,
   "spd": 55,
   "特性": "异类",
   "evolution": {
@@ -222,6 +222,14 @@
     {
       "skill_name": "复写",
       "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "试飞",
+      "unlock_condition": "技能石"
+    },
+    {
+      "skill_name": "暴打",
+      "unlock_condition": "[技能石]暴打"
     }
   ]
 }

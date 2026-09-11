@@ -20,7 +20,7 @@
     "element": "毒",
     "type": "状态",
     "skill_power": null,
-    "description": "将敌方所有增益，转化成中毒。",
+    "description": "将敌方所有增益，转化为相同层数的中毒。",
     "effect": "normal"
   },
   {

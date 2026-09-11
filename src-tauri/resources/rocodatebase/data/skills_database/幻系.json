@@ -173,7 +173,7 @@
     "cost": 7,
     "element": "幻",
     "type": "魔攻",
-    "skill_power": 100,
+    "skill_power": 110,
     "description": "造成魔伤，敌方每有1层印记，本技能能耗-1。",
     "effect": "normal"
   },
@@ -218,7 +218,7 @@
     "name": "薄纱环",
     "element": "幻",
     "type": "状态",
-    "description": "选择：对手随机获得1种负面印记或自己随机获得1种正面印记。",
+    "description": "选择：敌方随机获得1种负面印记或自己随机获得1种正面印记。",
     "skill_power": null,
     "cost": 3,
     "effect": "choice"
@@ -227,7 +227,7 @@
     "name": "星痕",
     "element": "幻",
     "type": "魔攻",
-    "description": "造成魔伤，若对手有印记，本次技能威力+40。",
+    "description": "造成魔伤，若敌方有印记，本次技能威力+40。",
     "skill_power": 90,
     "cost": 3,
     "triggered": {
@@ -243,6 +243,82 @@
     "description": "造成魔伤，双方已有的印记层数+1。",
     "skill_power": 55,
     "cost": 4,
+    "effect": "normal"
+  },
+  {
+    "name": "重组",
+    "element": "幻",
+    "type": "状态",
+    "description": "下一次攻击时，额外造成100%幻系伤害，应对防御：改为额外造成300%幻系伤害。",
+    "skill_power": null,
+    "cost": 1
+  },
+  {
+    "name": "月蚀",
+    "element": "幻",
+    "type": "物攻",
+    "description": "造成物伤，若敌方生命低于50%，本次技能能耗-3。",
+    "skill_power": 130,
+    "cost": 5
+  },
+  {
+    "name": "仰望夜空",
+    "element": "幻",
+    "type": "状态",
+    "description": "自己获得魔攻和魔防+70%。",
+    "skill_power": null,
+    "cost": 2,
+    "buff_options": [
+      {
+        "label": "自己魔攻和魔防+70%",
+        "effects": [
+          {
+            "target": "self",
+            "field": "mag_atk_buff",
+            "value": 70
+          },
+          {
+            "target": "self",
+            "field": "mag_def_buff",
+            "value": 70
+          }
+        ]
+      }
+    ],
+    "effect": "normal"
+  },
+  {
+    "name": "观测者效应",
+    "element": "幻",
+    "type": "状态",
+    "description": "自己脱离，更换入场的精灵以月陨星状态登场。",
+    "skill_power": null,
+    "cost": 3
+  },
+  {
+    "name": "量子涨落",
+    "element": "幻",
+    "type": "物攻",
+    "description": "造成物伤，若敌方没有星陨印记，则敌方获得3层星陨印记。",
+    "skill_power": 75,
+    "cost": 3
+  },
+  {
+    "name": "奇点",
+    "element": "幻",
+    "type": "魔攻",
+    "description": "造成魔伤，若上回合双方有精灵使用水系技能，敌方获得4层星陨印记。",
+    "skill_power": 60,
+    "cost": 4,
+    "effect": "normal"
+  },
+  {
+    "name": "引力偏转",
+    "element": "幻",
+    "type": "防御",
+    "description": "减伤80%，应对攻击：以魔法伤害触发敌方的星陨效果。",
+    "skill_power": null,
+    "cost": 2,
     "effect": "normal"
   }
 ]

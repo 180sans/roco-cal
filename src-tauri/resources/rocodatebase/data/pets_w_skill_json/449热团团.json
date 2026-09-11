@@ -1,0 +1,207 @@
+{
+  "id": "449",
+  "name": "热团团",
+  "other_name": [],
+  "elements": [
+    "火",
+    "虫"
+  ],
+  "种族资质": 342,
+  "hp": 48,
+  "atk": 69,
+  "mag": 18,
+  "def": 72,
+  "res": 72,
+  "spd": 63,
+  "特性": "热成像",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "449热团团",
+      "450焰米龙",
+      "451圣凯布米龙"
+    ],
+    "prev": [],
+    "next": [
+      "450焰米龙"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "火苗",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "闪燃",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "暖阳",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "流星火雨",
+      "unlock_condition": "[技能石]流星火雨"
+    },
+    {
+      "skill_name": "火焰切割",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "星火",
+      "unlock_condition": "（默认）Lv.42"
+    },
+    {
+      "skill_name": "天火",
+      "unlock_condition": "[技能石]天火"
+    },
+    {
+      "skill_name": "热身",
+      "unlock_condition": "[技能石]热身"
+    },
+    {
+      "skill_name": "飞断",
+      "unlock_condition": "[技能石]飞断"
+    },
+    {
+      "skill_name": "虫群过境",
+      "unlock_condition": "[技能石]虫群过境"
+    },
+    {
+      "skill_name": "蛰针",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "啃咬",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "迁飞扩散",
+      "unlock_condition": "[技能石]迁飞扩散"
+    },
+    {
+      "skill_name": "草虫冲击",
+      "unlock_condition": "（默认）Lv.21"
+    },
+    {
+      "skill_name": "翅刃",
+      "unlock_condition": "[技能石]翅刃"
+    },
+    {
+      "skill_name": "虫击",
+      "unlock_condition": "（默认）Lv.49"
+    },
+    {
+      "skill_name": "虫群智慧",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "偷袭",
+      "unlock_condition": "[技能石]偷袭"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.18"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "（默认）Lv.27"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "落石",
+      "unlock_condition": "[技能石]落石"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "[技能石]跺地"
+    },
+    {
+      "skill_name": "泥浆铠甲",
+      "unlock_condition": "[技能石]泥浆铠甲"
+    },
+    {
+      "skill_name": "双星",
+      "unlock_condition": "[技能石]双星"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "幻象",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "荆棘爪",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰箭",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "冰爪",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "尾后针",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "念力膨胀",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "淤泥表皮",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "啮合传递",
+      "unlock_condition": "（血脉）机械系血脉"
+    }
+  ]
+}

@@ -210,6 +210,10 @@
     {
       "skill_name": "下注",
       "unlock_condition": "[技能石]下注"
+    },
+    {
+      "skill_name": "月影交错",
+      "unlock_condition": "[技能石]月影交错"
     }
   ]
 }

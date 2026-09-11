@@ -5,13 +5,13 @@
   "elements": [
     "恶"
   ],
-  "种族资质": 368,
-  "hp": 82,
-  "atk": 86,
-  "mag": 27,
-  "def": 52,
-  "res": 41,
-  "spd": 80,
+  "种族资质": 366,
+  "hp": 94,
+  "atk": 65,
+  "mag": 18,
+  "def": 66,
+  "res": 55,
+  "spd": 68,
   "特性": "诅咒",
   "evolution": {
     "stage": 1,
@@ -204,6 +204,10 @@
     {
       "skill_name": "极限撕裂",
       "unlock_condition": "[技能石]极限撕裂"
+    },
+    {
+      "skill_name": "掉包",
+      "unlock_condition": "[技能石]掉包"
     }
   ]
 }

@@ -1,0 +1,206 @@
+{
+  "id": "465",
+  "name": "布灵布灵",
+  "other_name": [],
+  "elements": [
+    "幻",
+    "光"
+  ],
+  "种族资质": 582,
+  "hp": 83,
+  "atk": 115,
+  "mag": 40,
+  "def": 123,
+  "res": 96,
+  "spd": 125,
+  "特性": "旧玩具",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "464布灵",
+      "465布灵布灵"
+    ],
+    "prev": [
+      "464布灵"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "天体吸积",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "量子涨落",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "双星",
+      "unlock_condition": "（默认）Lv.8"
+    },
+    {
+      "skill_name": "叠加态",
+      "unlock_condition": "（默认）Lv.27"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "[技能石]超维投射"
+    },
+    {
+      "skill_name": "重组",
+      "unlock_condition": "[技能石]重组"
+    },
+    {
+      "skill_name": "闪光弹",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "透镜实验",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "光刃",
+      "unlock_condition": "（默认）Lv.24"
+    },
+    {
+      "skill_name": "漫反射",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "放晴",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "猛烈撞击",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "偷袭",
+      "unlock_condition": "[技能石]偷袭"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.12"
+    },
+    {
+      "skill_name": "锐利眼神",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "砂糖弹球",
+      "unlock_condition": "[技能石]砂糖弹球"
+    },
+    {
+      "skill_name": "爆米花爆破",
+      "unlock_condition": "[技能石]爆米花爆破"
+    },
+    {
+      "skill_name": "示弱",
+      "unlock_condition": "[技能石]示弱"
+    },
+    {
+      "skill_name": "生日蛋糕",
+      "unlock_condition": "[技能石]生日蛋糕"
+    },
+    {
+      "skill_name": "崩拳",
+      "unlock_condition": "[技能石]崩拳"
+    },
+    {
+      "skill_name": "截拳",
+      "unlock_condition": "[技能石]截拳"
+    },
+    {
+      "skill_name": "影袭",
+      "unlock_condition": "[技能石]影袭"
+    },
+    {
+      "skill_name": "破绽",
+      "unlock_condition": "[技能石]破绽"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "荆棘爪",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冰爪",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "念力膨胀",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "火爪",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "报复",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    }
+  ]
+}

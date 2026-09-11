@@ -225,6 +225,10 @@
     {
       "skill_name": "热身运动",
       "unlock_condition": "[技能石]热身运动"
+    },
+    {
+      "skill_name": "奇点",
+      "unlock_condition": "[技能石]奇点"
     }
   ]
 }

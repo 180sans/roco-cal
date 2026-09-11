@@ -231,6 +231,14 @@
     {
       "skill_name": "有效预防",
       "unlock_condition": "[技能石]有效预防"
+    },
+    {
+      "skill_name": "信息素",
+      "unlock_condition": "[技能石]信息素"
+    },
+    {
+      "skill_name": "惊鸿一瞥",
+      "unlock_condition": "[技能石]惊鸿一瞥"
     }
   ]
 }

@@ -223,6 +223,10 @@
     {
       "skill_name": "天旋地转",
       "unlock_condition": "[技能石]天旋地转"
+    },
+    {
+      "skill_name": "暖阳",
+      "unlock_condition": "[技能石]暖阳"
     }
   ]
 }

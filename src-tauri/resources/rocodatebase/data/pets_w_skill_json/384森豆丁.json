@@ -209,6 +209,10 @@
     {
       "skill_name": "缓一缓",
       "unlock_condition": "[技能石]缓一缓"
+    },
+    {
+      "skill_name": "麦芒",
+      "unlock_condition": "[技能石]麦芒"
     }
   ]
 }

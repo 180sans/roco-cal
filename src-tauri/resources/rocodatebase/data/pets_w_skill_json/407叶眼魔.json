@@ -228,6 +228,14 @@
     {
       "skill_name": "蒸汽进行曲",
       "unlock_condition": "[技能石]蒸汽进行曲"
+    },
+    {
+      "skill_name": "暴打",
+      "unlock_condition": "[技能石]暴打"
+    },
+    {
+      "skill_name": "汇流",
+      "unlock_condition": "[技能石]汇流"
     }
   ]
 }

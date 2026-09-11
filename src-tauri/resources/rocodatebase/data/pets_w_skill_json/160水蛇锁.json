@@ -6,13 +6,13 @@
     "水",
     "武"
   ],
-  "种族资质": 505,
-  "hp": 84,
-  "atk": 88,
+  "种族资质": 509,
+  "hp": 67,
+  "atk": 89,
   "mag": 83,
   "def": 83,
   "res": 83,
-  "spd": 84,
+  "spd": 104,
   "特性": "思维之盾",
   "evolution": {
     "stage": 2,
@@ -228,6 +228,10 @@
     {
       "skill_name": "叠浪",
       "unlock_condition": "[技能石]叠浪"
+    },
+    {
+      "skill_name": "汇流",
+      "unlock_condition": "[技能石]汇流"
     }
   ]
 }

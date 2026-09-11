@@ -225,6 +225,10 @@
     {
       "skill_name": "撞鬼",
       "unlock_condition": "[技能石]撞鬼"
+    },
+    {
+      "skill_name": "小型打劫",
+      "unlock_condition": "[技能石]小型打劫"
     }
   ]
 }

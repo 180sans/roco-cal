@@ -200,6 +200,10 @@
     {
       "skill_name": "加固",
       "unlock_condition": "[技能石]加固"
+    },
+    {
+      "skill_name": "拖拉机",
+      "unlock_condition": "[技能石]拖拉机"
     }
   ]
 }

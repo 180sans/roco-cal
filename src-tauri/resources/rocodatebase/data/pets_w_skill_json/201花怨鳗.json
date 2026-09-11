@@ -221,6 +221,10 @@
     {
       "skill_name": "吓退",
       "unlock_condition": "[技能石]吓退"
+    },
+    {
+      "skill_name": "麦芒",
+      "unlock_condition": "[技能石]麦芒"
     }
   ]
 }

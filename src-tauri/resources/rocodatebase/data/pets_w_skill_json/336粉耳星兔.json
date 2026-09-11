@@ -208,6 +208,10 @@
     {
       "skill_name": "星痕",
       "unlock_condition": "[技能石]星痕"
+    },
+    {
+      "skill_name": "重组",
+      "unlock_condition": "[技能石]重组"
     }
   ]
 }

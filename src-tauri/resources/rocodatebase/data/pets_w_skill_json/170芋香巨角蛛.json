@@ -222,6 +222,10 @@
     {
       "skill_name": "防御",
       "unlock_condition": "[技能石]防御"
+    },
+    {
+      "skill_name": "迁飞扩散",
+      "unlock_condition": "[技能石]迁飞扩散"
     }
   ]
 }

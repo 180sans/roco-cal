@@ -218,6 +218,10 @@
     {
       "skill_name": "焚身",
       "unlock_condition": "[技能石]焚身"
+    },
+    {
+      "skill_name": "暖阳",
+      "unlock_condition": "[技能石]暖阳"
     }
   ]
 }

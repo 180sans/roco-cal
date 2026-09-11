@@ -1,0 +1,205 @@
+{
+  "id": "455",
+  "name": "玳龟",
+  "other_name": [],
+  "elements": [
+    "幻"
+  ],
+  "种族资质": 414,
+  "hp": 101,
+  "atk": 37,
+  "mag": 85,
+  "def": 58,
+  "res": 93,
+  "spd": 40,
+  "特性": "乌龟塔理论",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "455玳龟",
+      "456玳塔"
+    ],
+    "prev": [],
+    "next": [
+      "456玳塔"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "多维击打",
+      "unlock_condition": "（默认）Lv.22"
+    },
+    {
+      "skill_name": "针状物",
+      "unlock_condition": "（默认）Lv.5"
+    },
+    {
+      "skill_name": "奇点",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "错乱",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "大爆炸",
+      "unlock_condition": "（默认）Lv.8"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（默认）Lv.19"
+    },
+    {
+      "skill_name": "引力偏转",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "（默认）Lv.30"
+    },
+    {
+      "skill_name": "心灵洞悉",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "魔能爆",
+      "unlock_condition": "[技能石]魔能爆"
+    },
+    {
+      "skill_name": "拍击",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "突袭",
+      "unlock_condition": "[技能石]突袭"
+    },
+    {
+      "skill_name": "消毒法",
+      "unlock_condition": "[技能石]消毒法"
+    },
+    {
+      "skill_name": "先发制人",
+      "unlock_condition": "[技能石]先发制人"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "血气",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "嗜痛",
+      "unlock_condition": "[技能石]嗜痛"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "缓一缓",
+      "unlock_condition": "[技能石]缓一缓"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "拟寄生",
+      "unlock_condition": "[技能石]拟寄生"
+    },
+    {
+      "skill_name": "虫蛊",
+      "unlock_condition": "[技能石]虫蛊"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "[技能石]掩护"
+    },
+    {
+      "skill_name": "食腐",
+      "unlock_condition": "[技能石]食腐"
+    },
+    {
+      "skill_name": "天光",
+      "unlock_condition": "[技能石]天光"
+    },
+    {
+      "skill_name": "镜像反射",
+      "unlock_condition": "[技能石]镜像反射"
+    },
+    {
+      "skill_name": "肥皂泡",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "折线冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "羽翼庇护",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "报复",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "泥浆铠甲",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    }
+  ]
+}

@@ -217,6 +217,10 @@
     {
       "skill_name": "锁芯",
       "unlock_condition": "[技能石]锁芯"
+    },
+    {
+      "skill_name": "广播",
+      "unlock_condition": "[技能石]广播"
     }
   ]
 }

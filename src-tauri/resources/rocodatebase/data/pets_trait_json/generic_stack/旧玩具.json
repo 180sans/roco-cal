@@ -1,0 +1,34 @@
+﻿{
+  "特性": {
+    "名称": "旧玩具",
+    "效果": "己方精灵每使用过1个不同系别的技能，自己入场时获得双攻+10%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "use_different_skill_type",
+                    "context": {
+                        "subject": "ally_team",
+                        "timing": "entry"
+                    },
+                    "stack": {
+                        "enabled": true,
+                        "input": true,
+                        "permanent": true,
+                        "hint": "不同系别的技能次数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values_per_stack": {
+                                "atk": 0.1,
+                                "mag": 0.1
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+  }
+}

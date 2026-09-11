@@ -248,6 +248,10 @@
     {
       "skill_name": "扫尾",
       "unlock_condition": "[技能石]扫尾"
+    },
+    {
+      "skill_name": "闪光弹",
+      "unlock_condition": "[技能石]闪光弹"
     }
   ]
 }

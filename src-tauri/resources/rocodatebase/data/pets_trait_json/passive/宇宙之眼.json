@@ -1,0 +1,34 @@
+﻿{
+  "特性": {
+    "名称": "宇宙之眼",
+    "效果": "敌方每有1层星陨印记，自己获得物防+10%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                    "mode": "starfall_marks",
+                    "context": {
+                        "subject": "defender",
+                        "timing": "current"
+                    },
+                    "passive": true,
+                    "stack": {
+                        "enabled": false,
+                        "input": false,
+                        "permanent": true,
+                        "hint": "星陨层数"
+                    },
+                    "effects": [
+                        {
+                            "kind": "stat_buff",
+                            "target": "self",
+                            "values_per_stack": {
+                                "def": 0.1
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+  }
+}

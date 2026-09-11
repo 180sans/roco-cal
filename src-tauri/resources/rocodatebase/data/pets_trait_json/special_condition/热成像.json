@@ -1,0 +1,36 @@
+﻿{
+  "特性": {
+    "名称": "热成像",
+    "效果": "若上回合双方有精灵使用火系技能，本回合自己携带的虫系技能威力+100%。",
+    "battle_effect": {
+      "affects_battle": true,
+      "effect_groups": [
+        {
+          "mode": "use_fire_skill",
+          "context": {
+            "subject": "all_team",
+            "timing": "last_turn"
+          },
+          "stack": {
+            "enabled": false,
+            "input": false,
+            "permanent": false,
+            "hint": "--"
+          },
+          "passive": true,
+          "effects": [
+            {
+              "kind": "power_multiplier",
+              "filters": {
+                "skill_elements": [
+                  "火"
+                ]
+              },
+              "value": 1.0
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

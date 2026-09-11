@@ -234,6 +234,10 @@
     {
       "skill_name": "焚尽",
       "unlock_condition": "[技能石]焚尽"
+    },
+    {
+      "skill_name": "叠势",
+      "unlock_condition": "技能石"
     }
   ]
 }

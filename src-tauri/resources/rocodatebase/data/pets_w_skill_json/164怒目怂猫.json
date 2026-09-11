@@ -5,10 +5,10 @@
   "elements": [
     "武"
   ],
-  "种族资质": 651,
+  "种族资质": 659,
   "hp": 92,
-  "atk": 132,
-  "mag": 126,
+  "atk": 136,
+  "mag": 130,
   "def": 111,
   "res": 95,
   "spd": 95,
@@ -224,6 +224,10 @@
     {
       "skill_name": "有效预防",
       "unlock_condition": "[技能石]有效预防"
+    },
+    {
+      "skill_name": "芳香诱引",
+      "unlock_condition": "技能石"
     }
   ]
 }

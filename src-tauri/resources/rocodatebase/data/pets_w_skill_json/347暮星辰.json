@@ -210,6 +210,10 @@
     {
       "skill_name": "远行",
       "unlock_condition": "[技能石]远行"
+    },
+    {
+      "skill_name": "奇点",
+      "unlock_condition": "[技能石]奇点"
     }
   ]
 }

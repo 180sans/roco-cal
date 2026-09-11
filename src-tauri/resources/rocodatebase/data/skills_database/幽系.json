@@ -240,5 +240,41 @@
     "skill_power": 80,
     "cost": 3,
     "effect": "normal"
+  },
+  {
+    "name": "小型打劫",
+    "element": "幽",
+    "type": "状态",
+    "description": "敌方队伍中所有精灵失去1能量。",
+    "skill_power": null,
+    "cost": 2,
+    "effect": "normal"
+  },
+  {
+    "name": "回收",
+    "element": "幽",
+    "type": "魔攻",
+    "description": "造成魔伤，若敌方本回合更换精灵，敌方失去4能量。",
+    "skill_power": 80,
+    "cost": 3,
+    "effect": "normal"
+  },
+  {
+    "name": "掠影",
+    "element": "幽",
+    "type": "物攻",
+    "description": "造成物伤，若上回合双方有精灵使用火系技能，偷取敌方3能量。",
+    "skill_power": 65,
+    "cost": 3,
+    "effect": "normal"
+  },
+  {
+    "name": "离魂术",
+    "element": "幽",
+    "type": "状态",
+    "description": "偷取敌方2能量，脱离。",
+    "skill_power": null,
+    "cost": 3,
+    "effect": "normal"
   }
 ]

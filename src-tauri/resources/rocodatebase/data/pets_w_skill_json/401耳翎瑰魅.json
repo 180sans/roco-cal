@@ -232,6 +232,10 @@
     {
       "skill_name": "假冒",
       "unlock_condition": "[技能石]假冒"
+    },
+    {
+      "skill_name": "暴打",
+      "unlock_condition": "[技能石]暴打"
     }
   ]
 }

@@ -175,5 +175,35 @@
       "skill_power_plus": "50"
     },
     "effect": "choice"
+  },
+  {
+    "name": "分光",
+    "element": "光",
+    "type": "状态",
+    "description": "自己获得魔攻+20%，己方队伍中精灵每有1个不同的系别，额外获得魔攻+10%。",
+    "skill_power": null,
+    "cost": 1,
+    "buff_options": [
+      {
+        "label": "自己魔攻 +20%",
+        "effects": [
+          {
+            "target": "self",
+            "field": "mag_atk_buff",
+            "value": 20
+          }
+        ]
+      }
+    ],
+    "effect": "normal"
+  },
+  {
+    "name": "闪光弹",
+    "element": "光",
+    "type": "物攻",
+    "description": "造成物伤，自己脱离。",
+    "skill_power": 40,
+    "cost": 2,
+    "effect": "normal"
   }
 ]

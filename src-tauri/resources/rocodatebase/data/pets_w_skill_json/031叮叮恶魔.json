@@ -212,6 +212,10 @@
     {
       "skill_name": "血契",
       "unlock_condition": "[技能石]血契"
+    },
+    {
+      "skill_name": "月影交错",
+      "unlock_condition": "[技能石]月影交错"
     }
   ]
 }

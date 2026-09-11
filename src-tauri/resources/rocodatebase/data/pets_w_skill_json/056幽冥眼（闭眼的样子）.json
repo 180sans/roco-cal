@@ -221,6 +221,10 @@
     {
       "skill_name": "魔镜",
       "unlock_condition": "[技能石]魔镜"
+    },
+    {
+      "skill_name": "回收",
+      "unlock_condition": "[技能石]回收"
     }
   ]
 }

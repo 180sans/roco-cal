@@ -213,6 +213,10 @@
     {
       "skill_name": "蒸汽进行曲",
       "unlock_condition": "[技能石]蒸汽进行曲"
+    },
+    {
+      "skill_name": "拖拉机",
+      "unlock_condition": "[技能石]拖拉机"
     }
   ]
 }

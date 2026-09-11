@@ -208,6 +208,10 @@
     {
       "skill_name": "吹散",
       "unlock_condition": "[技能石]吹散"
+    },
+    {
+      "skill_name": "无风",
+      "unlock_condition": "[技能石]无风"
     }
   ]
 }

@@ -233,6 +233,14 @@
     {
       "skill_name": "轮班",
       "unlock_condition": "[技能石]轮班"
+    },
+    {
+      "skill_name": "引力偏转",
+      "unlock_condition": "[技能石]引力偏转"
+    },
+    {
+      "skill_name": "量子涨落",
+      "unlock_condition": "[技能石]量子涨落"
     }
   ]
 }

@@ -1,7 +1,7 @@
-﻿{
+{
   "特性": {
     "名称": "上锁",
-    "效果": "对手本回合使用的技能，冷却1回合。",
+    "效果": "敌方本回合使用的技能，冷却1回合。",
     "battle_effect": {
       "affects_battle": false,
       "template": "ignored",

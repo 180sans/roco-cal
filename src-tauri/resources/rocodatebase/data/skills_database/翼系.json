@@ -320,31 +320,70 @@
     "name": "超声波",
     "element": "翼",
     "type": "状态",
-    "description": "自己获得全技能威力+30，选择：本次能耗-1或应对防御时改为全技能威力永久+50。",
+    "description": "自己获得全技能威力+20，选择：本次能耗-1或应对防御时改为全技能威力永久+20。",
     "skill_power": null,
     "cost": 2,
     "buff_options": [
       {
-        "label": "自己威力 +30",
+        "label": "自己威力 +20",
         "effects": [
           {
             "target": "self",
             "field": "power_bonus",
-            "value": 30
+            "value": 20
           }
         ]
       },
       {
-        "label": "应对自己威力 +50",
+        "label": "应对自己威力 +20",
         "effects": [
           {
             "target": "self",
             "field": "power_bonus",
-            "value": 50
+            "value": 20
           }
         ]
       }
     ],
     "effect": "choice"
+  },
+  {
+    "name": "月影交错",
+    "element": "翼",
+    "type": "物攻",
+    "description": "造成物伤，2连击，若上回合双方有精灵使用幻系技能，本技能获得迅捷。",
+    "skill_power": 25,
+    "cost": 2,
+    "effect": "normal"
+  },
+  {
+    "name": "惊鸿一瞥",
+    "element": "翼",
+    "type": "状态",
+    "description": "自己获得连击数+1，迅捷。",
+    "skill_power": null,
+    "cost": 2,
+    "effect": "normal",
+    "buff_options": [
+      {
+        "label": "自己连击+1",
+        "effects": [
+          {
+            "target": "self",
+            "field": "combo_plus",
+            "value": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "无风",
+    "element": "翼",
+    "type": "防御",
+    "description": "减伤50%，应对攻击：敌方和自己均脱离。",
+    "skill_power": null,
+    "cost": 2,
+    "effect": "normal"
   }
 ]

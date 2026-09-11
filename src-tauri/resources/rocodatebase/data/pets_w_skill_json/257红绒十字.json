@@ -6,10 +6,10 @@
     "火",
     "萌"
   ],
-  "种族资质": 598,
-  "hp": 112,
-  "atk": 47,
-  "mag": 122,
+  "种族资质": 604,
+  "hp": 137,
+  "atk": 42,
+  "mag": 108,
   "def": 100,
   "res": 127,
   "spd": 90,
@@ -226,6 +226,14 @@
     {
       "skill_name": "野火",
       "unlock_condition": "[技能石]野火"
+    },
+    {
+      "skill_name": "捧杀",
+      "unlock_condition": "技能石"
+    },
+    {
+      "skill_name": "星火",
+      "unlock_condition": "[技能石]星火"
     }
   ]
 }

@@ -235,6 +235,10 @@
     {
       "skill_name": "疾风连袭",
       "unlock_condition": "（传说）合体：圣羽翼王"
+    },
+    {
+      "skill_name": "俯冲猛击",
+      "unlock_condition": "技能石"
     }
   ]
 }

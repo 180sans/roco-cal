@@ -208,6 +208,10 @@
     {
       "skill_name": "可爱",
       "unlock_condition": "[技能石]可爱"
+    },
+    {
+      "skill_name": "加油",
+      "unlock_condition": "技能石"
     }
   ]
 }

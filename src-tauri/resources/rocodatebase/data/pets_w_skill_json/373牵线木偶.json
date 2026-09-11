@@ -256,6 +256,10 @@
     {
       "skill_name": "薄纱环",
       "unlock_condition": "[技能石]薄纱环"
+    },
+    {
+      "skill_name": "引力偏转",
+      "unlock_condition": "[技能石]引力偏转"
     }
   ]
 }

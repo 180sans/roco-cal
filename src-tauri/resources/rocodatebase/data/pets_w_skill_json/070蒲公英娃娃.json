@@ -237,6 +237,10 @@
     {
       "skill_name": "甜蜜陷阱",
       "unlock_condition": "[技能石]甜蜜陷阱"
+    },
+    {
+      "skill_name": "撒花",
+      "unlock_condition": "技能石"
     }
   ]
 }

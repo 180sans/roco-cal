@@ -5,12 +5,12 @@
   "elements": [
     "翼"
   ],
-  "种族资质": 360,
-  "hp": 76,
-  "atk": 60,
-  "mag": 59,
-  "def": 58,
-  "res": 74,
+  "种族资质": 371,
+  "hp": 79,
+  "atk": 62,
+  "mag": 61,
+  "def": 60,
+  "res": 76,
   "spd": 33,
   "特性": "异类",
   "evolution": {
@@ -221,6 +221,10 @@
     {
       "skill_name": "复写",
       "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "暴打",
+      "unlock_condition": "[技能石]暴打"
     }
   ]
 }

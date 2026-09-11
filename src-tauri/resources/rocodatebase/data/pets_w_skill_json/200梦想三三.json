@@ -232,6 +232,10 @@
     {
       "skill_name": "通电",
       "unlock_condition": "[技能石]通电"
+    },
+    {
+      "skill_name": "追打",
+      "unlock_condition": "技能石"
     }
   ]
 }

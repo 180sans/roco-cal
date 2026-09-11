@@ -209,6 +209,10 @@
     {
       "skill_name": "驱赶",
       "unlock_condition": "[技能石]驱赶"
+    },
+    {
+      "skill_name": "洗礼",
+      "unlock_condition": "技能石"
     }
   ]
 }

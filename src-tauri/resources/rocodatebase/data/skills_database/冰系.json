@@ -346,12 +346,13 @@
     "name": "雪原狩猎",
     "element": "冰",
     "type": "物攻",
-    "description": "造成物伤，天气为暴风雪时，本次技能威力+50%",
-    "skill_power": 80,
+    "description": "造成物伤，天气为暴风雪时，本次技能威力+50。",
+    "skill_power": 85,
     "cost": 3,
     "triggered": {
       "mode": "weather_blizzard",
-      "power_multiplier": "0.5"
+      "power_multiplier": "0.5",
+      "skill_power_plus": "50"
     },
     "effect": "normal"
   },

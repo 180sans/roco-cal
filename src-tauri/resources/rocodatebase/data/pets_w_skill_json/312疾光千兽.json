@@ -205,6 +205,10 @@
     {
       "skill_name": "透镜实验",
       "unlock_condition": "[技能石]透镜实验"
+    },
+    {
+      "skill_name": "闪光弹",
+      "unlock_condition": "[技能石]闪光弹"
     }
   ]
 }

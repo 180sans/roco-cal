@@ -229,6 +229,14 @@
     {
       "skill_name": "倾泻",
       "unlock_condition": "[技能石]倾泻"
+    },
+    {
+      "skill_name": "惊雷",
+      "unlock_condition": "技能石"
+    },
+    {
+      "skill_name": "掠影",
+      "unlock_condition": "[技能石]掠影"
     }
   ]
 }

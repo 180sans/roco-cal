@@ -8,8 +8,8 @@
   ],
   "种族资质": 493,
   "hp": 64,
-  "atk": 76,
-  "mag": 85,
+  "atk": 85,
+  "mag": 76,
   "def": 72,
   "res": 96,
   "spd": 100,
@@ -229,6 +229,10 @@
     {
       "skill_name": "透镜实验",
       "unlock_condition": "[技能石]透镜实验"
+    },
+    {
+      "skill_name": "闪光弹",
+      "unlock_condition": "[技能石]闪光弹"
     }
   ]
 }

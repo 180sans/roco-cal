@@ -221,6 +221,14 @@
     {
       "skill_name": "取念",
       "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "广播",
+      "unlock_condition": "[技能石]广播"
+    },
+    {
+      "skill_name": "量子涨落",
+      "unlock_condition": "[技能石]量子涨落"
     }
   ]
 }

@@ -213,6 +213,10 @@
     {
       "skill_name": "急中生智",
       "unlock_condition": "[技能石]急中生智"
+    },
+    {
+      "skill_name": "奇点",
+      "unlock_condition": "[技能石]奇点"
     }
   ]
 }

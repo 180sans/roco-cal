@@ -1,0 +1,225 @@
+{
+  "id": "459",
+  "name": "小浣蛋",
+  "other_name": [],
+  "elements": [
+    "恶"
+  ],
+  "种族资质": 546,
+  "hp": 78,
+  "atk": 93,
+  "mag": 88,
+  "def": 99,
+  "res": 92,
+  "spd": 96,
+  "特性": "翻垃圾桶",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "459小浣蛋",
+      "460黑手浣熊"
+    ],
+    "prev": [],
+    "next": [
+      "460黑手浣熊"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "趁火打劫",
+      "unlock_condition": "（默认）Lv.31"
+    },
+    {
+      "skill_name": "血契",
+      "unlock_condition": "（默认）Lv.45"
+    },
+    {
+      "skill_name": "黑手",
+      "unlock_condition": "（默认）Lv.4"
+    },
+    {
+      "skill_name": "暴打",
+      "unlock_condition": "（默认）Lv.18"
+    },
+    {
+      "skill_name": "限时特惠",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "虚假破产",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "纺纱",
+      "unlock_condition": "（默认）Lv.25"
+    },
+    {
+      "skill_name": "欺诈契约",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "恶意逃离",
+      "unlock_condition": "（默认）Lv.43"
+    },
+    {
+      "skill_name": "假冒",
+      "unlock_condition": "（默认）Lv.47"
+    },
+    {
+      "skill_name": "掉包",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "抓挠",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "倾泻",
+      "unlock_condition": "[技能石]倾泻"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.20"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "精神扰乱",
+      "unlock_condition": "[技能石]精神扰乱"
+    },
+    {
+      "skill_name": "应激反应",
+      "unlock_condition": "[技能石]应激反应"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "双星",
+      "unlock_condition": "[技能石]双星"
+    },
+    {
+      "skill_name": "大爆炸",
+      "unlock_condition": "[技能石]大爆炸"
+    },
+    {
+      "skill_name": "叠加态",
+      "unlock_condition": "[技能石]叠加态"
+    },
+    {
+      "skill_name": "观测者效应",
+      "unlock_condition": "[技能石]观测者效应"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "[技能石]超维投射"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "[技能石]毒沼"
+    },
+    {
+      "skill_name": "瘴气喷射",
+      "unlock_condition": "[技能石]瘴气喷射"
+    },
+    {
+      "skill_name": "剧毒",
+      "unlock_condition": "[技能石]剧毒"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "[技能石]毒孢子"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "溃烂触碰",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "猛烈撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "荆棘爪",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火爪",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "肥皂泡",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "（血脉）幽系血脉"
+    }
+  ]
+}

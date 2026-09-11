@@ -5,13 +5,13 @@
   "elements": [
     "机械"
   ],
-  "种族资质": 454,
+  "种族资质": 441,
   "hp": 73,
   "atk": 99,
   "mag": 38,
-  "def": 98,
-  "res": 74,
-  "spd": 72,
+  "def": 90,
+  "res": 64,
+  "spd": 77,
   "特性": "向心力",
   "evolution": {
     "stage": 1,
@@ -212,6 +212,10 @@
     {
       "skill_name": "绞轮",
       "unlock_condition": "[技能石]绞轮"
+    },
+    {
+      "skill_name": "拖拉机",
+      "unlock_condition": "[技能石]拖拉机"
     }
   ]
 }

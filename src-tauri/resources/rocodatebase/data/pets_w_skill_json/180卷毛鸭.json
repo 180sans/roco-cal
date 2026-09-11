@@ -221,6 +221,10 @@
     {
       "skill_name": "马步",
       "unlock_condition": "[技能石]马步"
+    },
+    {
+      "skill_name": "汇流",
+      "unlock_condition": "[技能石]汇流"
     }
   ]
 }

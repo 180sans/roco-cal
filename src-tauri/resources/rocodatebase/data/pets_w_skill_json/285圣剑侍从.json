@@ -233,6 +233,10 @@
     {
       "skill_name": "沙石阵",
       "unlock_condition": "[技能石]沙石阵"
+    },
+    {
+      "skill_name": "拖拉机",
+      "unlock_condition": "[技能石]拖拉机"
     }
   ]
 }

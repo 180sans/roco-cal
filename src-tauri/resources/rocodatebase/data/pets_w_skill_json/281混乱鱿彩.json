@@ -225,6 +225,14 @@
     {
       "skill_name": "天旋地转",
       "unlock_condition": "[技能石]天旋地转"
+    },
+    {
+      "skill_name": "掠影",
+      "unlock_condition": "[技能石]掠影"
+    },
+    {
+      "skill_name": "离魂术",
+      "unlock_condition": "[技能石]离魂术"
     }
   ]
 }

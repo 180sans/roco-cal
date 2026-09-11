@@ -238,6 +238,10 @@
     {
       "skill_name": "扬尘",
       "unlock_condition": "[技能石]扬尘"
+    },
+    {
+      "skill_name": "毒液渗透",
+      "unlock_condition": "50级解锁"
     }
   ]
 }

@@ -1,0 +1,227 @@
+{
+  "id": "448",
+  "name": "月使鹭纳",
+  "other_name": [],
+  "elements": [
+    "翼",
+    "冰"
+  ],
+  "种族资质": 614,
+  "hp": 83,
+  "atk": 99,
+  "mag": 100,
+  "def": 104,
+  "res": 113,
+  "spd": 115,
+  "特性": "冷光源",
+  "evolution": {
+    "stage": 3,
+    "chain": [
+      "446新月鹭",
+      "447月辉鹭",
+      "448月使鹭纳"
+    ],
+    "prev": [
+      "447月辉鹭"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "飞箭",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "回旋风暴",
+      "unlock_condition": "（默认）Lv.7"
+    },
+    {
+      "skill_name": "啄击",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "疾风刺",
+      "unlock_condition": "（默认）Lv.12"
+    },
+    {
+      "skill_name": "月影交错",
+      "unlock_condition": "（默认）Lv.45"
+    },
+    {
+      "skill_name": "羽翼庇护",
+      "unlock_condition": "[技能石]羽翼庇护"
+    },
+    {
+      "skill_name": "无风",
+      "unlock_condition": "[技能石]无风"
+    },
+    {
+      "skill_name": "乘风",
+      "unlock_condition": "（默认）Lv.28"
+    },
+    {
+      "skill_name": "飞羽",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "惊鸿一瞥",
+      "unlock_condition": "（默认）Lv.43"
+    },
+    {
+      "skill_name": "风起",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "[技能石]羽化加速"
+    },
+    {
+      "skill_name": "冰锋横扫",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "打雪仗",
+      "unlock_condition": "[技能石]打雪仗"
+    },
+    {
+      "skill_name": "冰锥",
+      "unlock_condition": "（默认）Lv.4"
+    },
+    {
+      "skill_name": "冰晶坠",
+      "unlock_condition": "（默认）Lv.32"
+    },
+    {
+      "skill_name": "瞬间零度",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "霜天",
+      "unlock_condition": "[技能石]霜天"
+    },
+    {
+      "skill_name": "冰捆缚",
+      "unlock_condition": "[技能石]冰捆缚"
+    },
+    {
+      "skill_name": "埋伏",
+      "unlock_condition": "[技能石]埋伏"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.20"
+    },
+    {
+      "skill_name": "嗜痛",
+      "unlock_condition": "[技能石]嗜痛"
+    },
+    {
+      "skill_name": "锐利眼神",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "热身运动",
+      "unlock_condition": "[技能石]热身运动"
+    },
+    {
+      "skill_name": "伺机而动",
+      "unlock_condition": "[技能石]伺机而动"
+    },
+    {
+      "skill_name": "三连破",
+      "unlock_condition": "[技能石]三连破"
+    },
+    {
+      "skill_name": "快速移动",
+      "unlock_condition": "[技能石]快速移动"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "多维击打",
+      "unlock_condition": "[技能石]多维击打"
+    },
+    {
+      "skill_name": "双星",
+      "unlock_condition": "[技能石]双星"
+    },
+    {
+      "skill_name": "星链",
+      "unlock_condition": "[技能石]星链"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "磁干扰",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "魅惑",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "水弹枪",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "离子震荡",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "鹰爪",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "幻象",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "念力膨胀",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    }
+  ]
+}

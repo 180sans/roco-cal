@@ -221,6 +221,10 @@
     {
       "skill_name": "毒誓",
       "unlock_condition": "[技能石]毒誓"
+    },
+    {
+      "skill_name": "迁飞扩散",
+      "unlock_condition": "[技能石]迁飞扩散"
     }
   ]
 }

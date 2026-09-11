@@ -206,6 +206,14 @@
     {
       "skill_name": "纺纱",
       "unlock_condition": "[技能石]纺纱"
+    },
+    {
+      "skill_name": "小型打劫",
+      "unlock_condition": "[技能石]小型打劫"
+    },
+    {
+      "skill_name": "掉包",
+      "unlock_condition": "[技能石]掉包"
     }
   ]
 }

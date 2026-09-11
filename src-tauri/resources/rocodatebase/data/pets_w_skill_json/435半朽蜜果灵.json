@@ -6,10 +6,10 @@
     "幽",
     "草"
   ],
-  "种族资质": 578,
-  "hp": 115,
-  "atk": 43,
-  "mag": 120,
+  "种族资质": 620,
+  "hp": 128,
+  "atk": 54,
+  "mag": 138,
   "def": 84,
   "res": 106,
   "spd": 110,
@@ -201,6 +201,18 @@
     {
       "skill_name": "取念",
       "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "入梦",
+      "unlock_condition": "技能石"
+    },
+    {
+      "skill_name": "小型打劫",
+      "unlock_condition": "[技能石]小型打劫"
+    },
+    {
+      "skill_name": "离魂术",
+      "unlock_condition": "[技能石]离魂术"
     }
   ]
 }

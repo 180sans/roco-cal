@@ -303,5 +303,14 @@
     "skill_power": 110,
     "cost": 4,
     "effect": "normal"
+  },
+  {
+    "name": "汇流",
+    "element": "水",
+    "type": "状态",
+    "description": "雨天的回合数延长4回合，应对防御：改为延长8回合。",
+    "skill_power": null,
+    "cost": 1,
+    "effect": "normal"
   }
 ]

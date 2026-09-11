@@ -1,0 +1,219 @@
+{
+  "id": "445",
+  "name": "银月狼王",
+  "other_name": [],
+  "elements": [
+    "幽",
+    "幻"
+  ],
+  "种族资质": 650,
+  "hp": 115,
+  "atk": 128,
+  "mag": 51,
+  "def": 128,
+  "res": 98,
+  "spd": 130,
+  "特性": "铭记于月亮",
+  "evolution": {
+    "stage": 3,
+    "chain": [
+      "443诅咒狼灵",
+      "444新月狼灵",
+      "445银月狼王"
+    ],
+    "prev": [
+      "444新月狼灵"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "诡刺",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "掠影",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "惊吓盒子",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "撞鬼",
+      "unlock_condition": "（默认）Lv.19"
+    },
+    {
+      "skill_name": "坟场搏击",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "离魂术",
+      "unlock_condition": "（默认）Lv.30"
+    },
+    {
+      "skill_name": "天体吸积",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "粒子对撞",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "量子涨落",
+      "unlock_condition": "[技能石]量子涨落"
+    },
+    {
+      "skill_name": "双星",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "月蚀",
+      "unlock_condition": "传说"
+    },
+    {
+      "skill_name": "叠加态",
+      "unlock_condition": "（默认）Lv.22"
+    },
+    {
+      "skill_name": "重组",
+      "unlock_condition": "（默认）Lv.42"
+    },
+    {
+      "skill_name": "先发制人",
+      "unlock_condition": "[技能石]先发制人"
+    },
+    {
+      "skill_name": "见招拆招",
+      "unlock_condition": "[技能石]见招拆招"
+    },
+    {
+      "skill_name": "气势一击",
+      "unlock_condition": "[技能石]气势一击"
+    },
+    {
+      "skill_name": "当头棒喝",
+      "unlock_condition": "[技能石]当头棒喝"
+    },
+    {
+      "skill_name": "偷袭",
+      "unlock_condition": "[技能石]偷袭"
+    },
+    {
+      "skill_name": "吞噬",
+      "unlock_condition": "[技能石]吞噬"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.17"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.7"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "困兽",
+      "unlock_condition": "[技能石]困兽"
+    },
+    {
+      "skill_name": "跌落",
+      "unlock_condition": "[技能石]跌落"
+    },
+    {
+      "skill_name": "极限撕裂",
+      "unlock_condition": "[技能石]极限撕裂"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "[技能石]贪婪"
+    },
+    {
+      "skill_name": "地刺",
+      "unlock_condition": "[技能石]地刺"
+    },
+    {
+      "skill_name": "岩脉崩毁",
+      "unlock_condition": "[技能石]岩脉崩毁"
+    },
+    {
+      "skill_name": "泥浆铠甲",
+      "unlock_condition": "[技能石]泥浆铠甲"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "噬心",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "恶能量",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "荆棘爪",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰箭",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "折线冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冰爪",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "星星撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "（血脉）幽系血脉"
+    }
+  ]
+}

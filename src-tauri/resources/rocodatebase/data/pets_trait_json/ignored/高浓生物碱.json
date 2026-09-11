@@ -1,7 +1,7 @@
 {
   "特性": {
     "名称": "高浓生物碱",
-    "效果": "使用技能时，敌方获得2层中毒。",
+    "效果": "使用技能时，敌方获得3层中毒。",
     "battle_effect": {
       "affects_battle": false,
       "template": "ignored",

@@ -218,6 +218,10 @@
     {
       "skill_name": "友谊满溢",
       "unlock_condition": "[技能石]友谊满溢"
+    },
+    {
+      "skill_name": "仰望夜空",
+      "unlock_condition": "[技能石]仰望夜空"
     }
   ]
 }

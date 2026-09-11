@@ -213,6 +213,10 @@
     {
       "skill_name": "撒花",
       "unlock_condition": "[技能石]撒花"
+    },
+    {
+      "skill_name": "吹散",
+      "unlock_condition": "技能石"
     }
   ]
 }

@@ -236,6 +236,10 @@
     {
       "skill_name": "无畏之心",
       "unlock_condition": "[技能石]无畏之心"
+    },
+    {
+      "skill_name": "掉包",
+      "unlock_condition": "[技能石]掉包"
     }
   ]
 }

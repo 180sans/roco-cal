@@ -209,6 +209,10 @@
     {
       "skill_name": "惊雷",
       "unlock_condition": "[技能石]惊雷"
+    },
+    {
+      "skill_name": "观测者效应",
+      "unlock_condition": "[技能石]观测者效应"
     }
   ]
 }

@@ -217,6 +217,10 @@
     {
       "skill_name": "色散",
       "unlock_condition": "[技能石]色散"
+    },
+    {
+      "skill_name": "回收",
+      "unlock_condition": "[技能石]回收"
     }
   ]
 }
