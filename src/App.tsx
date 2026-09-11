@@ -1197,7 +1197,7 @@ function PickerModal({
       const detail = skill.detail || skill;
       return detail.element === element;
     })
-    .filter((skill) => mode !== "skill" || skillTab !== "library" || !skillType || skillDetail(skill).type === skillType);
+    .filter((skill) => mode !== "skill" || !skillType || skillDetail(skill).type === skillType);
 
   async function saveConfig(values: Record<string, unknown>) {
     const data = await invoke<{ configs: PickerConfigs }>("save_picker_config", {
@@ -1206,8 +1206,12 @@ function PickerModal({
     onConfigsChanged(data.configs);
   }
 
+  useLayoutEffect(() => {
+    void invoke("update_overlay_click_through", { enabled: false }).catch(() => undefined);
+  }, []);
+
   return createPortal(
-    <div className={`modal-backdrop${mode === "skill" || mode === "pet" ? " skill-picker-backdrop" : ""}${document.documentElement.classList.contains("overlay-attached") ? " overlay-attached-picker" : ""}`} onMouseDown={(event) => {
+    <div data-overlay-control className={`modal-backdrop${mode === "skill" || mode === "pet" ? " skill-picker-backdrop" : ""}${document.documentElement.classList.contains("overlay-attached") ? " overlay-attached-picker" : ""}`} onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
       <section className="picker-modal compact-picker" onMouseDown={(event) => event.stopPropagation()}>
@@ -1290,7 +1294,7 @@ function PickerModal({
               <button onClick={() => void saveConfig({ element, skill_type: skillType })}>保存筛选</button>
             )}
           </div>
-          <div className={`picker-filter-row${mode === "skill" && skillTab === "library" ? " with-skill-types" : ""}`}>
+          <div className={`picker-filter-row${mode === "skill" ? " with-skill-types" : ""}`}>
             <div className="picker-element-grid" aria-label="属性筛选">
               {elements.map((item) => {
                 const selected = mode === "pet" ? petElements.includes(item) : element === item;
@@ -1300,27 +1304,24 @@ function PickerModal({
                   aria-pressed={selected}
                   onClick={() => {
                     if (mode !== "pet") {
-                      setElement(item);
+                      setElement((current) => current === item ? "" : item);
                       return;
                     }
-                    setPetElements((current) => current.includes(item) ? current : [...current.slice(0, 1), item]);
-                  }}
-                  onDoubleClick={() => {
-                    if (mode === "pet") setPetElements((current) => current.filter((value) => value !== item));
-                    else setElement("");
+                    setPetElements((current) => current.includes(item)
+                      ? current.filter((value) => value !== item)
+                      : [...current.slice(0, 1), item]);
                   }}
                 >
                   {item}
                 </button>;
               })}
             </div>
-            {mode === "skill" && skillTab === "library" ? <div className="picker-skill-type-grid" aria-label="技能类型筛选">
+            {mode === "skill" ? <div className="picker-skill-type-grid" aria-label="技能类型筛选">
               {SKILL_TYPE_FILTERS.map((item) => <button
                 key={item}
                 className={skillType === item ? "active" : ""}
                 aria-pressed={skillType === item}
-                onClick={() => setSkillType(item)}
-                onDoubleClick={() => setSkillType("")}
+                onClick={() => setSkillType((current) => current === item ? "" : item)}
               >
                 {item}
               </button>)}
@@ -2627,10 +2628,17 @@ function TeamBattlePage({
       if (pointerActive) return;
       syncing = true;
       try {
+        if (document.querySelector(".modal-backdrop[data-overlay-control]")) {
+          if (lastIgnore !== false) {
+            await invoke("update_overlay_click_through", { enabled: false });
+            if (!cancelled && token === mixedModeTokenRef.current) lastIgnore = false;
+          }
+          return;
+        }
         const currentWindow = getCurrentWindow();
         const [cursor, origin, scaleFactor] = await Promise.all([
           cursorPosition(),
-          currentWindow.outerPosition(),
+          currentWindow.innerPosition(),
           currentWindow.scaleFactor(),
         ]);
         if (cancelled) return;
@@ -2742,12 +2750,18 @@ function TeamBattlePage({
     focusRegion(id);
     const start = { pointerX: event.clientX, pointerY: event.clientY, x: regionPositions[id].x, y: regionPositions[id].y };
     const workspace = event.currentTarget;
+    const workspaceBounds = workspace.getBoundingClientRect();
+    const regionBounds = region.getBoundingClientRect();
+    const minX = start.x + workspaceBounds.left - regionBounds.left;
+    const maxX = start.x + workspaceBounds.right - regionBounds.right;
+    const minY = start.y + workspaceBounds.top - regionBounds.top;
+    const maxY = start.y + workspaceBounds.bottom - regionBounds.bottom;
     const move = (moveEvent: PointerEvent) => {
       const nextX = snapToGrid(start.x + moveEvent.clientX - start.pointerX);
       const nextY = snapToGrid(start.y + moveEvent.clientY - start.pointerY);
       moveRegion(id, {
-        x: Math.min(Math.max(0, nextX), Math.max(0, workspace.clientWidth - region.offsetWidth)),
-        y: Math.min(Math.max(0, nextY), Math.max(0, window.innerHeight - region.offsetHeight)),
+        x: Math.min(Math.max(minX, nextX), Math.max(minX, maxX)),
+        y: Math.min(Math.max(minY, nextY), Math.max(minY, maxY)),
       });
     };
     const stop = () => {
@@ -4148,9 +4162,14 @@ function TeamBuffPanel({
     event.stopPropagation();
     const startX = event.clientX;
     const startY = event.clientY;
+    const panelBounds = event.currentTarget.closest<HTMLElement>(".team-buff-panel")?.getBoundingClientRect();
     let moved = false;
     const move = (moveEvent: PointerEvent) => {
-      const delta = { x: moveEvent.clientX - startX, y: moveEvent.clientY - startY };
+      const rawDelta = { x: moveEvent.clientX - startX, y: moveEvent.clientY - startY };
+      const delta = panelBounds ? {
+        x: Math.min(Math.max(-panelBounds.left, rawDelta.x), window.innerWidth - panelBounds.right),
+        y: Math.min(Math.max(-panelBounds.top, rawDelta.y), window.innerHeight - panelBounds.bottom),
+      } : rawDelta;
       if (!moved && Math.hypot(delta.x, delta.y) < 4) return;
       moved = true;
       suppressSummaryClickRef.current = true;

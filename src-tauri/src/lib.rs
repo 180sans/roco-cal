@@ -672,34 +672,28 @@ fn sync_overlay_to_target(binding: OverlayTargetBinding, raise_overlay: bool) ->
         return true;
     }
 
-    // Align to the target client area so OCR coordinates stay exact.
+    // Bind to the target window rectangle itself, including fullscreen changes.
     const DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2: isize = -4;
     let previous_dpi_context = unsafe {
         SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 as *mut c_void)
     };
-    let mut target_client = WinRect {
+    let mut target_rect = WinRect {
         left: 0,
         top: 0,
         right: 0,
         bottom: 0,
     };
-    let mut client_origin = WinPoint { x: 0, y: 0 };
-    if unsafe { GetClientRect(target, &mut target_client) } == 0
-        || unsafe { ClientToScreen(target, &mut client_origin) } == 0
-    {
+    if unsafe { GetWindowRect(target, &mut target_rect) } == 0 {
         if !previous_dpi_context.is_null() {
             unsafe { SetThreadDpiAwarenessContext(previous_dpi_context) };
         }
         return false;
     }
-    let width = target_client.right - target_client.left;
-    let height = target_client.bottom - target_client.top;
+    let width = (target_rect.right - target_rect.left).max(1);
+    let height = (target_rect.bottom - target_rect.top).max(1);
     let flags = if raise_overlay {
-        // Decorations were just removed before the initial alignment. Ask
-        // Windows to immediately apply the new non-client metrics.
         SWP_NOACTIVATE | SWP_FRAMECHANGED
     } else {
-        // Tracking follows target geometry without disturbing activation.
         SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER
     };
     let mut overlay_rect = WinRect {
@@ -708,51 +702,21 @@ fn sync_overlay_to_target(binding: OverlayTargetBinding, raise_overlay: bool) ->
         right: 0,
         bottom: 0,
     };
-    let mut overlay_client = WinRect {
-        left: 0,
-        top: 0,
-        right: 0,
-        bottom: 0,
-    };
-    let mut overlay_client_origin = WinPoint { x: 0, y: 0 };
     let overlay_rect_available = unsafe { GetWindowRect(overlay, &mut overlay_rect) } != 0;
-    let overlay_client_available = unsafe { GetClientRect(overlay, &mut overlay_client) } != 0
-        && unsafe { ClientToScreen(overlay, &mut overlay_client_origin) } != 0;
-    let (overlay_origin, overlay_width, overlay_height) =
-        if overlay_rect_available && overlay_client_available {
-            let left_inset = overlay_client_origin.x - overlay_rect.left;
-            let top_inset = overlay_client_origin.y - overlay_rect.top;
-            let right_inset = overlay_rect.right
-                - overlay_client_origin.x
-                - (overlay_client.right - overlay_client.left);
-            let bottom_inset = overlay_rect.bottom
-                - overlay_client_origin.y
-                - (overlay_client.bottom - overlay_client.top);
-            (
-                WinPoint {
-                    x: client_origin.x - left_inset,
-                    y: client_origin.y - top_inset,
-                },
-                width + left_inset + right_inset,
-                height + top_inset + bottom_inset,
-            )
-        } else {
-            (client_origin, width, height)
-        };
     let geometry_changed = !overlay_rect_available
-        || overlay_rect.left != overlay_origin.x
-        || overlay_rect.top != overlay_origin.y
-        || overlay_rect.right - overlay_rect.left != overlay_width
-        || overlay_rect.bottom - overlay_rect.top != overlay_height;
+        || overlay_rect.left != target_rect.left
+        || overlay_rect.top != target_rect.top
+        || overlay_rect.right - overlay_rect.left != width
+        || overlay_rect.bottom - overlay_rect.top != height;
     let positioned = if raise_overlay || geometry_changed {
         (unsafe {
             SetWindowPos(
                 overlay,
                 std::ptr::null_mut(),
-                overlay_origin.x,
-                overlay_origin.y,
-                overlay_width,
-                overlay_height,
+                target_rect.left,
+                target_rect.top,
+                width,
+                height,
                 flags,
             )
         }) != 0
