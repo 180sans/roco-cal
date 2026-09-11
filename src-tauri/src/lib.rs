@@ -692,7 +692,6 @@ fn sync_overlay_to_target(binding: OverlayTargetBinding, raise_overlay: bool) ->
         }
         return false;
     }
-    let overlay_origin = client_origin;
     let width = target_client.right - target_client.left;
     let height = target_client.bottom - target_client.top;
     let flags = if raise_overlay {
@@ -709,12 +708,42 @@ fn sync_overlay_to_target(binding: OverlayTargetBinding, raise_overlay: bool) ->
         right: 0,
         bottom: 0,
     };
+    let mut overlay_client = WinRect {
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+    };
+    let mut overlay_client_origin = WinPoint { x: 0, y: 0 };
     let overlay_rect_available = unsafe { GetWindowRect(overlay, &mut overlay_rect) } != 0;
+    let overlay_client_available = unsafe { GetClientRect(overlay, &mut overlay_client) } != 0
+        && unsafe { ClientToScreen(overlay, &mut overlay_client_origin) } != 0;
+    let (overlay_origin, overlay_width, overlay_height) =
+        if overlay_rect_available && overlay_client_available {
+            let left_inset = overlay_client_origin.x - overlay_rect.left;
+            let top_inset = overlay_client_origin.y - overlay_rect.top;
+            let right_inset = overlay_rect.right
+                - overlay_client_origin.x
+                - (overlay_client.right - overlay_client.left);
+            let bottom_inset = overlay_rect.bottom
+                - overlay_client_origin.y
+                - (overlay_client.bottom - overlay_client.top);
+            (
+                WinPoint {
+                    x: client_origin.x - left_inset,
+                    y: client_origin.y - top_inset,
+                },
+                width + left_inset + right_inset,
+                height + top_inset + bottom_inset,
+            )
+        } else {
+            (client_origin, width, height)
+        };
     let geometry_changed = !overlay_rect_available
         || overlay_rect.left != overlay_origin.x
         || overlay_rect.top != overlay_origin.y
-        || overlay_rect.right - overlay_rect.left != width
-        || overlay_rect.bottom - overlay_rect.top != height;
+        || overlay_rect.right - overlay_rect.left != overlay_width
+        || overlay_rect.bottom - overlay_rect.top != overlay_height;
     let positioned = if raise_overlay || geometry_changed {
         (unsafe {
             SetWindowPos(
@@ -722,8 +751,8 @@ fn sync_overlay_to_target(binding: OverlayTargetBinding, raise_overlay: bool) ->
                 std::ptr::null_mut(),
                 overlay_origin.x,
                 overlay_origin.y,
-                width,
-                height,
+                overlay_width,
+                overlay_height,
                 flags,
             )
         }) != 0

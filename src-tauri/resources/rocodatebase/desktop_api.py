@@ -635,6 +635,7 @@ def apply_skill_buffs(payload: dict[str, Any]) -> dict[str, Any]:
         raise ValueError(f"未找到技能: {skill_name}")
     attacker_state = payload.get("attacker") if isinstance(payload.get("attacker"), dict) else None
     defender_state = payload.get("defender") if isinstance(payload.get("defender"), dict) else None
+    weather = payload.get("weather") or "none"
     if attacker_state and defender_state:
         attacker_args = _attacker_args({**attacker_state, "current_skill": skill_name})
         defender_args = _defender_args(defender_state)
@@ -653,6 +654,7 @@ def apply_skill_buffs(payload: dict[str, Any]) -> dict[str, Any]:
             defender_devolution=defender_args["defender_devolution"],
             defender_mega=defender_args["defender_mega"],
             defender_trait_runtime=defender_args["defender_trait_runtime"],
+            weather=weather,
         )[0]
     else:
         combo_count = 1

@@ -721,6 +721,7 @@ def resolve_effective_skill_combos(
     defender_devolution=0,
     defender_mega=False,
     defender_trait_runtime=None,
+    weather="none",
 ):
     """Resolve combo counts with the same skill, trait, and mark rules as battle damage."""
     skill_data = skill_dataset.find_skill(skill_name)

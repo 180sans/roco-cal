@@ -1435,9 +1435,10 @@ function TeamActionPanel({
   function clampToViewport(x: number, y: number) {
     const panelWidth = panelRef.current?.offsetWidth || 300;
     const panelHeight = panelRef.current?.offsetHeight || 46;
+    const bottomInset = pluginMode ? 0 : 8;
     return {
       x: Math.min(Math.max(8, x), Math.max(8, window.innerWidth - panelWidth - 8)),
-      y: Math.min(Math.max(8, y), Math.max(8, window.innerHeight - panelHeight - 8)),
+      y: Math.min(Math.max(8, y), Math.max(8, window.innerHeight - panelHeight - bottomInset)),
     };
   }
 
@@ -2746,7 +2747,7 @@ function TeamBattlePage({
       const nextY = snapToGrid(start.y + moveEvent.clientY - start.pointerY);
       moveRegion(id, {
         x: Math.min(Math.max(0, nextX), Math.max(0, workspace.clientWidth - region.offsetWidth)),
-        y: Math.min(Math.max(0, nextY), Math.max(0, workspace.clientHeight - region.offsetHeight)),
+        y: Math.min(Math.max(0, nextY), Math.max(0, window.innerHeight - region.offsetHeight)),
       });
     };
     const stop = () => {
@@ -2845,6 +2846,7 @@ function TeamBattlePage({
       skill_name: skillName,
       attacker: { ...activeBuffUnit, current_skill: skillName, other_bonuses: activeBuffOtherBonuses },
       defender: { ...activeBuffOpponent, other_bonuses: activeBuffOpponentBonuses },
+      weather,
     };
   }
 
@@ -2873,6 +2875,7 @@ function TeamBattlePage({
     activeBuffOpponent,
     activeBuffOtherBonuses,
     activeBuffOpponentBonuses,
+    weather,
     leftAttacks,
     leftIndex,
     rightIndex,
