@@ -121,7 +121,7 @@ export function ReplayPage() {
   const [videoAspect, setVideoAspect] = useState("16 / 9");
   const [currentTime, setCurrentTime] = useState(0);
   const [ocrValues, setOcrValues] = useState({ enemyHealth: "-", selfHealth: "-", enemyNotice: "-", selfNotice: "-", enemyDamage: "-", selfDamage: "-" });
-  const [ocrRawValues, setOcrRawValues] = useState<Record<RegionKey, string>>({ enemyHealth: "-", selfHealth: "-", enemyNotice: "-", enemyDamage: "-", selfNotice: "-", selfDamage: "-" });
+  const [ocrRawValues, setOcrRawValues] = useState<Record<RegionKey, string>>({ enemyHealth: "-", selfHealth: "-", enemyNotice: "-", enemyDamage: "-", selfNotice: "-", selfDamage: "-", enemyImage: "-", selfImage: "-" });
   const [settingsMessage, setSettingsMessage] = useState("配置会自动保存");
   const [sampleLabel, setSampleLabel] = useState("");
   const [sampleMessage, setSampleMessage] = useState("");
@@ -412,7 +412,7 @@ export function ReplayPage() {
     const sessions = new Map([
       ...pendingNoticeSessionsRef.current.values(),
       ...activeDamageSessionsRef.current.values(),
-    ]);
+    ].map((session) => [session.id, session] as const));
     for (const session of sessions.values()) {
     if (session.complete) continue;
       if (videoTime <= session.endVideoTime) continue;
@@ -453,7 +453,7 @@ export function ReplayPage() {
         .filter((value): value is string => Boolean(value));
       // Damage popups can count upward. Preserve the latest valid value rather
       // than the largest value from an earlier animation frame.
-      const latestBatchDamage = damageValues.at(-1) || "";
+      const latestBatchDamage = damageValues[damageValues.length - 1] || "";
       if (latestBatchDamage) session.latestDamage = latestBatchDamage;
       const finalDamage = session.latestDamage;
       if (final && scanEndFrame === frameCount) {

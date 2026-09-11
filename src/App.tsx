@@ -920,7 +920,7 @@ function speedScenarios(value: UnitState, pets: Pet[]): SpeedScenario[] {
       iv: configuredIv ?? scenario.iv,
       personality: configuredPersonality === null ? scenario.personality : configuredPersonality || null,
     }));
-  const scenarios = matches.length ? matches : [{
+  const scenarios: Array<{ label: SpeedScenario["label"]; iv: number; personality: number | null }> = matches.length ? matches : [{
     label: configuredPersonality && configuredPersonality < 0 ? "速度-" : configuredIv && configuredPersonality ? "速度++" : configuredIv ? "速度+" : "速度",
     iv: configuredIv ?? 0,
     personality: configuredPersonality,
