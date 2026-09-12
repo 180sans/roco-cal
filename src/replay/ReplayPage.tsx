@@ -31,6 +31,7 @@ type CaptureSession = {
 };
 type NoticeRecognitionJob = { imageDataUrls: string[]; videoTime: number; sessionId: number; generation: number };
 type ReplaySettings = { regions: Record<RegionKey, Region> };
+type AppConfigs = Record<string, Record<string, unknown>>;
 const REPLAY_SETTINGS_KEY = "rocodatebase.replay.settings.v1";
 const OCR_KEYS = ["enemyHealth", "selfHealth", "enemyNotice", "enemyDamage", "selfNotice", "selfDamage"] as const;
 const NUMERIC_REGION_KEYS = ["enemyHealth", "selfHealth", "enemyDamage", "selfDamage"] as const;
@@ -77,7 +78,7 @@ function formatTime(seconds: number) {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
 
-export function ReplayPage() {
+export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs; onConfigsChanged: (configs: AppConfigs) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileUrlRef = useRef<string | null>(null);
@@ -107,6 +108,10 @@ export function ReplayPage() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoName, setVideoName] = useState("");
   const [regions, setRegions] = useState<Record<RegionKey, Region>>(() => {
+    const configuredRegions = configs.replay?.regions;
+    if (configuredRegions && typeof configuredRegions === "object") {
+      return { ...DEFAULT_REGIONS, ...(configuredRegions as Partial<Record<RegionKey, Region>>) };
+    }
     try {
       const saved = JSON.parse(localStorage.getItem(REPLAY_SETTINGS_KEY) || "") as ReplaySettings;
       return saved.regions ? { ...DEFAULT_REGIONS, ...saved.regions } : DEFAULT_REGIONS;
@@ -786,9 +791,17 @@ export function ReplayPage() {
     }
   }
 
-  function saveSettings() {
+  async function saveSettings() {
     localStorage.setItem(REPLAY_SETTINGS_KEY, JSON.stringify({ regions } satisfies ReplaySettings));
-    setSettingsMessage("已保存校准配置");
+    try {
+      const result = await invoke<{ configs: AppConfigs }>("save_picker_config", {
+        payload: { section: "replay", values: { regions } },
+      });
+      onConfigsChanged(result.configs);
+      setSettingsMessage("已保存校准配置");
+    } catch (error) {
+      setSettingsMessage(`保存失败：${String(error)}`);
+    }
   }
 
   function resetSettings() {
@@ -824,7 +837,7 @@ export function ReplayPage() {
         <div className="replay-progress"><span>{formatTime(currentTime)}</span><input type="range" min="0" max={duration || 0} step="0.01" value={Math.min(currentTime, duration || 0)} disabled={!videoUrl} aria-label="视频进度" onChange={(event) => { const video = videoRef.current; const value = Number(event.target.value); if (video) video.currentTime = value; setCurrentTime(value); }} /><span>{formatTime(duration)}</span></div>
       </section>
       <aside className="replay-sidebar">
-        <section><h3>校准区域</h3>{ACTIVE_REGION_KEYS.map((key) => <button key={key} className={activeRegion === key ? "active" : ""} onClick={() => setActiveRegion(key)}>{REGION_LABELS[key]}</button>)}<label className="region-size-control">宽度 {Math.round(regions[activeRegion].width)}%<input type="range" min="1" max="96" value={regions[activeRegion].width} onChange={(event) => updateActiveRegion({ width: Number(event.target.value) })} /></label><label className="region-size-control">高度 {Math.round(regions[activeRegion].height)}%<input type="range" min="1" max="96" value={regions[activeRegion].height} onChange={(event) => updateActiveRegion({ height: Number(event.target.value) })} /></label><div className="replay-settings-actions"><button onClick={saveSettings}>保存配置</button><button onClick={resetSettings}>恢复默认</button></div><p>{settingsMessage}</p></section>
+        <section><h3>校准区域</h3>{ACTIVE_REGION_KEYS.map((key) => <button key={key} className={activeRegion === key ? "active" : ""} onClick={() => setActiveRegion(key)}>{REGION_LABELS[key]}</button>)}<label className="region-size-control">宽度 {Math.round(regions[activeRegion].width)}%<input type="range" min="1" max="96" value={regions[activeRegion].width} onChange={(event) => updateActiveRegion({ width: Number(event.target.value) })} /></label><label className="region-size-control">高度 {Math.round(regions[activeRegion].height)}%<input type="range" min="1" max="96" value={regions[activeRegion].height} onChange={(event) => updateActiveRegion({ height: Number(event.target.value) })} /></label><div className="replay-settings-actions"><button onClick={() => void saveSettings()}>保存配置</button><button onClick={resetSettings}>恢复默认</button></div><p>{settingsMessage}</p></section>
         <section><h3>血量 OCR</h3><dl><div><dt>敌方百分比</dt><dd>{ocrValues.enemyHealth}</dd></div><div><dt>我方生命</dt><dd>{ocrValues.selfHealth}</dd></div><div><dt>分析状态</dt><dd>{isAnalyzing ? "运行中" : "已暂停"}</dd></div></dl></section>
         <section className="ocr-sample-panel"><h3>图像样本与识别</h3><p>真值作为文件夹名称保存；图片文件名自动生成。</p>{(["enemyImage", "selfImage"] as const).map((region) => <div key={region}><label>{REGION_LABELS[region]} 真值<input value={imageTruth[region]} onChange={(event) => setImageTruth((current) => ({ ...current, [region]: event.target.value }))} /></label><button onClick={() => void classifyImage(region)} disabled={!videoUrl}>识别图像</button><button onClick={() => void saveImageSample(region)} disabled={!videoUrl}>保存图像</button><p>{imagePredictions[region]}</p></div>)}{imageSampleMessage ? <p className="sample-message">{imageSampleMessage}</p> : null}</section>
       </aside>

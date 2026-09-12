@@ -1875,14 +1875,17 @@ function TeamBattlePage({
     const powers = detectionReadoutRefs.current.powers;
     if (!layer || !health || !powers) return;
     const layerBounds = layer.getBoundingClientRect();
+    const healthBounds = health.getBoundingClientRect();
+    const powersBounds = powers.getBoundingClientRect();
+    if (layerBounds.width <= 0 || layerBounds.height <= 0 || healthBounds.width <= 0 || powersBounds.width <= 0) return;
     const next = {
       health: {
-        x: Math.round(health.getBoundingClientRect().left - layerBounds.left),
-        y: Math.round(health.getBoundingClientRect().top - layerBounds.top),
+        x: Math.round(healthBounds.left - layerBounds.left),
+        y: Math.round(healthBounds.top - layerBounds.top),
       },
       powers: {
-        x: Math.round(powers.getBoundingClientRect().left - layerBounds.left),
-        y: Math.round(powers.getBoundingClientRect().top - layerBounds.top),
+        x: Math.round(powersBounds.left - layerBounds.left),
+        y: Math.round(powersBounds.top - layerBounds.top),
       },
     };
     detectionReadoutLayoutsRef.current = next;
@@ -1900,6 +1903,7 @@ function TeamBattlePage({
     if (!layer || !health || !powers) return;
 
     const layerBounds = layer.getBoundingClientRect();
+    if (layerBounds.width <= 0 || layerBounds.height <= 0) return;
     const minX = 8;
     const minY = 8;
     const visibleRight = Math.max(layerBounds.left + minX, window.innerWidth - minX);
@@ -3657,7 +3661,10 @@ function TeamSkillCards({
     const panel = panelRef.current;
     const observer = new ResizeObserver(() => {
       if (panel.dataset.pluginResizing === "true") return;
-      onLayoutChange({ width: panel.offsetWidth, height: panel.offsetHeight });
+      const width = panel.offsetWidth;
+      const height = panel.offsetHeight;
+      if (width <= 0 || height <= 0) return;
+      onLayoutChange({ width, height });
     });
     observer.observe(panel);
     return () => observer.disconnect();
@@ -4451,7 +4458,10 @@ function FloatingTeamPanel({ className, layout, onLayoutChange, panelState: stat
     const panel = panelRef.current;
     const observer = new ResizeObserver(() => {
       if (panel.dataset.pluginResizing === "true") return;
-      onLayoutChange({ width: panel.offsetWidth, height: panel.offsetHeight });
+      const width = panel.offsetWidth;
+      const height = panel.offsetHeight;
+      if (width <= 0 || height <= 0) return;
+      onLayoutChange({ width, height });
     });
     observer.observe(panel);
     return () => observer.disconnect();
@@ -5251,7 +5261,7 @@ function App() {
               onConfigsChanged={(configs) => setData({ ...data, configs })}
             />
           </div>
-          <div className="battle-view" hidden={tab !== "replay"}><ReplayPage /></div>
+          <div className="battle-view" hidden={tab !== "replay"}><ReplayPage configs={data.configs} onConfigsChanged={(configs) => setData({ ...data, configs })} /></div>
           <div className="battle-view" hidden={tab !== "settings"}>
             <InterfaceSettingsPage configs={data.configs} onConfigsChanged={(configs) => setData({ ...data, configs })} onPreviewValues={setPreviewUiTokens} burstEffects={data.burstEffects} />
           </div>

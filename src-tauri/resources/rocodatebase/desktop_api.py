@@ -807,7 +807,7 @@ def manage_preset(payload: dict[str, Any]) -> dict[str, Any]:
 def save_picker_config(payload: dict[str, Any]) -> dict[str, Any]:
     section = (payload.get("section") or "").strip()
     values = payload.get("values") or {}
-    if section not in {"pet_picker", "trait_picker", "skill_picker", "ui_tokens", "burst_panel", "team_layout"}:
+    if section not in {"pet_picker", "trait_picker", "skill_picker", "ui_tokens", "burst_panel", "team_layout", "replay"}:
         raise ValueError(f"未知配置段: {section}")
     configs = _load_configs()
     configs.setdefault(section, {})
