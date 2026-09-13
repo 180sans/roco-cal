@@ -879,14 +879,15 @@ def recognize_image_text(payload: dict[str, Any]) -> dict[str, str]:
     _, encoded = image_data_url.split(",", 1)
     image = Image.open(io.BytesIO(base64.b64decode(encoded))).convert("RGB")
     numeric_modes = {"power", "enemy_health", "self_health", "number", "health"}
-    if mode in numeric_modes and is_dash_only_numeric_image(image):
-        return {"text": "-"}
+    dash_only = mode in numeric_modes and is_dash_only_numeric_image(image)
     ocr = _ocr_engine()
-    if mode in numeric_modes:
+    if mode == "power":
+        text = ocr.recognize_power_center(image)
+    elif mode in numeric_modes:
         # A numeric crop can include game badges and borders. Let the detector
         # locate the text before recognition instead of treating the entire
         # crop as one glyph.
-        lines = ocr(image)
+        lines = ocr(image, force_horizontal=True)
         text = "\n".join(line["text"] for line in lines if line.get("text"))
         if not text:
             # Some compact, slanted game badges are rejected by the detector
@@ -895,7 +896,11 @@ def recognize_image_text(payload: dict[str, Any]) -> dict[str, str]:
     else:
         lines = ocr(image)
         text = "\n".join(line["text"] for line in lines if line.get("text"))
+    raw_text = text.strip() or "-"
+    if dash_only and len("".join(raw_text.split()).replace("-", "")) <= 1:
+        return {"text": "-", "rawText": raw_text}
     if mode in numeric_modes:
+        text = text.translate(str.maketrans({"Z": "2", "z": "2", "O": "0", "o": "0", "G": "6"}))
         text = text.replace("／", "/").replace("\\", "/")
         allowed = {
             "power": "0123456789",
@@ -907,7 +912,7 @@ def recognize_image_text(payload: dict[str, Any]) -> dict[str, str]:
         text = "".join(char for char in text if char in allowed)
     if mode in {"self_health", "health"}:
         text = normalize_health_text(text)
-    return {"text": text.strip() or "-"}
+    return {"text": text.strip() or "-", "rawText": raw_text}
 
 
 def normalize_health_text(text: str) -> str:
@@ -1011,6 +1016,22 @@ class OnnxOcr:
         target = np.array([[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]], dtype=np.float32)
         return cv2.warpPerspective(image, cv2.getPerspectiveTransform(box, target), (width, height), borderMode=cv2.BORDER_REPLICATE)
 
+    @staticmethod
+    def _horizontal_crop(image: Any, box: Any) -> Any:
+        import numpy as np
+
+        box = np.asarray(box, dtype=np.float32)
+        source_height, source_width = image.shape[:2]
+        left = int(np.floor(box[:, 0].min()))
+        top = int(np.floor(box[:, 1].min()))
+        right = int(np.floor(box[:, 0].max())) + 1
+        bottom = int(np.floor(box[:, 1].max())) + 1
+        padding = max(4, int(round((bottom - top) * 0.25)))
+        return image[
+            max(0, top - padding):min(source_height, bottom + padding),
+            max(0, left - padding):min(source_width, right + padding),
+        ]
+
     def _recognize_crop(self, image: Any) -> str:
         import cv2
         import numpy as np
@@ -1034,11 +1055,20 @@ class OnnxOcr:
     def recognize_without_detection(self, image: Any) -> str:
         return self._recognize_crop(__import__("numpy").asarray(image))
 
-    def __call__(self, image: Any) -> list[dict[str, str]]:
+    def recognize_power_center(self, image: Any) -> str:
+        source = __import__("numpy").asarray(image)
+        height, width = source.shape[:2]
+        return self._recognize_crop(source[
+            round(height * 0.06):round(height * 0.94),
+            round(width * 0.125):round(width * 0.875),
+        ])
+
+    def __call__(self, image: Any, force_horizontal: bool = False) -> list[dict[str, str]]:
         import numpy as np
 
         source = np.asarray(image)
-        return [{"text": text} for text in (self._recognize_crop(self._crop(source, box)) for box in self._detect(source)) if text]
+        crop = self._horizontal_crop if force_horizontal else self._crop
+        return [{"text": text} for text in (self._recognize_crop(crop(source, box)) for box in self._detect(source)) if text]
 
 
 def _ocr_engine():
@@ -1057,7 +1087,7 @@ def recognize_images(payload: dict[str, Any]) -> dict[str, list[dict[str, str]]]
         if not isinstance(image, dict):
             raise ValueError("OCR image entry must be an object")
         result = recognize_image_text(image)
-        item = {"text": result["text"]}
+        item = {"text": result["text"], "rawText": result.get("rawText", result["text"])}
         if image.get("key") in {"enemyNotice", "selfNotice"}:
             item["event"] = classify_replay_notice(result["text"])
         items.append(item)

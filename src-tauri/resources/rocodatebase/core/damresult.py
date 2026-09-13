@@ -436,12 +436,12 @@ def generate_def_scenarios(def_iv, def_personality_candidates, def_attr_name):
     label_map = {"def": "防御", "res": "魔抗"}
     attr_label = label_map.get(def_attr_name, def_attr_name)
     defaults = [
-        {"def_iv": 0, "def_personality": DEFAULT_PERSONALITY_PENALTY,
-         "def_label": f"减{attr_label}性格"},
-        {"def_iv": 0, "def_personality": 0,
-         "def_label": f"正常{attr_label}"},
         {"def_iv": 10, "def_personality": 0,
          "def_label": f"加{attr_label}天分"},
+        {"def_iv": 0, "def_personality": 0,
+         "def_label": f"正常{attr_label}"},
+        {"def_iv": 0, "def_personality": DEFAULT_PERSONALITY_PENALTY,
+         "def_label": f"减{attr_label}性格"},
     ]
     scenarios = [
         {**scenario, "def_iv": def_iv if def_iv is not None else scenario["def_iv"]}

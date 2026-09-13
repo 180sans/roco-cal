@@ -1,10 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { prepareNumericCanvas, type NumericOcrMode } from "../numericOcr";
 
-type RegionKey = "enemyHealth" | "selfHealth" | "enemyNotice" | "enemyDamage" | "selfNotice" | "selfDamage" | "enemyImage" | "selfImage";
+type SkillRegionKey = "skill1" | "skill2" | "skill3" | "skill4";
+type RegionKey = "enemyHealth" | "selfHealth" | "enemyNotice" | "enemyDamage" | "selfNotice" | "selfDamage" | "enemyImage" | "selfImage" | SkillRegionKey;
 type Region = { x: number; y: number; width: number; height: number };
 type EventItem = { time: number; kind: "血量" | "提示" | "伤害"; text: string };
-type OcrKind = "number" | "text";
+type OcrKind = NumericOcrMode | "number" | "text";
 type NoticeEvent = { kind: "none" | "skill" | "summon" | "trait"; skill?: string; attack?: boolean };
 type CapturedFrame = {
   videoTime: number;
@@ -33,9 +35,16 @@ type NoticeRecognitionJob = { imageDataUrls: string[]; videoTime: number; sessio
 type ReplaySettings = { regions: Record<RegionKey, Region> };
 type AppConfigs = Record<string, Record<string, unknown>>;
 const REPLAY_SETTINGS_KEY = "rocodatebase.replay.settings.v1";
-const OCR_KEYS = ["enemyHealth", "selfHealth", "enemyNotice", "enemyDamage", "selfNotice", "selfDamage"] as const;
-const NUMERIC_REGION_KEYS = ["enemyHealth", "selfHealth", "enemyDamage", "selfDamage"] as const;
-const ACTIVE_REGION_KEYS = ["enemyHealth", "selfHealth", "enemyImage", "selfImage"] as const;
+const SKILL_REGION_KEYS = ["skill1", "skill2", "skill3", "skill4"] as const;
+const LIVE_NUMBER_REGION_KEYS = ["enemyHealth", "selfHealth", ...SKILL_REGION_KEYS] as const;
+const OCR_KEYS = [...LIVE_NUMBER_REGION_KEYS, "enemyNotice", "enemyDamage", "selfNotice", "selfDamage"] as const;
+const NUMERIC_REGION_KEYS = [...LIVE_NUMBER_REGION_KEYS, "enemyDamage", "selfDamage"] as const;
+const ACTIVE_REGION_KEYS = ["enemyHealth", "selfHealth", ...SKILL_REGION_KEYS, "enemyImage", "selfImage"] as const;
+const REGION_FRAME_LABELS: Record<(typeof ACTIVE_REGION_KEYS)[number], string> = {
+  enemyHealth: "敌方血量", selfHealth: "我方血量",
+  skill1: "技能 1", skill2: "技能 2", skill3: "技能 3", skill4: "技能 4",
+  enemyImage: "敌方图像", selfImage: "我方图像",
+};
 const CAPTURE_WINDOW_SECONDS = 3;
 const PRE_EVENT_SECONDS = 1;
 const CAPTURE_INTERVAL_SECONDS = 0.1;
@@ -52,6 +61,10 @@ const REGION_LABELS: Record<RegionKey, string> = {
   enemyDamage: "敌方受击伤害",
   selfNotice: "我方技能 / 召唤",
   selfDamage: "我方受击伤害",
+  skill1: "技能 1 威力",
+  skill2: "技能 2 威力",
+  skill3: "技能 3 威力",
+  skill4: "技能 4 威力",
   enemyImage: "敌方图像",
   selfImage: "我方图像",
 };
@@ -63,12 +76,17 @@ const DEFAULT_REGIONS: Record<RegionKey, Region> = {
   enemyDamage: { x: 36, y: 20, width: 28, height: 28 },
   selfNotice: { x: 5, y: 78, width: 88, height: 17 },
   selfDamage: { x: 36, y: 52, width: 28, height: 28 },
+  skill1: { x: 36, y: 20, width: 16, height: 8 },
+  skill2: { x: 36, y: 52, width: 16, height: 8 },
+  skill3: { x: 52, y: 20, width: 16, height: 8 },
+  skill4: { x: 52, y: 52, width: 16, height: 8 },
   enemyImage: { x: 15, y: 15, width: 25, height: 35 },
   selfImage: { x: 15, y: 50, width: 25, height: 35 },
 };
 
 const REGION_OCR_KIND: Record<RegionKey, OcrKind> = {
-  enemyHealth: "number", selfHealth: "number", enemyNotice: "text", enemyDamage: "number", selfNotice: "text", selfDamage: "number", enemyImage: "text", selfImage: "text",
+  enemyHealth: "enemy_health", selfHealth: "self_health", enemyNotice: "text", enemyDamage: "number", selfNotice: "text", selfDamage: "number",
+  skill1: "power", skill2: "power", skill3: "power", skill4: "power", enemyImage: "text", selfImage: "text",
 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -102,6 +120,7 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
   const lastHealthOcrTimeRef = useRef(-Infinity);
   const imageFrameSavingRef = useRef(false);
   const imageFrameSaveCountRef = useRef(0);
+  const numericRecognitionBusyRef = useRef(false);
   const imageTruthRef = useRef({ enemyImage: "", selfImage: "" });
   const captureSequenceRef = useRef(0);
   const lastNoticeTextRef = useRef<Record<"enemyNotice" | "selfNotice", string>>({ enemyNotice: "", selfNotice: "" });
@@ -120,13 +139,14 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
   const [activeRegion, setActiveRegion] = useState<RegionKey>("enemyHealth");
   const [dragging, setDragging] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [numericOcrTestMode, setNumericOcrTestMode] = useState(configs.replay?.numeric_ocr_test_mode === true || configs.replay?.health_ocr_test_mode === true);
   const [saveFrames, setSaveFrames] = useState(false);
   const [rate, setRate] = useState(1);
   const [duration, setDuration] = useState(0);
   const [videoAspect, setVideoAspect] = useState("16 / 9");
   const [currentTime, setCurrentTime] = useState(0);
-  const [ocrValues, setOcrValues] = useState({ enemyHealth: "-", selfHealth: "-", enemyNotice: "-", selfNotice: "-", enemyDamage: "-", selfDamage: "-" });
-  const [ocrRawValues, setOcrRawValues] = useState<Record<RegionKey, string>>({ enemyHealth: "-", selfHealth: "-", enemyNotice: "-", enemyDamage: "-", selfNotice: "-", selfDamage: "-", enemyImage: "-", selfImage: "-" });
+  const [ocrValues, setOcrValues] = useState({ enemyHealth: "-", selfHealth: "-", enemyNotice: "-", selfNotice: "-", enemyDamage: "-", selfDamage: "-", skill1: "-", skill2: "-", skill3: "-", skill4: "-" });
+  const [ocrRawValues, setOcrRawValues] = useState<Record<RegionKey, string>>({ enemyHealth: "-", selfHealth: "-", enemyNotice: "-", enemyDamage: "-", selfNotice: "-", selfDamage: "-", skill1: "-", skill2: "-", skill3: "-", skill4: "-", enemyImage: "-", selfImage: "-" });
   const [settingsMessage, setSettingsMessage] = useState("配置会自动保存");
   const [sampleLabel, setSampleLabel] = useState("");
   const [sampleMessage, setSampleMessage] = useState("");
@@ -213,7 +233,7 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
     canvas.getContext("2d")?.drawImage(video, 0, 0);
     if (video.currentTime - lastHealthOcrTimeRef.current >= 0.5) {
       lastHealthOcrTimeRef.current = video.currentTime;
-      void recognizeRegions(canvas, ["enemyHealth", "selfHealth"], video.currentTime);
+      void recognizeRegions(canvas, LIVE_NUMBER_REGION_KEYS, video.currentTime);
     }
     if (forceRecognitionRef.current) {
       forceRecognitionRef.current = false;
@@ -357,15 +377,15 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
       && videoTime - session.lastCaptureTime >= CAPTURE_INTERVAL_SECONDS,
     );
     if (!sessions.length && videoTime - lastBufferedFrameTimeRef.current < CAPTURE_INTERVAL_SECONDS) return;
-    const enemyDamageCrop = createOcrCrop(canvas, regions.enemyDamage, "number");
-    const selfDamageCrop = createOcrCrop(canvas, regions.selfDamage, "number");
+    const enemyDamageCrop = createOcrCrop(canvas, regions.enemyDamage, REGION_OCR_KIND.enemyDamage);
+    const selfDamageCrop = createOcrCrop(canvas, regions.selfDamage, REGION_OCR_KIND.selfDamage);
     const damage = {
       enemyDamage: enemyDamageCrop.toDataURL("image/png"),
       selfDamage: selfDamageCrop.toDataURL("image/png"),
     };
     const health = {
-      enemyHealth: createOcrCrop(canvas, regions.enemyHealth, "number").toDataURL("image/png"),
-      selfHealth: createOcrCrop(canvas, regions.selfHealth, "number").toDataURL("image/png"),
+      enemyHealth: createOcrCrop(canvas, regions.enemyHealth, REGION_OCR_KIND.enemyHealth).toDataURL("image/png"),
+      selfHealth: createOcrCrop(canvas, regions.selfHealth, REGION_OCR_KIND.selfHealth).toDataURL("image/png"),
     };
     const signatures = {
       enemyDamage: canvasSignature(enemyDamageCrop),
@@ -450,7 +470,7 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
         ] : []),
       ];
       if (saveFramesRef.current) void invoke("save_replay_ocr_frames", { frames: analysisFrames }).catch((error) => setSettingsMessage(`保存 OCR 分析帧失败：${String(error)}`));
-      const images = analysisFrames.map((frame) => ({ key: frame.region, imageDataUrl: frame.imageDataUrl, mode: "number" as const }));
+      const images = analysisFrames.map((frame) => ({ key: frame.region, imageDataUrl: frame.imageDataUrl, mode: REGION_OCR_KIND[frame.region as RegionKey] }));
       const response = await invoke<{ items: Array<{ text: string }> }>("recognize_images", { images });
       if (session.generation !== recognitionGenerationRef.current) return;
       const damageValues = response.items.slice(0, candidates.length)
@@ -485,12 +505,16 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
     }
   }
 
-  function applyOcrValues(values: Partial<Record<RegionKey, string>>) {
-    setOcrRawValues((current) => ({ ...current, ...values }));
+  function applyOcrValues(values: Partial<Record<RegionKey, string>>, rawValues: Partial<Record<RegionKey, string>> = values) {
+    setOcrRawValues((current) => ({ ...current, ...rawValues }));
     const percent = values.enemyHealth?.match(/(?:100|[1-9]?\d)\s*%?/)?.[0]?.replace(/\s/g, "");
     const hp = values.selfHealth?.match(/\d+\s*\/\s*\d+/);
     const enemyDamage = values.enemyDamage?.match(/\d{1,7}/);
     const selfDamage = values.selfDamage?.match(/\d{1,7}/);
+    const skillPower = (key: SkillRegionKey, current: string) => {
+      if (values[key] === undefined) return current;
+      return values[key]?.match(/\d{1,7}/)?.[0] || "-";
+    };
     setOcrValues((current) => ({
       enemyHealth: percent && Number(percent.replace("%", "")) <= 100 ? `${percent.replace("%", "")}%` : current.enemyHealth,
       selfHealth: hp ? hp[0].replace(/\s/g, "") : current.selfHealth,
@@ -498,6 +522,10 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
       selfNotice: values.selfNotice || current.selfNotice,
       enemyDamage: enemyDamage ? enemyDamage[0] : current.enemyDamage,
       selfDamage: selfDamage ? selfDamage[0] : current.selfDamage,
+      skill1: skillPower("skill1", current.skill1),
+      skill2: skillPower("skill2", current.skill2),
+      skill3: skillPower("skill3", current.skill3),
+      skill4: skillPower("skill4", current.skill4),
     }));
   }
 
@@ -513,8 +541,17 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
   function createOcrCrop(canvas: HTMLCanvasElement, region: Region, mode: OcrKind, preprocess = true) {
     const sourceWidth = Math.max(1, Math.floor(canvas.width * region.width / 100));
     const sourceHeight = Math.max(1, Math.floor(canvas.height * region.height / 100));
-    const scale = mode === "number" ? 6 : 3;
-    const padding = mode === "number" ? 16 : 6;
+    const sourceX = Math.floor(canvas.width * region.x / 100);
+    const sourceY = Math.floor(canvas.height * region.y / 100);
+    if (mode !== "text") {
+      const original = document.createElement("canvas");
+      original.width = sourceWidth;
+      original.height = sourceHeight;
+      original.getContext("2d")?.drawImage(canvas, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, sourceWidth, sourceHeight);
+      return preprocess ? prepareNumericCanvas(original, sourceWidth, sourceHeight) : original;
+    }
+    const scale = 3;
+    const padding = 6;
     const crop = document.createElement("canvas");
     crop.width = sourceWidth * scale + padding * 2;
     crop.height = sourceHeight * scale + padding * 2;
@@ -524,23 +561,7 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
     context.fillRect(0, 0, crop.width, crop.height);
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = "high";
-    context.drawImage(canvas, Math.floor(canvas.width * region.x / 100), Math.floor(canvas.height * region.y / 100), sourceWidth, sourceHeight, padding, padding, sourceWidth * scale, sourceHeight * scale);
-    if (mode === "number" && preprocess) {
-      const image = context.getImageData(0, 0, crop.width, crop.height);
-      for (let index = 0; index < image.data.length; index += 4) {
-        const red = image.data[index];
-        const green = image.data[index + 1];
-        const blue = image.data[index + 2];
-        const luminance = red * 0.299 + green * 0.587 + blue * 0.114;
-        // Preserve the anti-aliased glyph edges. A hard global threshold makes
-        // light text disappear against a yellow/green health bar background.
-        const value = clamp((luminance - 62) * 1.65, 0, 255);
-        image.data[index] = value;
-        image.data[index + 1] = value;
-        image.data[index + 2] = value;
-      }
-      context.putImageData(image, 0, 0);
-    }
+    context.drawImage(canvas, sourceX, sourceY, sourceWidth, sourceHeight, padding, padding, sourceWidth * scale, sourceHeight * scale);
     return crop;
   }
 
@@ -564,7 +585,7 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
     return crop;
   }
 
-  async function recognizeRegions(canvas: HTMLCanvasElement, keys: readonly RegionKey[], sourceVideoTime: number) {
+  async function recognizeRegions(canvas: HTMLCanvasElement, keys: readonly RegionKey[], sourceVideoTime: number, debugCategory?: string) {
     const noticeKeys = keys.filter((key): key is "enemyNotice" | "selfNotice" => key === "enemyNotice" || key === "selfNotice");
     noticeKeys.forEach((key) => { noticeOcrBusyRef.current[key] = true; });
     try {
@@ -577,8 +598,13 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
         const crop = createOcrCrop(canvas, region, REGION_OCR_KIND[key]);
         return { key, imageDataUrl: crop.toDataURL("image/png"), mode: REGION_OCR_KIND[key] };
       });
-      const response = await invoke<{ items: Array<{ text: string; event?: NoticeEvent }> }>("recognize_images", { images });
+      if (debugCategory) {
+        const saved = await invoke<{ directory: string }>("save_ocr_debug_images", { category: debugCategory, images });
+        setSettingsMessage(`测试图像已保存：${saved.directory}`);
+      }
+      const response = await invoke<{ items: Array<{ text: string; rawText?: string; event?: NoticeEvent }> }>("recognize_images", { images });
       const values = Object.fromEntries(keys.map((key, index) => [key, response.items[index]?.text.trim() || ""])) as Partial<Record<RegionKey, string>>;
+      const rawValues = Object.fromEntries(keys.map((key, index) => [key, response.items[index]?.rawText?.trim() || response.items[index]?.text.trim() || ""])) as Partial<Record<RegionKey, string>>;
       keys.forEach((key, index) => {
         if (key !== "enemyNotice" && key !== "selfNotice") return;
         const text = values[key] || "";
@@ -597,7 +623,7 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
           startDamageWindow(key, event, sourceVideoTime, sessionId);
         }
       });
-      applyOcrValues(values);
+      applyOcrValues(values, rawValues);
       return values;
     } catch (error) {
       setSettingsMessage(`OCR 不可用：${String(error)}`);
@@ -695,6 +721,37 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
     canvas.getContext("2d")?.drawImage(video, 0, 0);
     forceRecognitionRef.current = true;
     analyzeFrame();
+  }
+
+  async function recognizeNumericFrame() {
+    if (numericRecognitionBusyRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
+    numericRecognitionBusyRef.current = true;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d")?.drawImage(video, 0, 0);
+    try {
+      await recognizeRegions(canvas, LIVE_NUMBER_REGION_KEYS, video.currentTime, numericOcrTestMode ? "replay-numeric" : undefined);
+    } finally {
+      numericRecognitionBusyRef.current = false;
+    }
+  }
+
+  async function changeNumericOcrTestMode(enabled: boolean) {
+    const previous = numericOcrTestMode;
+    setNumericOcrTestMode(enabled);
+    try {
+      const result = await invoke<{ configs: AppConfigs }>("save_picker_config", {
+        payload: { section: "replay", values: { numeric_ocr_test_mode: enabled } },
+      });
+      onConfigsChanged(result.configs);
+      setSettingsMessage(enabled ? "数字测试模式已开启" : "数字测试模式已关闭");
+    } catch (error) {
+      setNumericOcrTestMode(previous);
+      setSettingsMessage(`保存失败：${String(error)}`);
+    }
   }
 
   async function saveSample() {
@@ -820,7 +877,7 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
           {videoUrl ? <video ref={videoRef} src={videoUrl} onLoadedMetadata={(event) => { setDuration(event.currentTarget.duration); setVideoAspect(`${event.currentTarget.videoWidth} / ${event.currentTarget.videoHeight}`); }} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onLoadedData={refreshFrame} onSeeking={resetRecognitionPipeline} onSeeked={refreshFrame} /> : <div className="video-empty">选择一段 MP4 / WebM 录像开始调试</div>}
           {videoUrl ? ACTIVE_REGION_KEYS.map((key) => {
             const region = regions[key];
-            return <button key={key} className={`roi ${activeRegion === key ? "active" : ""}`} style={{ left: `${region.x}%`, top: `${region.y}%`, width: `${region.width}%`, height: `${region.height}%` }} onPointerDown={(event) => { event.preventDefault(); setActiveRegion(key); setDragging(true); }} title={`拖动 ${REGION_LABELS[key]}`}><span>{REGION_LABELS[key]}</span></button>;
+            return <button key={key} className={`roi ${activeRegion === key ? "active" : ""}`} style={{ left: `${region.x}%`, top: `${region.y}%`, width: `${region.width}%`, height: `${region.height}%` }} onPointerDown={(event) => { event.preventDefault(); setActiveRegion(key); setDragging(true); }} title={`拖动 ${REGION_FRAME_LABELS[key]}`}><span>{REGION_FRAME_LABELS[key]}</span></button>;
           }) : null}
         </div>
         <div className="replay-controls">
@@ -837,9 +894,35 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
         <div className="replay-progress"><span>{formatTime(currentTime)}</span><input type="range" min="0" max={duration || 0} step="0.01" value={Math.min(currentTime, duration || 0)} disabled={!videoUrl} aria-label="视频进度" onChange={(event) => { const video = videoRef.current; const value = Number(event.target.value); if (video) video.currentTime = value; setCurrentTime(value); }} /><span>{formatTime(duration)}</span></div>
       </section>
       <aside className="replay-sidebar">
-        <section><h3>校准区域</h3>{ACTIVE_REGION_KEYS.map((key) => <button key={key} className={activeRegion === key ? "active" : ""} onClick={() => setActiveRegion(key)}>{REGION_LABELS[key]}</button>)}<label className="region-size-control">宽度 {Math.round(regions[activeRegion].width)}%<input type="range" min="1" max="96" value={regions[activeRegion].width} onChange={(event) => updateActiveRegion({ width: Number(event.target.value) })} /></label><label className="region-size-control">高度 {Math.round(regions[activeRegion].height)}%<input type="range" min="1" max="96" value={regions[activeRegion].height} onChange={(event) => updateActiveRegion({ height: Number(event.target.value) })} /></label><div className="replay-settings-actions"><button onClick={() => void saveSettings()}>保存配置</button><button onClick={resetSettings}>恢复默认</button></div><p>{settingsMessage}</p></section>
-        <section><h3>血量 OCR</h3><dl><div><dt>敌方百分比</dt><dd>{ocrValues.enemyHealth}</dd></div><div><dt>我方生命</dt><dd>{ocrValues.selfHealth}</dd></div><div><dt>分析状态</dt><dd>{isAnalyzing ? "运行中" : "已暂停"}</dd></div></dl></section>
-        <section className="ocr-sample-panel"><h3>图像样本与识别</h3><p>真值作为文件夹名称保存；图片文件名自动生成。</p>{(["enemyImage", "selfImage"] as const).map((region) => <div key={region}><label>{REGION_LABELS[region]} 真值<input value={imageTruth[region]} onChange={(event) => setImageTruth((current) => ({ ...current, [region]: event.target.value }))} /></label><button onClick={() => void classifyImage(region)} disabled={!videoUrl}>识别图像</button><button onClick={() => void saveImageSample(region)} disabled={!videoUrl}>保存图像</button><p>{imagePredictions[region]}</p></div>)}{imageSampleMessage ? <p className="sample-message">{imageSampleMessage}</p> : null}</section>
+        <section className="replay-region-panel">
+          <h3>识别框</h3>
+          {ACTIVE_REGION_KEYS.map((key) => <button key={key} className={activeRegion === key ? "active" : ""} onClick={() => setActiveRegion(key)}>{REGION_FRAME_LABELS[key]}</button>)}
+          <label className="region-size-control">宽度 {Math.round(regions[activeRegion].width)}%<input type="range" min="1" max="96" value={regions[activeRegion].width} onChange={(event) => updateActiveRegion({ width: Number(event.target.value) })} /></label>
+          <label className="region-size-control">高度 {Math.round(regions[activeRegion].height)}%<input type="range" min="1" max="96" value={regions[activeRegion].height} onChange={(event) => updateActiveRegion({ height: Number(event.target.value) })} /></label>
+          <div className="replay-settings-actions"><button onClick={() => void saveSettings()}>保存配置</button><button onClick={resetSettings}>恢复默认</button></div>
+          <p>{settingsMessage}</p>
+        </section>
+        <section className="replay-number-results">
+          <h3>数字识别结果</h3>
+          <div className="replay-number-actions">
+            <button onClick={() => void recognizeNumericFrame()} disabled={!videoUrl}>开始识别</button>
+            <label><input type="checkbox" checked={numericOcrTestMode} onChange={(event) => void changeNumericOcrTestMode(event.target.checked)} />测试模式</label>
+          </div>
+          <div className="replay-result-columns"><span /><span>原始</span><span>处理后</span></div>
+          <dl>
+            <div><dt>敌方百分比</dt><dd>{ocrRawValues.enemyHealth}</dd><dd>{ocrValues.enemyHealth}</dd></div>
+            <div><dt>我方生命</dt><dd>{ocrRawValues.selfHealth}</dd><dd>{ocrValues.selfHealth}</dd></div>
+            {SKILL_REGION_KEYS.map((key, index) => <div key={key}><dt>技能 {index + 1}</dt><dd>{ocrRawValues[key]}</dd><dd>{ocrValues[key]}</dd></div>)}
+            <div className="replay-analysis-row"><dt>分析状态</dt><dd>{isAnalyzing ? "运行中" : "已暂停"}</dd></div>
+          </dl>
+        </section>
+        <section className="ocr-sample-panel">
+          <h3>图像样本与识别</h3>
+          <div className="image-sample-grid">
+            {(["enemyImage", "selfImage"] as const).map((region) => <div className="image-sample-entry" key={region}><label>{REGION_LABELS[region]} 真值<input value={imageTruth[region]} onChange={(event) => setImageTruth((current) => ({ ...current, [region]: event.target.value }))} /></label><div><button onClick={() => void classifyImage(region)} disabled={!videoUrl}>识别</button><button onClick={() => void saveImageSample(region)} disabled={!videoUrl}>保存</button></div><p>{imagePredictions[region]}</p></div>)}
+          </div>
+          {imageSampleMessage ? <p className="sample-message">{imageSampleMessage}</p> : null}
+        </section>
       </aside>
     </div>
     <canvas ref={canvasRef} hidden />

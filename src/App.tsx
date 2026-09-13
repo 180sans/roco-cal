@@ -3,6 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import { cursorPosition, getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { createPortal } from "react-dom";
 import { Fragment, type CSSProperties, type PointerEvent as ReactPointerEvent, type PointerEventHandler as ReactPointerEventHandler, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { prepareNumericImage, type NumericOcrMode } from "./numericOcr";
 import { ReplayPage } from "./replay/ReplayPage";
 
 const STATS = ["hp", "atk", "mag", "def", "res", "spd"] as const;
@@ -1524,7 +1525,6 @@ type PluginOverlayLayouts = Record<string, PluginOverlayLayout>;
 type DetectionReadoutLayouts = Record<"health" | "powers", { x: number; y: number }>;
 type DetectionReadoutCoordinateMode = "viewport-offset" | "page";
 type DetectionGroup = "battleStart" | "battleLive";
-type NumericOcrMode = "power" | "enemy_health" | "self_health";
 type DetectionRegion = { x: number; y: number; width: number; height: number };
 type DetectionRegions = Record<string, DetectionRegion>;
 type CaptureClientArea = { x: number; y: number; width: number; height: number };
@@ -1557,6 +1557,7 @@ function withReplayDetectionSizes(regions: DetectionRegions): DetectionRegions {
     ...Object.fromEntries(BATTLE_START_IMAGE_KEYS.map((key) => [key, "enemyImage"])),
     enemyImage: "enemyImage", selfImage: "selfImage",
     enemyHealth: "enemyHealth", selfHealth: "selfHealth",
+    skill1: "skill1", skill2: "skill2", skill3: "skill3", skill4: "skill4",
   };
   return Object.fromEntries(Object.entries(regions).map(([key, region]) => {
     const source = replayRegions[sourceForKey[key]];
@@ -2086,30 +2087,6 @@ function TeamBattlePage({
     })));
     await saveOcrDebugImages("numeric", preparedImages);
     return invoke<{ items: Array<{ text: string }> }>("recognize_images", { images: preparedImages });
-  }
-
-  async function prepareNumericImage(imageDataUrl: string) {
-    const image = new Image();
-    await new Promise<void>((resolve, reject) => {
-      image.onload = () => resolve();
-      image.onerror = () => reject(new Error("数字识别图片无法读取"));
-      image.src = imageDataUrl;
-    });
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, image.naturalWidth * 2);
-    canvas.height = Math.max(1, image.naturalHeight * 2);
-    const context = canvas.getContext("2d");
-    if (!context) throw new Error("数字识别图片无法处理");
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
-    for (let index = 0; index < pixels.data.length; index += 4) {
-      const gray = Math.round(0.299 * pixels.data[index] + 0.587 * pixels.data[index + 1] + 0.114 * pixels.data[index + 2]);
-      pixels.data[index] = gray;
-      pixels.data[index + 1] = gray;
-      pixels.data[index + 2] = gray;
-    }
-    context.putImageData(pixels, 0, 0);
-    return canvas.toDataURL("image/png");
   }
 
   async function saveOcrDebugImages(category: string, images: Array<{ key?: string; imageDataUrl: string }>) {

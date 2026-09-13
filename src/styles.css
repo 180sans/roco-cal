@@ -728,7 +728,7 @@ body:has(.battle-page.mixed-active) .app-header,
   align-items: start;
   display: grid;
   gap: 12px;
-  grid-template-columns: minmax(620px, 1fr) 270px;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.4fr);
 }
 
 .replay-workspace,
@@ -846,8 +846,10 @@ body:has(.battle-page.mixed-active) .app-header,
 }
 
 .replay-sidebar {
+  align-content: start;
   display: grid;
   gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .replay-sidebar section {
@@ -857,6 +859,10 @@ body:has(.battle-page.mixed-active) .app-header,
 .replay-sidebar section:first-child {
   display: grid;
   gap: 6px;
+}
+
+.replay-region-panel > button {
+  width: 100%;
 }
 
 .replay-flow dl {
@@ -931,6 +937,52 @@ body:has(.battle-page.mixed-active) .app-header,
   font-weight: 700;
 }
 
+.replay-result-columns,
+.replay-number-results dl div {
+  align-items: center;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.72fr) minmax(0, 0.72fr);
+}
+
+.replay-result-columns {
+  color: #667789;
+  font-size: 11px;
+  padding-bottom: 3px;
+  text-align: right;
+}
+
+.replay-number-results dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.replay-number-results dl .replay-analysis-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.replay-number-actions {
+  align-items: center;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-bottom: 7px;
+}
+
+.replay-number-actions label {
+  align-items: center;
+  color: #526374;
+  display: inline-flex;
+  font-size: 12px;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.replay-number-actions input {
+  margin: 0;
+}
+
 .ocr-debug {
   border-top: 1px solid #edf1f4;
   display: grid;
@@ -953,6 +1005,7 @@ body:has(.battle-page.mixed-active) .app-header,
 .ocr-sample-panel {
   display: grid;
   gap: 7px;
+  grid-column: 1 / -1;
 }
 
 .ocr-sample-panel input {
@@ -961,6 +1014,28 @@ body:has(.battle-page.mixed-active) .app-header,
 
 .ocr-sample-panel button {
   justify-self: start;
+}
+
+.image-sample-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.image-sample-entry {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.image-sample-entry > div {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.image-sample-entry > p {
+  margin: 0;
 }
 
 .sample-message {
@@ -4272,6 +4347,18 @@ body:has(.plugin-mode) .app-header .weather-panel {
       "right-bonus-tools"
       "right-buff"
       "right-skills";
+  }
+
+  .replay-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .ocr-sample-panel {
+    grid-column: auto;
+  }
+
+  .image-sample-grid {
+    grid-template-columns: 1fr;
   }
 
 }
