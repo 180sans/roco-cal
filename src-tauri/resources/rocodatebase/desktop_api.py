@@ -881,18 +881,23 @@ def recognize_image_text(payload: dict[str, Any]) -> dict[str, str]:
     numeric_modes = {"power", "enemy_health", "self_health", "number", "health"}
     dash_only = mode in numeric_modes and is_dash_only_numeric_image(image)
     ocr = _ocr_engine()
-    if mode == "power":
-        text = ocr.recognize_power_center(image)
-    elif mode in numeric_modes:
-        # A numeric crop can include game badges and borders. Let the detector
-        # locate the text before recognition instead of treating the entire
-        # crop as one glyph.
-        lines = ocr(image, force_horizontal=True)
-        text = "\n".join(line["text"] for line in lines if line.get("text"))
-        if not text:
-            # Some compact, slanted game badges are rejected by the detector
-            # even though the recognizer can still read their digit shapes.
-            text = ocr.recognize_without_detection(image)
+    recognize_number = getattr(ocr, "recognize_number_crop", None)
+    if mode in numeric_modes:
+        # A numeric crop is recognized as one image when the dedicated whole-crop
+        # model is installed; the detector would crop away "%" and "/" glyphs.
+        text = recognize_number(image) if recognize_number is not None else None
+        if text is None:
+            if mode == "power":
+                text = ocr.recognize_power_center(image)
+            else:
+                # Fallback: let the detector locate the text before recognition
+                # instead of treating the entire crop as one glyph.
+                lines = ocr(image, force_horizontal=True)
+                text = "\n".join(line["text"] for line in lines if line.get("text"))
+                if not text:
+                    # Some compact, slanted game badges are rejected by the
+                    # detector even though the recognizer can still read them.
+                    text = ocr.recognize_without_detection(image)
     else:
         lines = ocr(image)
         text = "\n".join(line["text"] for line in lines if line.get("text"))
@@ -949,6 +954,76 @@ class OnnxOcr:
         self.rec_input = self.rec.get_inputs()[0].name
         self.characters = [line.rstrip("\r\n") for line in (models_dir / "ppocr_keys_v1.txt").read_text(encoding="utf-8").splitlines()]
         self.characters.append(" ")
+        # Numeric regions can use a dedicated whole-crop model at
+        # ocr-models/number/{model.onnx,charset.txt}. When the directory is
+        # absent the engine falls back to the detector + PP-OCR recognition
+        # path, so the model can be added, replaced or removed at any time.
+        self.number_dir = Path(os.environ.get("ROCODATABASE_OCR_NUMBER_DIR") or (models_dir / "number"))
+        self.number_session: Any | None = None
+        self.number_input = ""
+        self.number_characters: list[str] = []
+        self.number_stamp: tuple[int, int, int, int] | None = None
+        self._reload_number_model(force=True)
+
+    def _reload_number_model(self, force: bool = False) -> bool:
+        """Load the numeric model, reloading it when the files on disk change."""
+        import onnxruntime as ort
+
+        model_path = self.number_dir / "model.onnx"
+        charset_path = self.number_dir / "charset.txt"
+        if not (model_path.is_file() and charset_path.is_file()):
+            self.number_session = None
+            self.number_stamp = None
+            return False
+        try:
+            model_stat = model_path.stat()
+            charset_stat = charset_path.stat()
+        except OSError:
+            return self.number_session is not None
+        stamp = (model_stat.st_mtime_ns, model_stat.st_size, charset_stat.st_mtime_ns, charset_stat.st_size)
+        if not force and self.number_session is not None and stamp == self.number_stamp:
+            return True
+        try:
+            session = ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
+            characters = [line.rstrip("\r\n") for line in charset_path.read_text(encoding="utf-8").splitlines()]
+        except Exception:
+            # A broken model must not break OCR: fall back to PP-OCR.
+            self.number_session = None
+            self.number_stamp = None
+            return False
+        if not characters:
+            self.number_session = None
+            self.number_stamp = None
+            return False
+        self.number_session = session
+        self.number_input = session.get_inputs()[0].name
+        self.number_characters = characters
+        self.number_stamp = stamp
+        return True
+
+    def recognize_number_crop(self, image: Any) -> str | None:
+        """Recognize a whole numeric crop; None means no model, caller falls back."""
+        import cv2
+        import numpy as np
+
+        if not self._reload_number_model():
+            return None
+        source = np.asarray(image)
+        height, width = source.shape[:2]
+        target_width = max(48, min(320, int(round(width / max(height, 1) * 48))))
+        resized = cv2.resize(source, (target_width, 48), interpolation=cv2.INTER_LINEAR)
+        tensor = resized.astype(np.float32) / 255.0
+        tensor = (tensor - 0.5) / 0.5
+        prediction = self.number_session.run(None, {self.number_input: tensor.transpose(2, 0, 1)[None]})[0][0]
+        indices = prediction.argmax(axis=1)
+        result = []
+        previous = -1
+        for index in indices:
+            index = int(index)
+            if index != 0 and index != previous and index - 1 < len(self.number_characters):
+                result.append(self.number_characters[index - 1])
+            previous = index
+        return "".join(result)
 
     @staticmethod
     def _det_input(image: Any) -> tuple[Any, tuple[int, int, int, int]]:

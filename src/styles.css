@@ -728,7 +728,7 @@ body:has(.battle-page.mixed-active) .app-header,
   align-items: start;
   display: grid;
   gap: 12px;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.4fr);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.36fr);
 }
 
 .replay-workspace,
@@ -983,6 +983,42 @@ body:has(.battle-page.mixed-active) .app-header,
   margin: 0;
 }
 
+.numeric-sample-panel {
+  border-top: 1px solid #d8e0e8;
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.numeric-sample-panel h4 {
+  font-size: 12px;
+  margin: 0;
+}
+
+.numeric-sample-row {
+  align-items: center;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+}
+
+.numeric-sample-row label,
+.numeric-sample-row input,
+.numeric-sample-row button {
+  font-size: 11px;
+  min-width: 0;
+}
+
+.numeric-sample-row input {
+  width: 100%;
+}
+
+.numeric-sample-row button {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
 .ocr-debug {
   border-top: 1px solid #edf1f4;
   display: grid;
@@ -1003,9 +1039,22 @@ body:has(.battle-page.mixed-active) .app-header,
 }
 
 .ocr-sample-panel {
+  border-top: 1px solid #d8e0e8;
   display: grid;
-  gap: 7px;
+  gap: 6px;
   grid-column: 1 / -1;
+  padding: 8px 10px 9px;
+}
+
+.ocr-sample-panel h3 {
+  font-size: 16px;
+  margin: 0 0 6px;
+}
+
+.ocr-sample-panel p {
+  color: #667789;
+  font-size: 12px;
+  margin: 0;
 }
 
 .ocr-sample-panel input {
@@ -1018,13 +1067,13 @@ body:has(.battle-page.mixed-active) .app-header,
 
 .image-sample-grid {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .image-sample-entry {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 

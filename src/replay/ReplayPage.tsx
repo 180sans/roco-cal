@@ -38,7 +38,6 @@ const REPLAY_SETTINGS_KEY = "rocodatebase.replay.settings.v1";
 const SKILL_REGION_KEYS = ["skill1", "skill2", "skill3", "skill4"] as const;
 const LIVE_NUMBER_REGION_KEYS = ["enemyHealth", "selfHealth", ...SKILL_REGION_KEYS] as const;
 const OCR_KEYS = [...LIVE_NUMBER_REGION_KEYS, "enemyNotice", "enemyDamage", "selfNotice", "selfDamage"] as const;
-const NUMERIC_REGION_KEYS = [...LIVE_NUMBER_REGION_KEYS, "enemyDamage", "selfDamage"] as const;
 const ACTIVE_REGION_KEYS = ["enemyHealth", "selfHealth", ...SKILL_REGION_KEYS, "enemyImage", "selfImage"] as const;
 const REGION_FRAME_LABELS: Record<(typeof ACTIVE_REGION_KEYS)[number], string> = {
   enemyHealth: "敌方血量", selfHealth: "我方血量",
@@ -148,7 +147,9 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
   const [ocrValues, setOcrValues] = useState({ enemyHealth: "-", selfHealth: "-", enemyNotice: "-", selfNotice: "-", enemyDamage: "-", selfDamage: "-", skill1: "-", skill2: "-", skill3: "-", skill4: "-" });
   const [ocrRawValues, setOcrRawValues] = useState<Record<RegionKey, string>>({ enemyHealth: "-", selfHealth: "-", enemyNotice: "-", enemyDamage: "-", selfNotice: "-", selfDamage: "-", skill1: "-", skill2: "-", skill3: "-", skill4: "-", enemyImage: "-", selfImage: "-" });
   const [settingsMessage, setSettingsMessage] = useState("配置会自动保存");
-  const [sampleLabel, setSampleLabel] = useState("");
+  const [sampleLabels, setSampleLabels] = useState<Record<(typeof LIVE_NUMBER_REGION_KEYS)[number], string>>({
+    enemyHealth: "", selfHealth: "", skill1: "", skill2: "", skill3: "", skill4: "",
+  });
   const [sampleMessage, setSampleMessage] = useState("");
   const [imageTruth, setImageTruth] = useState({ enemyImage: "", selfImage: "" });
   const [imageSampleMessage, setImageSampleMessage] = useState("");
@@ -754,14 +755,10 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
     }
   }
 
-  async function saveSample() {
-    if (!(NUMERIC_REGION_KEYS as readonly string[]).includes(activeRegion)) {
-      setSampleMessage("请先选择一个数字识别框");
-      return;
-    }
-    const label = sampleLabel.trim().replace(/\s/g, "");
-    if (!/^[0-9/%]+$/.test(label)) {
-      setSampleMessage("标签只能填写数字、/ 或 %");
+  async function saveSample(region: (typeof LIVE_NUMBER_REGION_KEYS)[number]) {
+    const label = sampleLabels[region].trim().replace(/\s/g, "");
+    if (!/^(?:[0-9/%]+|-)$/.test(label)) {
+      setSampleMessage(`${REGION_FRAME_LABELS[region]}真值只能填写数字、/、% 或 -`);
       return;
     }
     const video = videoRef.current;
@@ -770,11 +767,11 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext("2d")?.drawImage(video, 0, 0);
-    const originalCrop = createOcrCrop(canvas, regions[activeRegion], "number", false);
+    const originalCrop = createOcrCrop(canvas, regions[region], REGION_OCR_KIND[region], false);
     try {
-      const result = await invoke<{ file: string }>("save_labeled_ocr_sample", { imageDataUrl: originalCrop.toDataURL("image/png"), region: activeRegion, label, videoTime: video.currentTime });
-      setSampleMessage(`已保存：${result.file}`);
-      setSampleLabel("");
+      const result = await invoke<{ file: string }>("save_labeled_ocr_sample", { imageDataUrl: originalCrop.toDataURL("image/png"), region, label, videoTime: video.currentTime });
+      setSampleMessage(`${REGION_FRAME_LABELS[region]}已保存：${result.file}`);
+      setSampleLabels((current) => ({ ...current, [region]: "" }));
     } catch (error) {
       setSampleMessage(`保存失败：${String(error)}`);
     }
@@ -892,6 +889,13 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
           <span>{videoName || "尚未导入视频"}</span>
         </div>
         <div className="replay-progress"><span>{formatTime(currentTime)}</span><input type="range" min="0" max={duration || 0} step="0.01" value={Math.min(currentTime, duration || 0)} disabled={!videoUrl} aria-label="视频进度" onChange={(event) => { const video = videoRef.current; const value = Number(event.target.value); if (video) video.currentTime = value; setCurrentTime(value); }} /><span>{formatTime(duration)}</span></div>
+        <section className="ocr-sample-panel">
+          <h3>图像样本与识别</h3>
+          <div className="image-sample-grid">
+            {(["enemyImage", "selfImage"] as const).map((region) => <div className="image-sample-entry" key={region}><label>{REGION_LABELS[region]} 真值<input value={imageTruth[region]} onChange={(event) => setImageTruth((current) => ({ ...current, [region]: event.target.value }))} /></label><div><button onClick={() => void classifyImage(region)} disabled={!videoUrl}>识别</button><button onClick={() => void saveImageSample(region)} disabled={!videoUrl}>保存</button></div><p>{imagePredictions[region]}</p></div>)}
+          </div>
+          {imageSampleMessage ? <p className="sample-message">{imageSampleMessage}</p> : null}
+        </section>
       </section>
       <aside className="replay-sidebar">
         <section className="replay-region-panel">
@@ -915,13 +919,21 @@ export function ReplayPage({ configs, onConfigsChanged }: { configs: AppConfigs;
             {SKILL_REGION_KEYS.map((key, index) => <div key={key}><dt>技能 {index + 1}</dt><dd>{ocrRawValues[key]}</dd><dd>{ocrValues[key]}</dd></div>)}
             <div className="replay-analysis-row"><dt>分析状态</dt><dd>{isAnalyzing ? "运行中" : "已暂停"}</dd></div>
           </dl>
-        </section>
-        <section className="ocr-sample-panel">
-          <h3>图像样本与识别</h3>
-          <div className="image-sample-grid">
-            {(["enemyImage", "selfImage"] as const).map((region) => <div className="image-sample-entry" key={region}><label>{REGION_LABELS[region]} 真值<input value={imageTruth[region]} onChange={(event) => setImageTruth((current) => ({ ...current, [region]: event.target.value }))} /></label><div><button onClick={() => void classifyImage(region)} disabled={!videoUrl}>识别</button><button onClick={() => void saveImageSample(region)} disabled={!videoUrl}>保存</button></div><p>{imagePredictions[region]}</p></div>)}
+          <div className="numeric-sample-panel">
+            <h4>保存原始裁图与真值</h4>
+            {LIVE_NUMBER_REGION_KEYS.map((region) => <div className="numeric-sample-row" key={region}>
+              <label htmlFor={`numeric-sample-${region}`}>{REGION_FRAME_LABELS[region]}</label>
+              <input
+                id={`numeric-sample-${region}`}
+                value={sampleLabels[region]}
+                inputMode="text"
+                placeholder="真值"
+                onChange={(event) => setSampleLabels((current) => ({ ...current, [region]: event.target.value }))}
+              />
+              <button onClick={() => void saveSample(region)} disabled={!videoUrl}>保存</button>
+            </div>)}
+            {sampleMessage ? <p className="sample-message">{sampleMessage}</p> : null}
           </div>
-          {imageSampleMessage ? <p className="sample-message">{imageSampleMessage}</p> : null}
         </section>
       </aside>
     </div>

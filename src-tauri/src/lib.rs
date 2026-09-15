@@ -1799,17 +1799,21 @@ async fn save_labeled_ocr_sample(
     video_time: f64,
 ) -> Result<Value, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        let allowed_regions = ["enemyHealth", "selfHealth", "enemyDamage", "selfDamage"];
+        let allowed_regions = [
+            "enemyHealth", "selfHealth", "enemyDamage", "selfDamage",
+            "skill1", "skill2", "skill3", "skill4",
+        ];
         if !allowed_regions.contains(&region.as_str()) {
             return Err("Only numeric OCR regions can be labeled".to_string());
         }
         let normalized_label = label.trim().replace(' ', "");
         if normalized_label.is_empty()
-            || !normalized_label
-                .chars()
-                .all(|ch| ch.is_ascii_digit() || ch == '/' || ch == '%')
+            || !(normalized_label == "-"
+                || normalized_label
+                    .chars()
+                    .all(|ch| ch.is_ascii_digit() || matches!(ch, '/' | '%')))
         {
-            return Err("Numeric sample labels can contain only digits, /, and %".to_string());
+            return Err("Numeric sample labels can contain only digits, /, %, and -".to_string());
         }
         let (_, encoded) = image_data_url
             .split_once(',')
