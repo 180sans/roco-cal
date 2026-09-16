@@ -16,6 +16,27 @@ const STAT_LABEL: Record<(typeof STATS)[number], string> = {
   spd: "速度",
 };
 const IV_OPTIONS = ["", "0", "7", "8", "9", "10"];
+const BLOODLINE_OPTIONS = [
+  "普通系血脉",
+  "草系血脉",
+  "火系血脉",
+  "水系血脉",
+  "光系血脉",
+  "地系血脉",
+  "冰系血脉",
+  "龙系血脉",
+  "电系血脉",
+  "毒系血脉",
+  "虫系血脉",
+  "武系血脉",
+  "翼系血脉",
+  "萌系血脉",
+  "幽系血脉",
+  "恶系血脉",
+  "机械系血脉",
+  "幻系血脉",
+  "首领血脉",
+];
 const DEFAULT_SKILL_CARD_COUNT = 4;
 const UI_TOKEN_DEFAULTS = {
   "window-width": 566,
@@ -320,6 +341,7 @@ type PresetItem = {
   personality_bouns: string | null;
   personality_down: string | null;
   skills: string[];
+  bloodline?: string | null;
   trait_override_query?: string | null;
   trait_triggered?: boolean;
   trait_stacks?: number;
@@ -418,6 +440,7 @@ type TeamOtherBonuses = {
 type UnitState = {
   name: string;
   display_name: string;
+  bloodline: string;
   devolution: number;
   mega: boolean;
   mega_form: string | null;
@@ -541,6 +564,7 @@ function blankUnit(): UnitState {
   return {
     name: "",
     display_name: "",
+    bloodline: "",
     devolution: 0,
     mega: false,
     mega_form: null,
@@ -592,6 +616,7 @@ function unitFromPreset(preset: PresetItem, showPresetName = false): UnitState {
     ...blankUnit(),
     name: `${preset.id}${preset.name}`,
     display_name: showPresetName ? preset.key : "",
+    bloodline: preset.bloodline || "",
     iv: preset.iv,
     personality_bouns: preset.personality_bouns,
     personality_down: preset.personality_down,
@@ -3195,8 +3220,8 @@ function TeamBattlePage({
             </button>
           ))}
         </section>
-        <TeamBuffPanel className="team-left-buff" title="buff" expanded={displayMode === "plugin" ? openPopover.left === "buff" : undefined} onExpandedChange={(next) => togglePopover("left", "buff", next)} onMove={(delta) => moveRegion("left-buff", { x: regionPositions["left-buff"].x + delta.x, y: regionPositions["left-buff"].y + delta.y })} value={leftSlots[leftIndex]} onChange={(partial) => patchSlot("left", leftIndex, partial)} />
-        <TeamBuffPanel className="team-right-buff" title="buff" expanded={displayMode === "plugin" ? openPopover.right === "buff" : undefined} onExpandedChange={(next) => togglePopover("right", "buff", next)} onMove={(delta) => moveRegion("right-buff", { x: regionPositions["right-buff"].x + delta.x, y: regionPositions["right-buff"].y + delta.y })} value={rightSlots[rightIndex]} onChange={(partial) => patchSlot("right", rightIndex, partial)} />
+        <TeamBuffPanel className="team-left-buff" title={displayMode === "plugin" ? "buff" : "己方 buff"} expanded={displayMode === "plugin" ? openPopover.left === "buff" : undefined} onExpandedChange={(next) => togglePopover("left", "buff", next)} onMove={(delta) => moveRegion("left-buff", { x: regionPositions["left-buff"].x + delta.x, y: regionPositions["left-buff"].y + delta.y })} value={leftSlots[leftIndex]} onChange={(partial) => patchSlot("left", leftIndex, partial)} />
+        <TeamBuffPanel className="team-right-buff" title={displayMode === "plugin" ? "buff" : "敌方 buff"} expanded={displayMode === "plugin" ? openPopover.right === "buff" : undefined} onExpandedChange={(next) => togglePopover("right", "buff", next)} onMove={(delta) => moveRegion("right-buff", { x: regionPositions["right-buff"].x + delta.x, y: regionPositions["right-buff"].y + delta.y })} value={rightSlots[rightIndex]} onChange={(partial) => patchSlot("right", rightIndex, partial)} />
         {displayMode === "plugin" ? <>
           {Array.from({ length: pluginSkillCardCount }, (_, skillIndex) => (
             <TeamSkillCards key={`left-skill-${skillIndex}`} panelState={panelState(Boolean(leftPluginSkillSlots[skillIndex]))} pluginMode className={`team-left-skill-${skillIndex}`} title={`技能 ${skillIndex + 1}`} cardCount={pluginSkillCardCount} onlyIndex={skillIndex} floating layout={overlayLayout(`left-skill-${skillIndex}`)} onLayoutChange={(partial) => updateOverlayLayout(`left-skill-${skillIndex}`, partial)} value={leftSlots[leftIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onApplySkill={leftAttacks ? (skill) => void applyBuff(skill) : undefined} quickResult={leftAttacks ? quickSkillResults?.find((item) => item.skillName === leftPluginSkillSlots[skillIndex]) || null : null} onChange={(partial) => patchSlot("left", leftIndex, partial)} />
@@ -3299,6 +3324,13 @@ function PresetManagerPage({
   const [skillData, setSkillData] = useState<SkillListResult>({ petSkills: [], allSkills: [] });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [codeOpen, setCodeOpen] = useState(false);
+  const [codeText, setCodeText] = useState("");
+  const [codeGroupName, setCodeGroupName] = useState("");
+  const [codeBusy, setCodeBusy] = useState(false);
+  const [codeMessage, setCodeMessage] = useState("");
+  const [codeError, setCodeError] = useState("");
+  const [codeReport, setCodeReport] = useState<string[]>([]);
 
   const currentGroup = presets.find((group) => group.name === groupName) || presets[0];
   const selectedPreset = currentGroup?.items.find((item) => item.key === selectedKey) || null;
@@ -3414,6 +3446,53 @@ function PresetManagerPage({
     newPreset();
   }
 
+  function openTeamCode() {
+    setCodeOpen(true);
+    setCodeMessage("");
+    setCodeError("");
+    setCodeReport([]);
+  }
+
+  async function importTeamCode(mode: "overwrite" | "create") {
+    const target = mode === "create" ? codeGroupName.trim() : groupName;
+    if (!codeText.trim()) {
+      setCodeError("请先粘贴阵容码");
+      return;
+    }
+    if (!target) {
+      setCodeError("请先填写新分组名");
+      return;
+    }
+    if (mode === "overwrite") {
+      const count = presets.find((group) => group.name === groupName)?.items.length || 0;
+      if (!window.confirm(`将用导入的精灵替换分组“${groupName}”现有的 ${count} 个预设，是否继续？`)) return;
+    } else if (presets.some((group) => group.name === target)) {
+      if (!window.confirm(`分组“${target}”已存在，导入会替换它的内容，是否继续？`)) return;
+    }
+    setCodeBusy(true);
+    setCodeError("");
+    setCodeMessage("");
+    setCodeReport([]);
+    try {
+      const data = await invoke<{ presets: PresetGroup[]; groupName: string; report: string[] }>("import_team_code", {
+        payload: { text: codeText, mode, groupName: target },
+      });
+      onPresetsChanged(data.presets);
+      setGroupName(data.groupName);
+      setTargetGroup(data.groupName);
+      setSelectedKey("");
+      setPresetName("");
+      setEditor(blankUnit());
+      setMessage(`已导入到分组：${data.groupName}`);
+      setCodeMessage(`已导入到分组：${data.groupName}`);
+      setCodeReport(data.report || []);
+    } catch (err) {
+      setCodeError(asError(err));
+    } finally {
+      setCodeBusy(false);
+    }
+  }
+
   const skillCards = skillCardSlots(editor.skills).map((name) => (name ? { name } : null));
 
   return (
@@ -3421,7 +3500,10 @@ function PresetManagerPage({
       <aside className="preset-library-panel">
         <header className="preset-manager-header">
           <h2 className="preset-library-title">精灵预设</h2>
-          <button className="compact-button preset-new-button" onClick={newPreset}>新建预设</button>
+          <div className="header-actions">
+            <button className="compact-button preset-new-button" onClick={newPreset}>新建预设</button>
+            <button className="compact-button preset-new-button" onClick={openTeamCode}>阵容码</button>
+          </div>
         </header>
         <div className="preset-group-row">
           <FieldLabel className="preset-group-label">分组</FieldLabel>
@@ -3463,6 +3545,17 @@ function PresetManagerPage({
             <div className="preset-pet-row">
               <input className="preset-pet-input" list="pet-options" value={editor.name} onChange={(event) => patchEditor({ name: event.target.value })} placeholder="选择或输入精灵" />
               <button className="preset-pet-picker-button" onClick={() => setPicker("pet")}>选宠</button>
+            </div>
+          </FieldLabel>
+          <FieldLabel className="preset-bloodline-label">
+            <span className="ui-field-title preset-section-title">血脉</span>
+            <div className="preset-bloodline-row">
+              <select className="preset-bloodline-select" value={editor.bloodline || ""} onChange={(event) => patchEditor({ bloodline: event.target.value })}>
+                <option value="">无</option>
+                {BLOODLINE_OPTIONS.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </select>
             </div>
           </FieldLabel>
         </section>
@@ -3545,6 +3638,48 @@ function PresetManagerPage({
           }}
           onPickTrait={() => undefined}
         />
+      ) : null}
+      {codeOpen ? createPortal(
+        <div
+          data-overlay-control
+          className="modal-backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setCodeOpen(false);
+          }}
+        >
+          <section className="team-code-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <header>
+              <h2>导入阵容码</h2>
+              <button className="compact-button" onClick={() => setCodeOpen(false)}>关闭</button>
+            </header>
+            <textarea
+              className="team-code-textarea"
+              value={codeText}
+              onChange={(event) => setCodeText(event.target.value)}
+              placeholder="粘贴游戏里复制的完整内容（包含 # 音速犬：首领血脉、{灼伤、热身} 这类说明行和阵容码那一行）"
+            />
+            <div className="team-code-actions">
+              <input
+                className="team-code-group-input"
+                value={codeGroupName}
+                onChange={(event) => setCodeGroupName(event.target.value)}
+                placeholder="新分组名"
+              />
+              <button className="compact-button" disabled={codeBusy} onClick={() => void importTeamCode("overwrite")}>覆盖当前分组</button>
+              <button className="compact-button" disabled={codeBusy} onClick={() => void importTeamCode("create")}>新建分组</button>
+            </div>
+            <p className="team-code-hint">覆盖当前分组：替换“{groupName}”里现有的全部预设；新建分组：用输入的名字新建分组（同名会覆盖）。导入后到队伍面板用“导入分组”即可填满队伍。</p>
+            {codeMessage ? <p className="save-message">{codeMessage}</p> : null}
+            {codeError ? <p className="error-text preset-message">错误：{codeError}</p> : null}
+            {codeReport.length ? (
+              <div className="team-code-report">
+                <span className="ui-field-title">导入结果</span>
+                {codeReport.map((line, index) => <p key={index}>{line}</p>)}
+              </div>
+            ) : null}
+          </section>
+        </div>,
+        document.body,
       ) : null}
     </section>
   );

@@ -1713,6 +1713,11 @@ async fn manage_preset(app: tauri::AppHandle, payload: Value) -> Result<Value, S
 }
 
 #[tauri::command]
+async fn import_team_code(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
+    run_python_payload_async(app, "import-team-code", payload).await
+}
+
+#[tauri::command]
 async fn save_picker_config(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
     run_python_payload_async(app, "save-picker-config", payload).await
 }
@@ -2281,6 +2286,7 @@ pub fn run() {
             skill_trigger_info,
             save_preset,
             manage_preset,
+            import_team_code,
             save_picker_config,
             classify_image_samples,
             recognize_image_text,

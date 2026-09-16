@@ -319,6 +319,7 @@ def list_presets() -> dict[str, Any]:
                         "personality_bouns": value.get("personality_bouns") if isinstance(value, dict) else None,
                         "personality_down": value.get("personality_down") if isinstance(value, dict) else None,
                         "skills": value.get("skills", []) if isinstance(value, dict) else [],
+                        "bloodline": value.get("bloodline") if isinstance(value, dict) else None,
                         "trait_override_query": value.get("trait_override_query") if isinstance(value, dict) else None,
                         "trait_triggered": bool(value.get("trait_triggered", False)) if isinstance(value, dict) else False,
                         "trait_stacks": int(value.get("trait_stacks", 0) or 0) if isinstance(value, dict) else 0,
@@ -735,6 +736,7 @@ def save_preset(payload: dict[str, Any]) -> dict[str, Any]:
         "personality_bouns": state.get("personality_bouns"),
         "personality_down": state.get("personality_down"),
         "skills": [skill for skill in (state.get("skills") or []) if skill],
+        "bloodline": (state.get("bloodline") or "").strip() or None,
         "trait_override_query": state.get("trait_override_query"),
         "trait_triggered": bool(state.get("trait_triggered", False)),
         "trait_stacks": max(0, int(state.get("trait_stacks", 0) or 0)),
@@ -802,6 +804,271 @@ def manage_preset(payload: dict[str, Any]) -> dict[str, Any]:
 
     _save_presets(presets)
     return {"presets": list_presets()["groups"], "groupName": result_group, "presetName": result_name}
+
+
+TEAM_CODE_MAX_PETS = 6
+# 阵容码性格字母：正面/负面属性各按 生命、物攻、魔攻、物防、魔防、速度 排布。
+TEAM_CODE_NATURES: dict[str, tuple[str, str]] = {
+    "F": ("atk", "hp"), "C": ("atk", "mag"), "B": ("atk", "def"), "D": ("atk", "res"), "E": ("atk", "spd"),
+    "K": ("def", "hp"), "G": ("def", "atk"), "H": ("def", "mag"), "I": ("def", "res"), "J": ("def", "spd"),
+    "a": ("hp", "atk"), "c": ("hp", "mag"), "b": ("hp", "def"), "d": ("hp", "res"), "e": ("hp", "spd"),
+    "Z": ("spd", "hp"), "V": ("spd", "atk"), "X": ("spd", "mag"), "W": ("spd", "def"), "Y": ("spd", "res"),
+    "P": ("mag", "hp"), "L": ("mag", "atk"), "M": ("mag", "def"), "N": ("mag", "res"), "O": ("mag", "spd"),
+    "U": ("res", "hp"), "Q": ("res", "atk"), "S": ("res", "mag"), "R": ("res", "def"), "T": ("res", "spd"),
+}
+# 个体值串每两位一组，第二位是属性字母，第一位是数值（B 等非 0 视作满值 10，0 表示缺省）。
+TEAM_CODE_IV_STATS = {"P": "hp", "Q": "atk", "R": "mag", "S": "def", "T": "res", "U": "spd"}
+TEAM_CODE_CORRECTIONS = {"B": "hp", "C": "atk", "D": "mag", "E": "def", "F": "res", "G": "spd"}
+TEAM_CODE_STAT_LABELS = {"hp": "生命", "atk": "物攻", "mag": "魔攻", "def": "物防", "res": "魔防", "spd": "速度"}
+TEAM_CODE_IV_ORDER = ("hp", "atk", "mag", "def", "res", "spd")
+
+
+def _team_code_base_name(name: str) -> str:
+    """取括号前的主体名称，避免“鸭吉吉”匹配到“鸭吉吉国王”。"""
+
+    return re.split(r"[（(【\[]", (name or "").strip(), maxsplit=1)[0].strip()
+
+
+def _team_code_strip_id(name: str) -> str:
+    stripped = re.sub(r"^\d+", "", (name or "").strip()).strip()
+    return stripped or (name or "").strip()
+
+
+def _parse_team_code_block(text: str) -> tuple[str, list[dict[str, Any]]]:
+    code = ""
+    entries: list[dict[str, Any]] = []
+    for raw_line in (text or "").splitlines():
+        line = raw_line.strip().lstrip("#").strip()
+        if not line:
+            continue
+        if "~~~" in line:
+            if len(line) > len(code):
+                code = line
+            continue
+        # 说明行结尾可能还跟着性格文字（如“加物防，减生命”），这里只取到技能表。
+        match = re.match(r"^(?P<name>[^：:]+)[：:](?P<blood>[^、{}]*)、?\s*\{(?P<skills>[^}]*)\}", line)
+        if match:
+            skills = [item.strip() for item in re.split(r"[、,，]", match.group("skills")) if item.strip()]
+            entries.append(
+                {
+                    "name": match.group("name").strip(),
+                    "bloodline": match.group("blood").strip(),
+                    "skills": skills,
+                }
+            )
+    if not code:
+        raise ValueError("没有找到阵容码，请粘贴游戏里复制的完整内容")
+    if not entries:
+        raise ValueError("没有找到精灵说明行（形如 # 音速犬：首领血脉、{灼伤、热身}）")
+    return code, entries
+
+
+def _parse_team_code_iv(chunk: str) -> dict[str, int]:
+    iv = {stat: 0 for stat in TEAM_CODE_IV_ORDER}
+    index = 0
+    while index + 1 < len(chunk):
+        value_char = chunk[index]
+        stat = TEAM_CODE_IV_STATS.get(chunk[index + 1])
+        # 个体值只有“满值(B)”和“缺省(00)”两种，出现别的字符说明这里已经是技能编码，停止解析。
+        if stat is None or value_char not in {"B", "0"}:
+            break
+        if value_char != "0":
+            iv[stat] = 10
+        index += 2
+    return iv
+
+
+def _parse_team_code_records(code: str, count: int) -> list[dict[str, Any]]:
+    records = code.split("~~~")[1:]
+    if len(records) != count:
+        raise ValueError(f"阵容码与精灵说明数量不一致：码内 {len(records)} 只，说明行 {count} 只")
+    correction_match = re.search(r"F((?:[A-G]~)+)$", code)
+    corrections = [item for item in correction_match.group(1).split("~") if item] if correction_match else []
+    parsed: list[dict[str, Any]] = []
+    for index, record in enumerate(records):
+        parts = record.split("~")
+        parsed.append(
+            {
+                "bloodline_letter": parts[0] if parts else "",
+                "nature_letter": parts[1] if len(parts) > 1 else "",
+                "iv": _parse_team_code_iv(parts[2] if len(parts) > 2 else ""),
+                "correction": corrections[index * 2:index * 2 + 2],
+            }
+        )
+    return parsed
+
+
+def _team_code_personality(nature_letter: str, correction: list[str]) -> tuple[str | None, str | None, list[str]]:
+    notes: list[str] = []
+    nature = TEAM_CODE_NATURES.get(nature_letter)
+    if nature is None:
+        return None, None, [f"未识别的性格字母“{nature_letter}”，性格按未指定处理"]
+    plus, minus = nature
+    corrected = (list(correction) + ["A", "A"])[:2]
+    applied: list[str] = []
+    for position, letter in enumerate(corrected):
+        stat = TEAM_CODE_CORRECTIONS.get(letter) if letter != "A" else None
+        if stat is None:
+            continue
+        if position == 0:
+            plus = stat
+        else:
+            minus = stat
+        applied.append(("正面→" if position == 0 else "负面→") + TEAM_CODE_STAT_LABELS[stat])
+    if applied:
+        notes.append("性格修正：" + "、".join(applied))
+    if plus == minus:
+        notes.append("性格修正后正负属性相同，已忽略修正")
+        plus, minus = nature
+    return plus, minus, notes
+
+
+def _team_code_candidate_paths(dataset: Any, query: str) -> list[str]:
+    """只用内存索引列出候选文件，顺序为 编号+全名 → 全名 → 括号前主体名 → 模糊。"""
+
+    normalized = (query or "").strip()
+    stripped = _team_code_strip_id(normalized)
+    base = _team_code_base_name(stripped)
+    paths: list[str] = []
+
+    def add(path: Any) -> None:
+        if isinstance(path, str) and path not in paths:
+            paths.append(path)
+
+    def add_all(items: Any) -> None:
+        for path in items or []:
+            add(path)
+
+    add(dataset._id_name_index.get(normalized))
+    add(dataset._id_name_index.get(stripped))
+    add_all(dataset._name_index.get(stripped))
+    add_all(dataset._other_name_index.get(stripped))
+    if base != stripped:
+        add_all(dataset._name_index.get(base))
+        add_all(dataset._other_name_index.get(base))
+    if base:
+        # 只比较括号前的主体名，避免“鸭吉吉”匹配到“鸭吉吉国王”。
+        for name in sorted(name for name in dataset._name_index if _team_code_base_name(name) == base):
+            add_all(dataset._name_index.get(name))
+    if not paths and base:
+        for name in sorted(
+            name for name in dataset._name_index
+            if base in _team_code_base_name(name) or _team_code_base_name(name) in base
+        ):
+            add_all(dataset._name_index.get(name))
+    if not paths and base:
+        scored = sorted(
+            (
+                (difflib.SequenceMatcher(a=base, b=_team_code_base_name(name)).ratio(), name)
+                for name in dataset._name_index
+            ),
+            key=lambda item: (-item[0], item[1]),
+        )
+        for score, name in scored[:5]:
+            if score >= 0.5:
+                add_all(dataset._name_index.get(name))
+    # 文件名就是“编号+全名”，按文件名排序等价于按编号、名称排序。
+    return sorted(paths, key=lambda path: os.path.basename(path))
+
+
+def _match_team_code_pet(
+    dataset: Any,
+    query: str,
+    skills: list[str],
+) -> tuple[dict[str, Any] | None, int, int]:
+    """返回（选中的精灵, 候选数量, 技能表也符合的候选数量）。"""
+
+    paths = _team_code_candidate_paths(dataset, query)
+    first: dict[str, Any] | None = None
+    matched: list[dict[str, Any]] = []
+    for path in paths:
+        pet = dataset.load(path)
+        if not isinstance(pet, dict):
+            continue
+        if first is None:
+            first = pet
+        owned = {skill.get("skill_name") for skill in pet.get("skills", []) if isinstance(skill, dict)}
+        if all(skill in owned for skill in skills):
+            matched.append(pet)
+    if matched:
+        return matched[0], len(paths), len(matched)
+    return first, len(paths), 0
+
+
+def import_team_code(payload: dict[str, Any]) -> dict[str, Any]:
+    from core.find_pets import pets_dataset
+
+    mode = (payload.get("mode") or "create").strip()
+    if mode not in {"create", "overwrite"}:
+        raise ValueError(f"未知的导入方式: {mode}")
+    group_name = (payload.get("groupName") or "").strip()
+    if not group_name:
+        raise ValueError("分组名不能为空")
+
+    code, entries = _parse_team_code_block(payload.get("text") or "")
+    report: list[str] = []
+    records = _parse_team_code_records(code, len(entries))
+    if len(entries) > TEAM_CODE_MAX_PETS:
+        report.append(f"阵容码内有 {len(entries)} 只精灵，超过队伍上限，已只取前 {TEAM_CODE_MAX_PETS} 只")
+        entries = entries[:TEAM_CODE_MAX_PETS]
+        records = records[:TEAM_CODE_MAX_PETS]
+
+    presets = _load_presets()
+    if mode == "overwrite" and group_name not in presets:
+        raise ValueError(f"未找到当前分组: {group_name}")
+
+    items: dict[str, Any] = {}
+    for entry, record in zip(entries, records):
+        pet, candidate_count, matched_count = _match_team_code_pet(pets_dataset, entry["name"], entry["skills"])
+        if pet is None:
+            report.append(f"{entry['name']}：精灵库中没有找到，已跳过")
+            continue
+        pet_name = pet.get("name", "") or entry["name"]
+        plus, minus, notes = _team_code_personality(record["nature_letter"], record["correction"])
+        owned = {skill.get("skill_name") for skill in pet.get("skills", []) if isinstance(skill, dict)}
+        missing = [skill for skill in entry["skills"] if skill not in owned]
+        lines = [f"{entry['name']} → {_pet_label(pet)}"]
+        if candidate_count > 1:
+            if matched_count == 1:
+                lines.append(f"候选形态 {candidate_count} 个，技能表唯一确定这个形态")
+            elif matched_count > 1:
+                lines.append(f"候选形态 {candidate_count} 个，其中 {matched_count} 个的技能表都符合，已取第一个（请自行确认形态）")
+            else:
+                lines.append(f"候选形态 {candidate_count} 个，技能表都对不上，已取第一个（请自行确认形态）")
+        if missing:
+            lines.append("技能不在该精灵技能表里：" + "、".join(missing))
+        if plus and minus:
+            lines.append(f"性格：加{TEAM_CODE_STAT_LABELS[plus]}、减{TEAM_CODE_STAT_LABELS[minus]}")
+        lines.extend(notes)
+        report.append("｜".join(lines))
+
+        key = pet_name
+        suffix = 2
+        while key in items:
+            key = f"{pet_name} {suffix}"
+            suffix += 1
+        items[key] = {
+            "id": pet.get("id", ""),
+            "name": pet_name,
+            "iv": record["iv"],
+            "personality_bouns": plus,
+            "personality_down": minus,
+            "skills": list(entry["skills"]),
+            "bloodline": entry["bloodline"] or None,
+            "trait_override_query": None,
+            "trait_triggered": False,
+            "trait_stacks": 0,
+            "trait_choices": {},
+            "devolution": 0,
+            "mega": False,
+            "mega_form": None,
+        }
+
+    if not items:
+        raise ValueError("没有可导入的精灵，请检查阵容码内容")
+    presets[group_name] = items
+    _save_presets(presets)
+    return {"presets": list_presets()["groups"], "groupName": group_name, "report": report}
 
 
 def save_picker_config(payload: dict[str, Any]) -> dict[str, Any]:
@@ -1325,6 +1592,7 @@ def main() -> int:
             "skill-trigger-info",
             "save-preset",
             "manage-preset",
+            "import-team-code",
             "save-picker-config",
             "recognize-image-text",
             "classify-image-samples",
@@ -1375,6 +1643,8 @@ def main() -> int:
                 payload = save_preset(payload_arg)
             elif args.command == "manage-preset":
                 payload = manage_preset(payload_arg)
+            elif args.command == "import-team-code":
+                payload = import_team_code(payload_arg)
             elif args.command == "recognize-image-text":
                 payload = recognize_image_text(payload_arg)
             elif args.command == "classify-image-samples":

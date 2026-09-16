@@ -1545,6 +1545,43 @@ body:has(.battle-page.mixed-active) .app-header,
 .team-layout .team-right-skills { left: var(--right-skills-x); top: var(--right-skills-y); z-index: var(--right-skills-z); }
 .team-layout .team-weather { left: var(--weather-x); top: var(--weather-y); z-index: var(--weather-z); }
 
+/* 常规模式：技能卡片保持“技能名 + 按钮”一行排列，避免技能名被按钮挤成 0 宽。 */
+.battle-page.normal-mode .team-skill-panel .team-skill-card .skill-card-actions {
+  flex: 0 0 auto;
+  grid-template-columns: auto;
+  margin-top: 0;
+  width: auto;
+}
+
+/* 常规模式：技能卡片高度用界面配置里的“技能卡片高度”，不再被 82px 顶死。 */
+.battle-page.normal-mode .team-skill-panel .team-skill-card {
+  min-height: var(--skill-card-height);
+}
+
+/* 常规模式：buff 每行只有字段对（组名已移除），否则会被挤在 2em 的第一列里堆叠。 */
+.battle-page.normal-mode .team-buff-grid .buff-group {
+  grid-template-columns: 1fr;
+}
+
+/* 常规模式：面板偏窄时 buff 字段自动竖排，避免 label 和输入框叠在一起。 */
+.battle-page.normal-mode .team-buff-grid .buff-group-fields {
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--buff-width) + 46px), 1fr));
+}
+
+/* 常规模式：队伍面板层级封顶，保证“计算 / 应用 buff”栏不会被面板挡住。 */
+.battle-page.normal-mode .team-layout .team-left-roster { z-index: min(var(--left-roster-z), 12); }
+.battle-page.normal-mode .team-layout .team-right-roster { z-index: min(var(--right-roster-z), 12); }
+.battle-page.normal-mode .team-layout .team-left-bonus-toolbar { z-index: min(var(--left-bonus-tools-z), 12); }
+.battle-page.normal-mode .team-layout .team-right-bonus-toolbar { z-index: min(var(--right-bonus-tools-z), 12); }
+.battle-page.normal-mode .team-layout .team-left-buff { z-index: min(var(--left-buff-z), 12); }
+.battle-page.normal-mode .team-layout .team-right-buff { z-index: min(var(--right-buff-z), 12); }
+.battle-page.normal-mode .team-layout .team-left-skills { z-index: min(var(--left-skills-z), 12); }
+.battle-page.normal-mode .team-layout .team-right-skills { z-index: min(var(--right-skills-z), 12); }
+.battle-page.normal-mode .team-layout .team-weather { z-index: min(var(--weather-z), 12); }
+
+/* 常规模式：计算 / 应用 buff 栏优先显示（选精灵等弹窗和对战结果窗口仍在它之上）。 */
+.battle-page.normal-mode .normal-team-action { z-index: 19; }
+
 .team-layout > .roster,
 .team-layout > .team-bonus-toolbar,
 .team-layout > .team-buff-panel,
@@ -3381,6 +3418,96 @@ body:has(.plugin-mode) .app-header .weather-panel {
 .preset-pet-picker-button { font-size: var(--preset-pet-picker-font-size); height: var(--preset-pet-picker-height); width: var(--preset-pet-picker-width); }
 .preset-skill-reset-button { font-size: var(--preset-skill-reset-font-size); height: var(--preset-skill-reset-height); width: var(--preset-skill-reset-width); }
 .preset-editor-panel .team-skill-card .slot-action { font-size: var(--preset-skill-font-size); }
+
+/* 精灵保存页的技能卡片保持“技能名 + 按钮”一行排列：按钮按内容宽度，避免把技能名挤成 0 宽。 */
+.preset-editor-panel .team-skill-card .skill-card-actions {
+  flex: 0 0 auto;
+  grid-template-columns: auto;
+  margin-top: 0;
+  width: auto;
+}
+
+.preset-library-panel .preset-manager-header {
+  flex-wrap: wrap;
+}
+
+.preset-bloodline-row {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+
+.preset-bloodline-select {
+  flex: 0 1 var(--preset-pet-width);
+  font-size: var(--preset-pet-font-size);
+  height: var(--preset-pet-height);
+  width: min(100%, var(--preset-pet-width));
+}
+
+.team-code-modal {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 20px 70px rgba(20, 31, 43, 0.25);
+  display: grid;
+  gap: 8px;
+  max-height: calc(100vh - 48px);
+  max-width: calc(100vw - 36px);
+  overflow: auto;
+  padding: 14px;
+  width: min(560px, 92vw);
+}
+
+.team-code-modal header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.team-code-modal h2 {
+  font-size: 17px;
+  margin: 0;
+}
+
+.team-code-textarea {
+  font-size: 12px;
+  height: 160px;
+  width: 100%;
+}
+
+.team-code-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.team-code-group-input {
+  flex: 1 1 140px;
+}
+
+.team-code-hint {
+  color: #667789;
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.team-code-report {
+  background: #f7fbff;
+  border: 1px solid #d8e0e8;
+  border-radius: 6px;
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+}
+
+.team-code-report p {
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0;
+}
+
 .preset-iv-editor .iv-grid label { font-size: var(--preset-iv-font-size); }
 .preset-iv-editor .iv-grid select { flex: 0 0 var(--preset-iv-width); font-size: var(--preset-iv-number-font-size); height: var(--preset-iv-height); width: var(--preset-iv-width); }
 .preset-iv-editor .personality-row .field-label { color: inherit; font-size: var(--preset-iv-font-size); }
