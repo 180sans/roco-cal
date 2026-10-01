@@ -3,13 +3,32 @@
     "名称": "毒牙",
     "效果": "使敌方获得中毒时，也会使其获得物攻-40%和速度-40。",
     "battle_effect": {
-      "affects_battle": false,
-      "template": "ignored",
-      "stackable": true,
-      "permanent": false,
-      "stacks_input": true,
-      "stack_hint": "附带弱化的中毒触发次数",
-      "note": "速度下降未纳入当前结构化字段"
+      "affects_battle": true,
+      "effect_groups": [
+        {
+          "mode": "poison_application",
+          "context": {
+            "subject": "enemy",
+            "timing": "status_apply"
+          },
+          "stack": {
+            "enabled": true,
+            "input": true,
+            "permanent": false,
+            "hint": "附带弱化的中毒触发次数"
+          },
+          "effects": [
+            {
+              "kind": "stat_buff",
+              "target": "opponent",
+              "values_per_stack": {
+                "spd": -40
+              },
+              "value_type": "flat"
+            }
+          ]
+        }
+      ]
     }
   }
 }

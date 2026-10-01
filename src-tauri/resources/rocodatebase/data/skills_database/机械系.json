@@ -227,8 +227,23 @@
     "description": "自己获得速度+30，本技能位于1号位或3号位时额外获得物攻+80%，传动1。",
     "buff_options": [
       {
-        "label": "自己物攻 +80%",
+        "label": "自己速度 +30",
         "effects": [
+          {
+            "target": "self",
+            "field": "speed_buff",
+            "value": 30
+          }
+        ]
+      },
+      {
+        "label": "1/3号位：自己速度 +30 / 物攻 +80%",
+        "effects": [
+          {
+            "target": "self",
+            "field": "speed_buff",
+            "value": 30
+          },
           {
             "target": "self",
             "field": "phys_atk_buff",
@@ -286,6 +301,16 @@
             "target": "self",
             "field": "phys_atk_buff",
             "value": 90
+          }
+        ]
+      },
+      {
+        "label": "自己速度 +60",
+        "effects": [
+          {
+            "target": "self",
+            "field": "speed_buff",
+            "value": 60
           }
         ]
       }

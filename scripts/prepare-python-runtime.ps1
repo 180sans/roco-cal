@@ -86,7 +86,7 @@ try {
     }
 
     $modelsDir = Join-Path $resourcesDir "ocr-models"
-    $classifierModel = Join-Path $resourcesDir "image-classifier\model.onnx"
+    $classifierModel = Join-Path $resourcesDir "image-classifier\legacy_558.onnx"
     $smokeTest = @'
 import sys
 from pathlib import Path

@@ -99,7 +99,7 @@
     "description": "蓄力，自己获得双攻+150%和速度+80。",
     "buff_options": [
       {
-        "label": "自己物攻 +150% / 自己魔攻 +150%",
+        "label": "自己物攻 +150% / 自己魔攻 +150% / 自己速度 +80",
         "effects": [
           {
             "target": "self",
@@ -110,6 +110,11 @@
             "target": "self",
             "field": "mag_atk_buff",
             "value": 150
+          },
+          {
+            "target": "self",
+            "field": "speed_buff",
+            "value": 80
           }
         ]
       }

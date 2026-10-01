@@ -27,7 +27,8 @@
                             "target": "self",
                             "values_per_stack": {
                                 "spd": 5
-                            }
+                            },
+                            "value_type": "flat"
                         }
                     ]
                 }

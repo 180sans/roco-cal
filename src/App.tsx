@@ -4,7 +4,6 @@ import { cursorPosition, getCurrentWindow, LogicalSize } from "@tauri-apps/api/w
 import { createPortal } from "react-dom";
 import { Fragment, type CSSProperties, type PointerEvent as ReactPointerEvent, type PointerEventHandler as ReactPointerEventHandler, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { prepareNumericImage, type NumericOcrMode } from "./numericOcr";
-import { ReplayPage } from "./replay/ReplayPage";
 
 const STATS = ["hp", "atk", "mag", "def", "res", "spd"] as const;
 const STAT_LABEL: Record<(typeof STATS)[number], string> = {
@@ -407,6 +406,7 @@ const BUFF_STATE_FIELDS = [
   "mag_atk_buff",
   "phys_def_buff",
   "mag_def_buff",
+  "speed_buff",
   "power_multiplier",
   "power_bonus",
   "combo_plus",
@@ -456,6 +456,7 @@ type UnitState = {
   mag_atk_buff: number;
   phys_def_buff: number;
   mag_def_buff: number;
+  speed_buff: number;
   power_multiplier: number;
   power_bonus: number;
   combo_plus: number;
@@ -484,6 +485,16 @@ type BattleResult = {
   hp_results: Array<{ hp_label: string; hp: number; damage_percent: number }>;
 };
 type QuickSkillResult = { skillName: string; displayPower?: number | null; results: BattleResult[] };
+type EnemyAttackSkillCell = {
+  skillName: string;
+  displayName: string;
+  skillPower?: number | null;
+  damage?: number | null;
+  element?: string;
+};
+type EnemyAttackSkillRow = { label: string; skills: Array<EnemyAttackSkillCell | null> };
+type EnemyAttackSkillGroup = { attackType: "物攻" | "魔攻"; skills: string[]; rows: EnemyAttackSkillRow[] };
+type EnemyAttackSkillResponse = { targetHp: number; groups: EnemyAttackSkillGroup[] };
 type WillpowerElementResult = { element: string; advantage: number; has_stab: boolean; results: BattleResult[] };
 type WillpowerResponse = { attack_type: "atk" | "mag"; elements: WillpowerElementResult[] };
 type RequiredPowerRow = { attack_type: "物攻" | "魔攻"; attacker_label: string; required_power: number };
@@ -580,6 +591,7 @@ function blankUnit(): UnitState {
     mag_atk_buff: 0,
     phys_def_buff: 0,
     mag_def_buff: 0,
+    speed_buff: 0,
     power_multiplier: 0,
     power_bonus: 0,
     combo_plus: 0,
@@ -608,6 +620,12 @@ function applyBuffEffect(unit: UnitState, effect: BuffEffect): UnitState {
   const current = unit[effect.field];
   const nextValue = current + effect.value;
   return { ...unit, [effect.field]: nextValue } as UnitState;
+}
+
+// 显示用精灵名：槽位里存的是“编号+名字”，界面只展示名字。
+function petNameOnly(value: string | null | undefined) {
+  const text = (value || "").trim();
+  return text.replace(/^\d+\s*/, "") || text;
 }
 
 function unitFromPreset(preset: PresetItem, showPresetName = false): UnitState {
@@ -729,8 +747,8 @@ function asError(err: unknown) {
 
 function battleContextFromUnits(attacker: UnitState, defender: UnitState): BattleContext {
   return {
-    attackerName: attacker.mega_form || attacker.display_name || attacker.name || "攻击方",
-    defenderName: defender.mega_form || defender.display_name || defender.name || "防御方",
+    attackerName: petNameOnly(attacker.mega_form || attacker.display_name || attacker.name) || "攻击方",
+    defenderName: petNameOnly(defender.mega_form || defender.display_name || defender.name) || "防御方",
     skillName: attacker.current_skill || attacker.skills[0] || "",
     attackerIv: attacker.iv,
     attackerPersonalityBouns: attacker.personality_bouns,
@@ -901,6 +919,7 @@ function FieldLabel({ children, className = "" }: { children: React.ReactNode; c
 }
 
 type SpeedScenario = { label: "速度-" | "速度" | "速度+" | "速度++"; value: number };
+type SpeedModifiers = { flat: number; percent: number };
 
 function personalityValue(value: string | null, stat: string, direction: 1 | -1) {
   const parsed = parsePersonality(value);
@@ -919,7 +938,7 @@ function speedValue(raceValue: number, iv: number, personality: number | null) {
   return Math.floor((base * (1 + (personality || 0))) + effort + 0.5);
 }
 
-function speedScenarios(value: UnitState, pets: Pet[]): SpeedScenario[] {
+function speedScenarios(value: UnitState, pets: Pet[], modifiers: SpeedModifiers = { flat: 0, percent: 0 }): SpeedScenario[] {
   // display_name is a user-defined preset label; calculations must use the pet identity.
   const petName = value.mega_form || value.name;
   const pet = pets.find((item) => item.label === petName || item.name === petName || `${item.id}${item.name}` === petName);
@@ -953,8 +972,35 @@ function speedScenarios(value: UnitState, pets: Pet[]): SpeedScenario[] {
   }];
   return scenarios.map((scenario) => ({
     label: scenario.label,
-    value: speedValue(pet.spd!, scenario.iv, scenario.personality),
+    value: Math.floor((speedValue(pet.spd!, scenario.iv, scenario.personality) + (value.speed_buff || 0) + modifiers.flat) * (1 + modifiers.percent)),
   }));
+}
+
+function traitSpeedModifiers(runtime: any, weather: string, recipient: "self" | "opponent"): SpeedModifiers {
+  let flat = 0;
+  let percent = 0;
+  if (!runtime?.active || !Array.isArray(runtime.resolved_effects)) return { flat, percent };
+  for (const effect of runtime.resolved_effects) {
+    if (effect?.kind !== "stat_buff") continue;
+    const stats = Array.isArray(effect.stats) ? effect.stats : [];
+    if (!stats.includes("spd")) continue;
+    const target = effect.target;
+    if (target !== "all" && (recipient === "self" ? target !== "self" && target != null : target !== "opponent")) continue;
+    const context = effect.context;
+    if (context?.subject === "weather" && effect.context_mode && effect.context_mode !== weather) continue;
+    const numeric = Number(effect.value);
+    if (!Number.isFinite(numeric)) continue;
+    const valueType = effect.value_type === "flat" || effect.value_type === "percent"
+      ? effect.value_type
+      : Math.abs(numeric) <= 1 ? "percent" : "flat";
+    if (valueType === "percent") percent += numeric;
+    else flat += numeric;
+  }
+  return { flat, percent };
+}
+
+function addSpeedModifiers(first: SpeedModifiers, second: SpeedModifiers): SpeedModifiers {
+  return { flat: first.flat + second.flat, percent: first.percent + second.percent };
 }
 
 function PluginResizeEdges({ onPointerDown }: { onPointerDown?: ReactPointerEventHandler<HTMLDivElement> }) {
@@ -968,6 +1014,39 @@ function PluginResizeEdges({ onPointerDown }: { onPointerDown?: ReactPointerEven
 
 function PluginDragZone() {
   return <div className="plugin-drag-zone" aria-label="拖动面板" />;
+}
+
+/* 展开浮层默认向下、向右展开；贴到屏幕边缘时自动翻到另一侧，避免被裁掉。 */
+function usePopupPlacement(open: boolean, anchorRef: React.RefObject<HTMLElement | null>, popupRef: React.RefObject<HTMLElement | null>) {
+  const [placement, setPlacement] = useState({ up: false, left: false });
+  useEffect(() => {
+    if (!open) {
+      setPlacement({ up: false, left: false });
+      return;
+    }
+    const measure = () => {
+      const anchor = anchorRef.current;
+      if (!anchor) return;
+      const rect = anchor.getBoundingClientRect();
+      const popup = popupRef.current;
+      const neededHeight = (popup?.offsetHeight || 240) + 8;
+      const neededWidth = (popup?.offsetWidth || 320) + 8;
+      setPlacement({
+        up: window.innerHeight - rect.bottom < neededHeight && rect.top > neededHeight,
+        left: rect.right + neededWidth > window.innerWidth && rect.left - neededWidth > 0,
+      });
+    };
+    measure();
+    const timer = window.setTimeout(measure, 0);
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+    };
+  }, [open, anchorRef, popupRef]);
+  return placement;
 }
 
 function NumberInput({
@@ -1510,13 +1589,8 @@ function TeamActionPanel({
     <section ref={panelRef} className={pluginMode ? "team-action-floating" : "team-action-floating normal-team-action"} data-panel-state="armed" data-overlay-control data-plugin-resizable={pluginMode || undefined} data-plugin-overlay-id={pluginMode ? "action" : undefined} style={{ left: position.x, top: position.y, width: pluginMode && layout ? layout.width : undefined, height: pluginMode && layout ? layout.height : undefined, ...(pluginMode ? pluginContentStyle(layout) : {}) }} onPointerDown={startDrag}>
       {pluginMode ? <PluginResizeEdges /> : null}
       <div className="team-action-buttons">
-        <button className="direction-button" title="切换攻击方向" onClick={onToggleDirection}>
-          {leftAttacks ? "→" : "←"}
-        </button>
         <button className="calc-button" onClick={onCalculate}>计算</button>
         <button className="calc-button" onClick={onResetBattle}>对局重置</button>
-        <input className="required-power-input" aria-label="我方血量" type="number" min="1" value={targetHp || ""} placeholder="我方血量" onChange={(event) => onTargetHpChange(Math.max(0, Number(event.target.value) || 0))} />
-        <button className="calc-button" onClick={onCalculateRequiredPower} disabled={!targetHp}>判死</button>
         <select
           className="buff-option-select"
           value={buffOptions.length ? selectedBuffOption : ""}
@@ -1704,6 +1778,13 @@ function defaultPluginOverlayLayout(id: string): PluginOverlayLayout {
   if (id === "speed-line") {
     return { x: Math.max(8, Math.round(window.innerWidth / 2 - 130)), y: 132, width: 260, height: 86 };
   }
+  if (id === "speed-buffs") {
+    const base = defaultPluginOverlayLayout("speed-line");
+    return { x: base.x, y: base.y + base.height + 8, width: base.width, height: 96 };
+  }
+  if (id === "right-watch") {
+    return { x: 520, y: 120, width: 148, height: 96 };
+  }
   const isRight = id.includes("right-");
   const isEvolution = id.includes("evolution");
   const skillIndex = Number(id.match(/skill-(\d+)$/)?.[1] || 0);
@@ -1842,6 +1923,7 @@ function TeamBattlePage({
   const [rightMarkFields, setRightMarkFields] = useState<MarkField[]>([]);
   const [results, setResults] = useState<BattleResult[]>([]);
   const [quickSkillResults, setQuickSkillResults] = useState<QuickSkillResult[] | null>(null);
+  const [enemyAttackResults, setEnemyAttackResults] = useState<EnemyAttackSkillResponse | null>(null);
   const [targetHp, setTargetHp] = useState(0);
   const [requiredPower, setRequiredPower] = useState<RequiredPowerResponse | null>(null);
   const [willpower, setWillpower] = useState<WillpowerResponse | null>(null);
@@ -1857,6 +1939,7 @@ function TeamBattlePage({
   const [targetStatus, setTargetStatus] = useState("");
   const targetStatusTimerRef = useRef<number | undefined>(undefined);
   const calculateQuickSkillsRef = useRef<() => void>(() => undefined);
+  const calculateEnemyAttackSkillsRef = useRef<() => void>(() => undefined);
   const hideQuickSkillResultsRef = useRef<() => void>(() => undefined);
   const [targetAttached, setTargetAttached] = useState(false);
   const [mixedMode, setMixedMode] = useState(false);
@@ -2000,20 +2083,47 @@ function TeamBattlePage({
   }
 
   function overlayLayout(id: string) {
+    if (id === "speed-buffs" && !overlayLayouts[id] && !defaultOverlayLayoutsRef.current[id]) {
+      // 速度增益默认贴在速度线面板正下方，与速度线保持明显间隔。
+      const base = overlayLayouts["speed-line"]
+        || defaultOverlayLayoutsRef.current["speed-line"]
+        || (defaultOverlayLayoutsRef.current["speed-line"] = defaultPluginOverlayLayout("speed-line"));
+      defaultOverlayLayoutsRef.current[id] = { x: base.x, y: base.y + base.height + 8, width: base.width, height: 96 };
+    }
     const defaultLayout = defaultOverlayLayoutsRef.current[id] || (defaultOverlayLayoutsRef.current[id] = defaultPluginOverlayLayout(id));
     return overlayLayouts[id] || defaultLayout;
   }
 
-  function updateOverlayLayout(id: string, partial: Partial<PluginOverlayLayout>) {
+  function updateOverlayLayout(id: string, partial: Partial<PluginOverlayLayout>, syncSkillSize = true) {
     setOverlayLayouts((current) => {
-      const previous = current[id] || defaultOverlayLayoutsRef.current[id] || (defaultOverlayLayoutsRef.current[id] = defaultPluginOverlayLayout(id));
-      const next = { ...previous, ...partial };
-      if (
-        previous.x === next.x && previous.y === next.y
-        && previous.width === next.width && previous.height === next.height
-        && previous.contentX === next.contentX && previous.contentY === next.contentY
-      ) return current;
-      return { ...current, [id]: next };
+      const nextLayouts = { ...current };
+      let changed = false;
+      const applyTo = (targetId: string, patch: Partial<PluginOverlayLayout>) => {
+        const previous = nextLayouts[targetId] || defaultOverlayLayoutsRef.current[targetId] || (defaultOverlayLayoutsRef.current[targetId] = defaultPluginOverlayLayout(targetId));
+        const next = { ...previous, ...patch };
+        if (
+          previous.x === next.x && previous.y === next.y
+          && previous.width === next.width && previous.height === next.height
+          && previous.contentX === next.contentX && previous.contentY === next.contentY
+        ) return;
+        nextLayouts[targetId] = next;
+        changed = true;
+      };
+      applyTo(id, partial);
+
+      // 同一侧的四个技能框尺寸联动，宽度和高度一起跟随。
+      const skillMatch = /^(left|right)-skill-(\d+)$/.exec(id);
+      if (syncSkillSize && skillMatch && (partial.width !== undefined || partial.height !== undefined)) {
+        const sync: Partial<PluginOverlayLayout> = {};
+        if (partial.width !== undefined) sync.width = partial.width;
+        if (partial.height !== undefined) sync.height = partial.height;
+        for (let other = 0; other < pluginSkillCardCount; other += 1) {
+          const otherId = `${skillMatch[1]}-skill-${other}`;
+          if (otherId !== id) applyTo(otherId, sync);
+        }
+      }
+
+      return changed ? nextLayouts : current;
     });
   }
 
@@ -2537,6 +2647,8 @@ function TeamBattlePage({
     setLeftMarkFields([]);
     setRightMarkFields([]);
     setResults([]);
+    setQuickSkillResults(null);
+    setEnemyAttackResults(null);
     setWillpower(null);
     setRequiredPower(null);
     setBattleContext(null);
@@ -2978,13 +3090,63 @@ function TeamBattlePage({
     }
   }
 
+  async function calculateEnemyAttackSkills() {
+    if (displayMode !== "plugin") return;
+    const attacker = rightSlots[rightIndex];
+    const defender = leftSlots[leftIndex];
+    const targetHp = Number(detectedHealth.self.match(/^\s*(\d+)/)?.[1] || 0);
+    if (!targetHp) {
+      setError("未识别到有效的我方当前血量");
+      return;
+    }
+    setError("");
+    try {
+      const data = await invoke<EnemyAttackSkillResponse>("calculate_enemy_attack_skills", {
+        payload: {
+          attacker: { ...attacker, other_bonuses: rightOtherBonuses },
+          defender: { ...defender, other_bonuses: leftOtherBonuses },
+          target_hp: targetHp,
+          weather,
+        },
+      });
+      setEnemyAttackResults(data);
+      setQuickSkillResults(null);
+      setResults([]);
+      setWillpower(null);
+      setRequiredPower(null);
+      setBattleContext(null);
+    } catch (err) {
+      setEnemyAttackResults(null);
+      setError(asError(err));
+    }
+  }
+
   calculateQuickSkillsRef.current = () => void calculateQuickSkills();
-  hideQuickSkillResultsRef.current = () => setQuickSkillResults(null);
+  calculateEnemyAttackSkillsRef.current = () => void calculateEnemyAttackSkills();
+  hideQuickSkillResultsRef.current = () => {
+    setQuickSkillResults(null);
+    setEnemyAttackResults(null);
+  };
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
     let disposed = false;
     void listen("overlay-quick-calculate", () => calculateQuickSkillsRef.current())
+      .then((dispose) => {
+        if (disposed) dispose();
+        else unlisten = dispose;
+      })
+      .catch((err) => setError(asError(err)));
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let disposed = false;
+    void listen("overlay-enemy-attack-calculate", () => calculateEnemyAttackSkillsRef.current())
       .then((dispose) => {
         if (disposed) dispose();
         else unlisten = dispose;
@@ -3109,6 +3271,21 @@ function TeamBattlePage({
   const pluginSkillCardCount = Math.max(DEFAULT_SKILL_CARD_COUNT, teamSkillCardCount);
   const leftPluginSkillSlots = skillCardSlots(leftSlots[leftIndex].skills, pluginSkillCardCount);
   const rightPluginSkillSlots = skillCardSlots(rightSlots[rightIndex].skills, pluginSkillCardCount);
+  // 醒目技能：关注敌方当前精灵是否可能携带某些技能，配置存在 team_layout 里，默认空。
+  const watchSkills = useMemo(() => {
+    const saved = configs.team_layout?.watch_skills;
+    return Array.isArray(saved) ? saved.filter((item): item is string => typeof item === "string") : [];
+  }, [configs]);
+  async function setWatchSkills(next: string[]) {
+    try {
+      const data = await invoke<{ configs: PickerConfigs }>("save_picker_config", {
+        payload: { section: "team_layout", values: { watch_skills: next } },
+      });
+      onConfigsChanged(data.configs);
+    } catch (err) {
+      setError(asError(err));
+    }
+  }
 
   return (
     <section
@@ -3171,6 +3348,7 @@ function TeamBattlePage({
             <button onClick={() => void recognizeDetection("battleStart")} disabled={!targetAttached}>开始识别 Ctrl+B</button>
             <button onClick={() => void recognizeDetection("battleLive")} disabled={!targetAttached}>战斗识别 Ctrl+U</button>
             <button onClick={() => void recognizeSkillPowers()} disabled={!targetAttached}>威力识别 Ctrl+P</button>
+            <button onClick={() => void calculateEnemyAttackSkills()} disabled={!targetAttached}>敌方攻击 Ctrl+K</button>
           </div>
         </details> : null}
         {targetStatus || layoutMessage || detectionMessage ? <span>{targetStatus || layoutMessage || detectionMessage}</span> : null}
@@ -3196,7 +3374,18 @@ function TeamBattlePage({
         <Roster panelState={panelState(leftSlots.some((slot) => Boolean(slot.name)))} pluginMode={displayMode === "plugin"} className="team-left-roster" title="队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={leftSlots} activeIndex={leftIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("left", groupName)} onSelect={setLeftIndex} onPatchSlot={(partial) => patchSlot("left", leftIndex, partial)} onPatchSlotAt={(index, partial) => patchSlot("left", index, partial)} onChoose={(index) => { setLeftIndex(index); setPetPicker({ side: "left", index }); }} onClear={(index) => setSlot("left", index, blankUnit())} />
         <Roster panelState={panelState(rightSlots.some((slot) => Boolean(slot.name)))} pluginMode={displayMode === "plugin"} className="team-right-roster" title="队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={rightSlots} activeIndex={rightIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("right", groupName)} onSelect={setRightIndex} onPatchSlot={(partial) => patchSlot("right", rightIndex, partial)} onPatchSlotAt={(index, partial) => patchSlot("right", index, partial)} onChoose={(index) => { setRightIndex(index); setPetPicker({ side: "right", index }); }} onClear={(index) => setSlot("right", index, blankUnit())} />
         {displayMode === "plugin" ? <>
-          <SpeedLine left={leftSlots[leftIndex]} right={rightSlots[rightIndex]} pets={pets} layout={overlayLayout("speed-line")} onLayoutChange={(partial) => updateOverlayLayout("speed-line", partial)} />
+          <SpeedLine
+            left={leftSlots[leftIndex]}
+            right={rightSlots[rightIndex]}
+            pets={pets}
+            weather={weather}
+            layout={overlayLayout("speed-line")}
+            buffLayout={overlayLayout("speed-buffs")}
+            onLayoutChange={(partial) => updateOverlayLayout("speed-line", partial)}
+            onBuffLayoutChange={(partial) => updateOverlayLayout("speed-buffs", partial)}
+            onChangeLeft={(partial) => patchSlot("left", leftIndex, partial)}
+            onChangeRight={(partial) => patchSlot("right", rightIndex, partial)}
+          />
           <FloatingTeamPanel panelState={panelState(leftSlots[leftIndex]?.trait_triggered || leftSlots[leftIndex]?.trait_stacks > 0)} className="trait-floating-panel team-left-trait" layout={overlayLayout("left-trait")} onLayoutChange={(partial) => updateOverlayLayout("left-trait", partial)}><TeamTraitEditor expanded={openPopover.left === "trait"} onExpandedChange={(next) => togglePopover("left", "trait", next)} value={leftSlots[leftIndex]} pets={pets} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onChange={(partial) => patchSlot("left", leftIndex, partial)} /></FloatingTeamPanel>
           <FloatingTeamPanel panelState={panelState(rightSlots[rightIndex]?.trait_triggered || rightSlots[rightIndex]?.trait_stacks > 0)} className="trait-floating-panel team-right-trait" layout={overlayLayout("right-trait")} onLayoutChange={(partial) => updateOverlayLayout("right-trait", partial)}><TeamTraitEditor expanded={openPopover.right === "trait"} onExpandedChange={(next) => togglePopover("right", "trait", next)} value={rightSlots[rightIndex]} pets={pets} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onChange={(partial) => patchSlot("right", rightIndex, partial)} /></FloatingTeamPanel>
           <FloatingTeamPanel panelState={panelState(leftSlots[leftIndex]?.devolution > 0 || Boolean(leftSlots[leftIndex]?.mega))} className="team-left-evolution" layout={overlayLayout("left-evolution")} onLayoutChange={(partial) => updateOverlayLayout("left-evolution", partial)}><TeamEvolutionControls value={leftSlots[leftIndex]} pets={pets} onChange={(partial) => patchSlot("left", leftIndex, partial)} /></FloatingTeamPanel>
@@ -3224,11 +3413,16 @@ function TeamBattlePage({
         <TeamBuffPanel className="team-right-buff" title={displayMode === "plugin" ? "buff" : "敌方 buff"} expanded={displayMode === "plugin" ? openPopover.right === "buff" : undefined} onExpandedChange={(next) => togglePopover("right", "buff", next)} onMove={(delta) => moveRegion("right-buff", { x: regionPositions["right-buff"].x + delta.x, y: regionPositions["right-buff"].y + delta.y })} value={rightSlots[rightIndex]} onChange={(partial) => patchSlot("right", rightIndex, partial)} />
         {displayMode === "plugin" ? <>
           {Array.from({ length: pluginSkillCardCount }, (_, skillIndex) => (
-            <TeamSkillCards key={`left-skill-${skillIndex}`} panelState={panelState(Boolean(leftPluginSkillSlots[skillIndex]))} pluginMode className={`team-left-skill-${skillIndex}`} title={`技能 ${skillIndex + 1}`} cardCount={pluginSkillCardCount} onlyIndex={skillIndex} floating layout={overlayLayout(`left-skill-${skillIndex}`)} onLayoutChange={(partial) => updateOverlayLayout(`left-skill-${skillIndex}`, partial)} value={leftSlots[leftIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onApplySkill={leftAttacks ? (skill) => void applyBuff(skill) : undefined} quickResult={leftAttacks ? quickSkillResults?.find((item) => item.skillName === leftPluginSkillSlots[skillIndex]) || null : null} onChange={(partial) => patchSlot("left", leftIndex, partial)} />
+            <TeamSkillCards key={`left-skill-${skillIndex}`} panelState={panelState(Boolean(leftPluginSkillSlots[skillIndex]))} pluginMode className={`team-left-skill-${skillIndex}`} title={`技能 ${skillIndex + 1}`} cardCount={pluginSkillCardCount} onlyIndex={skillIndex} floating layout={overlayLayout(`left-skill-${skillIndex}`)} onLayoutChange={(partial) => updateOverlayLayout(`left-skill-${skillIndex}`, partial, false)} value={leftSlots[leftIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onApplySkill={leftAttacks ? (skill) => void applyBuff(skill) : undefined} quickResult={leftAttacks ? quickSkillResults?.find((item) => item.skillName === leftPluginSkillSlots[skillIndex]) || null : null} onChange={(partial) => patchSlot("left", leftIndex, partial)} />
           ))}
-          {Array.from({ length: pluginSkillCardCount }, (_, skillIndex) => (
-            <TeamSkillCards key={`right-skill-${skillIndex}`} panelState={panelState(Boolean(rightPluginSkillSlots[skillIndex]))} pluginMode className={`team-right-skill-${skillIndex}`} title={`技能 ${skillIndex + 1}`} cardCount={pluginSkillCardCount} onlyIndex={skillIndex} floating layout={overlayLayout(`right-skill-${skillIndex}`)} onLayoutChange={(partial) => updateOverlayLayout(`right-skill-${skillIndex}`, partial)} value={rightSlots[rightIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onApplySkill={!leftAttacks ? (skill) => void applyBuff(skill) : undefined} quickResult={!leftAttacks ? quickSkillResults?.find((item) => item.skillName === rightPluginSkillSlots[skillIndex]) || null : null} onChange={(partial) => patchSlot("right", rightIndex, partial)} />
-          ))}
+          <EnemyWatchSkillsPanel
+            key="right-watch"
+            layout={overlayLayout("right-watch")}
+            onLayoutChange={(partial) => updateOverlayLayout("right-watch", partial)}
+            watchSkills={watchSkills}
+            enemyName={rightSlots[rightIndex]?.name || ""}
+            onRemove={(name) => setWatchSkills(watchSkills.filter((item) => item !== name))}
+          />
         </> : <>
           <TeamSkillCards className="team-left-skills" title="己方技能卡片" cardCount={teamSkillCardCount} value={leftSlots[leftIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onApplySkill={leftAttacks ? (skill) => void applyBuff(skill) : undefined} onChange={(partial) => patchSlot("left", leftIndex, partial)} />
           <TeamSkillCards className="team-right-skills" title="敌方技能卡片" cardCount={teamSkillCardCount} value={rightSlots[rightIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onApplySkill={!leftAttacks ? (skill) => void applyBuff(skill) : undefined} onChange={(partial) => patchSlot("right", rightIndex, partial)} />
@@ -3267,6 +3461,7 @@ function TeamBattlePage({
           onSelectWillpowerElement={selectWillpowerElement}
         />
         {requiredPower ? <RequiredPowerView value={requiredPower} context={battleContext} /> : null}
+        {enemyAttackResults ? <EnemyAttackSkillPanel value={enemyAttackResults} onClose={() => setEnemyAttackResults(null)} /> : null}
       </div>
       {petPicker ? (
         <PickerModal
@@ -3321,6 +3516,7 @@ function PresetManagerPage({
   const [editor, setEditor] = useState<UnitState>(blankUnit());
   const [picker, setPicker] = useState<"pet" | null>(null);
   const [skillPickerIndex, setSkillPickerIndex] = useState<number | null>(null);
+  const [watchPicker, setWatchPicker] = useState(false);
   const [skillData, setSkillData] = useState<SkillListResult>({ petSkills: [], allSkills: [] });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -3348,6 +3544,29 @@ function PresetManagerPage({
     if (skillPickerIndex === null) return;
     void cachedListSkills(editor.name).then(setSkillData).catch(() => setSkillData({ petSkills: [], allSkills: [] }));
   }, [editor.name, skillPickerIndex]);
+
+  // 醒目技能：全局关注列表，存在 team_layout 里；插件模式的敌方面板按它提示。
+  const watchSkills = useMemo(() => {
+    const saved = configs.team_layout?.watch_skills;
+    return Array.isArray(saved) ? saved.filter((item): item is string => typeof item === "string") : [];
+  }, [configs]);
+
+  useEffect(() => {
+    if (!watchPicker) return;
+    void cachedListSkills("").then(setSkillData).catch(() => setSkillData({ petSkills: [], allSkills: [] }));
+  }, [watchPicker]);
+
+  async function saveWatchSkills(next: string[]) {
+    try {
+      const data = await invoke<{ configs: PickerConfigs }>("save_picker_config", {
+        payload: { section: "team_layout", values: { watch_skills: next } },
+      });
+      onConfigsChanged(data.configs);
+      setMessage("醒目技能已保存");
+    } catch (err) {
+      setError(asError(err));
+    }
+  }
 
   function patchEditor(partial: Partial<UnitState>) {
     setEditor((value) => ({ ...value, ...partial }));
@@ -3577,6 +3796,25 @@ function PresetManagerPage({
             onClear={clearSkillAt}
           />
         </section>
+        <section className="preset-editor-section">
+          <div className="panel-title">
+            <h2 className="preset-skills-title">醒目技能</h2>
+            <button className="compact-button" onClick={() => setWatchPicker(true)}>选择技能</button>
+          </div>
+          {watchSkills.length ? (
+            <div className="watch-skill-chips">
+              {watchSkills.map((name) => (
+                <button
+                  type="button"
+                  className="watch-skill-chip"
+                  key={name}
+                  title="点击移除"
+                  onClick={() => void saveWatchSkills(watchSkills.filter((item) => item !== name))}
+                >{name} ×</button>
+              ))}
+            </div>
+          ) : <p className="muted preset-watch-hint">未配置。选中的技能会在插件模式右侧「醒目技能」面板里，按敌方当前精灵技能库命中情况显示。</p>}
+        </section>
         <section className="preset-editor-section preset-transfer-section">
           <div className="preset-transfer-target">
             <FieldLabel className="preset-transfer-label"><span className="ui-field-title preset-section-title">目标分组</span></FieldLabel>
@@ -3635,6 +3873,25 @@ function PresetManagerPage({
           onPickSkill={(skill) => {
             setSkillAt(skillPickerIndex, skill.name);
             setSkillPickerIndex(null);
+          }}
+          onPickTrait={() => undefined}
+        />
+      ) : null}
+      {watchPicker ? (
+        <PickerModal
+          mode="skill"
+          pets={[]}
+          elements={elements}
+          /* 醒目技能是全局关注列表：两个标签都给完整技能库，避免默认标签是空的。 */
+          petSkills={skillData.allSkills}
+          allSkills={skillData.allSkills}
+          traits={[]}
+          configs={configs}
+          onConfigsChanged={onConfigsChanged}
+          onClose={() => setWatchPicker(false)}
+          onPickPet={() => undefined}
+          onPickSkill={(skill) => {
+            if (!watchSkills.includes(skill.name)) void saveWatchSkills([...watchSkills, skill.name]);
           }}
           onPickTrait={() => undefined}
         />
@@ -3730,7 +3987,11 @@ function TeamSkillCards({
   const controlSkill = onlyIndex === undefined ? currentSkill : cards[0]?.name || "";
 
   function startFloatingDrag(event: ReactPointerEvent<HTMLElement>) {
-    if (!floating || (event.target as HTMLElement).closest("button, input, select, textarea, [role=button], summary, .plugin-resize-edge")) return;
+    if (!floating || pickerIndex !== null) return;
+    const dragTarget = event.target as HTMLElement;
+    if (dragTarget.closest("button, input, select, textarea, summary, .plugin-resize-edge")) return;
+    // 技能卡自身也可以拖动：超过阈值才算移动，普通点击仍然是选技能。
+    if (dragTarget.closest("[role=button]") && !dragTarget.closest(".team-skill-card")) return;
     event.preventDefault();
     const start = { pointerX: event.clientX, pointerY: event.clientY, ...(layout || defaultPluginOverlayLayout(className)) };
     const move = (moveEvent: PointerEvent) => {
@@ -3768,19 +4029,22 @@ function TeamSkillCards({
     return () => { cancelled = true; };
   }, [controlSkill]);
 
+  // 观察器只在挂载时建立一次；回调走 ref，避免每次渲染重建订阅导致拖拽时尺寸互相回写。
+  const layoutChangeRef = useRef(onLayoutChange);
+  layoutChangeRef.current = onLayoutChange;
   useEffect(() => {
-    if (!floating || !panelRef.current || !onLayoutChange) return;
+    if (!floating || !panelRef.current) return;
     const panel = panelRef.current;
     const observer = new ResizeObserver(() => {
       if (panel.dataset.pluginResizing === "true") return;
       const width = panel.offsetWidth;
       const height = panel.offsetHeight;
       if (width <= 0 || height <= 0) return;
-      onLayoutChange({ width, height });
+      layoutChangeRef.current?.({ width, height });
     });
     observer.observe(panel);
     return () => observer.disconnect();
-  }, [floating, onLayoutChange]);
+  }, [floating]);
 
   function setSkillAt(index: number, skillName: string) {
     const next = skillCardSlots(value.skills, Math.max(cardCount, value.skills.length));
@@ -3851,7 +4115,7 @@ function TeamSkillCards({
             );
           })}
           {skillInfo?.stackable.length ? <button className="compact-button skill-reset-button" onClick={() => onChange({ skill_trigger_stacks: { ...value.skill_trigger_stacks, [controlSkill]: [] } })}>重置</button> : null}
-          {skillInfo?.has_buff && onApplySkill ? <button className="compact-button" onClick={() => onApplySkill(controlSkill)}>应用</button> : null}
+          {!pluginMode && skillInfo?.has_buff && onApplySkill ? <button className="compact-button" onClick={() => onApplySkill(controlSkill)}>应用</button> : null}
           {skillInfo && skillInfo.usage_mode_options.length > 1 && value.usage_time_plus > 0 ? (
           <div className="skill-stack-control">
             <FieldLabel>使用强化</FieldLabel>
@@ -3891,6 +4155,47 @@ function TeamSkillCards({
         />
       ) : null}
     </section>
+  );
+}
+
+/* 敌方醒目技能：只列出我方配置关注、且敌方当前精灵可能拥有的技能。 */
+function EnemyWatchSkillsPanel({ layout, onLayoutChange, watchSkills, enemyName, onRemove }: {
+  layout: PluginOverlayLayout;
+  onLayoutChange: (partial: Partial<PluginOverlayLayout>) => void;
+  watchSkills: string[];
+  enemyName: string;
+  onRemove: (name: string) => void;
+}) {
+  const [petSkillNames, setPetSkillNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!enemyName) {
+      setPetSkillNames([]);
+      return;
+    }
+    let cancelled = false;
+    void cachedListSkills(enemyName)
+      .then((data) => { if (!cancelled) setPetSkillNames(data.petSkills.map((item) => item.name)); })
+      .catch(() => { if (!cancelled) setPetSkillNames([]); });
+    return () => { cancelled = true; };
+  }, [enemyName]);
+
+  const matched = watchSkills.filter((name) => petSkillNames.includes(name));
+
+  return (
+    <FloatingTeamPanel className="watch-skill-panel" layout={layout} onLayoutChange={onLayoutChange}>
+      <div className="watch-skill-title">醒目技能</div>
+      {matched.length ? (
+        <div className="watch-skill-list">
+          {matched.map((name) => (
+            <div className="watch-skill-item" key={name}>
+              <span>{name}</span>
+              <button type="button" className="compact-button watch-skill-remove" title="从醒目技能移除" onClick={() => onRemove(name)}>×</button>
+            </div>
+          ))}
+        </div>
+      ) : <div className="watch-skill-empty">无</div>}
+    </FloatingTeamPanel>
   );
 }
 
@@ -4271,10 +4576,13 @@ function TeamBuffPanel({
 }) {
   const [localExpanded, setLocalExpanded] = useState(false);
   const suppressSummaryClickRef = useRef(false);
+  const panelRef = useRef<HTMLDetailsElement | null>(null);
+  const popupRef = useRef<HTMLDivElement | null>(null);
   const expanded = expandedProp ?? localExpanded;
   const setExpanded = (next: boolean) => (expandedProp === undefined ? setLocalExpanded(next) : onExpandedChange?.(next));
   const isActive = (field: BuffField) => value[field.key] !== (field.base ?? 0);
   const activeBuffs = BUFF_FIELDS.filter(isActive);
+  const popupPlacement = usePopupPlacement(Boolean(expanded), panelRef, popupRef);
 
   function startSummaryInteraction(event: ReactPointerEvent<HTMLElement>) {
     if (!onMove || (event.target as HTMLElement).closest("button")) return;
@@ -4308,7 +4616,7 @@ function TeamBuffPanel({
   }
 
   return (
-    <details className={`team-buff-panel ${className}`.trim()} data-panel-state={panelState(activeBuffs.length > 0)} data-overlay-control data-plugin-resizable open={expanded}>
+    <details ref={panelRef} className={`team-buff-panel ${className}`.trim()} data-panel-state={panelState(activeBuffs.length > 0)} data-popup-flip={popupPlacement.up ? "up" : undefined} data-popup-side={popupPlacement.left ? "left" : undefined} data-overlay-control data-plugin-resizable open={expanded}>
       <PluginResizeEdges />
       <summary onPointerDown={startSummaryInteraction} onClick={(event) => {
         event.preventDefault();
@@ -4329,7 +4637,7 @@ function TeamBuffPanel({
           重置
         </button>
       </summary>
-      <div className="buff-grid team-buff-grid">
+      <div ref={popupRef} className="buff-grid team-buff-grid">
         {BUFF_GROUPS.map((group) => (
           <div className="buff-group" key={group.title}>
             <div className="buff-group-fields">
@@ -4376,8 +4684,11 @@ function TeamTraitEditor({
   const [picker, setPicker] = useState(false);
   const [traitRuntime, setTraitRuntime] = useState<any>(null);
   const [localExpanded, setLocalExpanded] = useState(false);
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const popupRef = useRef<HTMLDivElement | null>(null);
   const expanded = expandedProp ?? localExpanded;
   const setExpanded = (next: boolean) => (expandedProp === undefined ? setLocalExpanded(next) : onExpandedChange?.(next));
+  const popupPlacement = usePopupPlacement(Boolean(expanded), sectionRef, popupRef);
   const traitQuery = value.trait_override_query || value.name;
   const selectedMegaForm = value.trait_override_query ? null : value.mega_form;
   const resolveMega = !value.trait_override_query && Boolean(value.mega || selectedMegaForm);
@@ -4403,12 +4714,12 @@ function TeamTraitEditor({
     ? "特性读取失败"
     : traitRuntime?.name
       ? traitRuntime.name
-      : "未找到精灵特性";
+      : "无";
   const traitDetail = traitRuntime?.error ? traitRuntime.error : traitRuntime?.effect_text || "";
   const traitChoiceLabel = (option: string) => ({ weekend: "周末", workday: "工作日" } as Record<string, string>)[option] || option;
 
   return (
-    <section className="team-slot-section">
+    <section ref={sectionRef} className="team-slot-section" data-popup-flip={popupPlacement.up ? "up" : undefined} data-popup-side={popupPlacement.left ? "left" : undefined}>
       <button className="trait-summary-button compact" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
         <strong className="ui-field-title">{traitLabel}</strong>
         <span>{expanded ? "收起" : "展开"}</span>
@@ -4432,7 +4743,6 @@ function TeamTraitEditor({
               </div>
             </>
           ) : null}
-          {traitRuntime?.stack_input ? <button className="compact-button trait-reset-button" onClick={() => onChange({ trait_override_query: null, trait_triggered: false, trait_stacks: 0, trait_choices: {} })}>重置</button> : null}
         </div>
         {Object.entries(traitRuntime?.exclusive_choices || {}).map(([groupName, choice]: [string, any]) => (
           <label className="inline-row" key={groupName}>
@@ -4447,7 +4757,7 @@ function TeamTraitEditor({
         ))}
       </div>
       {expanded ? (
-        <div className="trait-expanded-content">
+        <div ref={popupRef} className="trait-expanded-content">
           {traitDetail ? <p className="trait-text">{traitDetail}</p> : null}
           {traitRuntime?.note ? <p className="muted trait-note">{traitRuntime.note}</p> : null}
           <div className="inline-row trait-action-row"><button className="compact-button trait-select-button" onClick={() => setPicker(true)}>选特</button></div>
@@ -4565,6 +4875,9 @@ function FloatingTeamPanel({ className, layout, onLayoutChange, panelState: stat
     window.addEventListener("pointerup", stop);
   }
 
+  // 同技能浮层：观察器只建一次，回调走 ref，避免拖拽中反复重建订阅。
+  const layoutChangeRef = useRef(onLayoutChange);
+  layoutChangeRef.current = onLayoutChange;
   useEffect(() => {
     if (!panelRef.current) return;
     const panel = panelRef.current;
@@ -4573,11 +4886,11 @@ function FloatingTeamPanel({ className, layout, onLayoutChange, panelState: stat
       const width = panel.offsetWidth;
       const height = panel.offsetHeight;
       if (width <= 0 || height <= 0) return;
-      onLayoutChange({ width, height });
+      layoutChangeRef.current({ width, height });
     });
     observer.observe(panel);
     return () => observer.disconnect();
-  }, [onLayoutChange]);
+  }, []);
 
   return <section ref={panelRef} className={`floating-team-panel ${className}`} data-panel-state={isSpeedLine ? undefined : state} data-overlay-control data-plugin-resizable style={{ left: layout.x, top: layout.y, width: layout.width, height: layout.height, ...pluginContentStyle(layout), ...(isSpeedLine ? { "--speed-line-content-width": `${speedLineContentWidth.current}px` } : {}) }} onPointerDown={startDrag}>
     <div className="plugin-drag-zone" aria-label="拖动面板" />
@@ -4586,16 +4899,88 @@ function FloatingTeamPanel({ className, layout, onLayoutChange, panelState: stat
   </section>;
 }
 
-function SpeedLine({ left, right, pets, layout, onLayoutChange }: { left: UnitState; right: UnitState; pets: Pet[]; layout: PluginOverlayLayout; onLayoutChange: (partial: Partial<PluginOverlayLayout>) => void }) {
-  const leftScenarios = speedScenarios(left, pets);
-  const rightScenarios = speedScenarios(right, pets);
-  return <FloatingTeamPanel className="speed-line" layout={layout} onLayoutChange={onLayoutChange}>
-    <div className="speed-line-title">速度线</div>
-    <div className="speed-line-sides">
-      <div><strong>{left.display_name || left.name || "己方"}</strong>{leftScenarios.length ? leftScenarios.map((item) => <span key={item.label}>{item.label} {item.value}</span>) : <span>未选择精灵</span>}</div>
-      <div><strong>{right.display_name || right.name || "敌方"}</strong>{rightScenarios.length ? rightScenarios.map((item) => <span key={item.label}>{item.label} {item.value}</span>) : <span>未选择精灵</span>}</div>
+function SpeedLine({ left, right, pets, weather, layout, buffLayout, onLayoutChange, onBuffLayoutChange, onChangeLeft, onChangeRight }: {
+  left: UnitState;
+  right: UnitState;
+  pets: Pet[];
+  weather: string;
+  layout: PluginOverlayLayout;
+  buffLayout: PluginOverlayLayout;
+  onLayoutChange: (partial: Partial<PluginOverlayLayout>) => void;
+  onBuffLayoutChange: (partial: Partial<PluginOverlayLayout>) => void;
+  onChangeLeft: (partial: Partial<UnitState>) => void;
+  onChangeRight: (partial: Partial<UnitState>) => void;
+}) {
+  const [leftRuntime, setLeftRuntime] = useState<any>(null);
+  const [rightRuntime, setRightRuntime] = useState<any>(null);
+  const loadRuntime = (value: UnitState, setter: (runtime: any) => void) => {
+    const traitQuery = value.trait_override_query || value.name;
+    const selectedMegaForm = value.trait_override_query ? null : value.mega_form;
+    if (!traitQuery) {
+      setter(null);
+      return;
+    }
+    void cachedTraitInfo({
+      query: traitQuery,
+      mega: !value.trait_override_query && Boolean(value.mega || selectedMegaForm),
+      megaForm: selectedMegaForm,
+      triggered: value.trait_triggered,
+      stacks: value.trait_stacks,
+      choices: value.trait_choices,
+    }).then((data) => setter(data.runtime)).catch(() => setter(null));
+  };
+  useEffect(() => loadRuntime(left, setLeftRuntime), [left.name, left.trait_override_query, left.mega, left.mega_form, left.trait_triggered, left.trait_stacks, left.trait_choices]);
+  useEffect(() => loadRuntime(right, setRightRuntime), [right.name, right.trait_override_query, right.mega, right.mega_form, right.trait_triggered, right.trait_stacks, right.trait_choices]);
+  const leftModifiers = addSpeedModifiers(traitSpeedModifiers(leftRuntime, weather, "self"), traitSpeedModifiers(rightRuntime, weather, "opponent"));
+  const rightModifiers = addSpeedModifiers(traitSpeedModifiers(rightRuntime, weather, "self"), traitSpeedModifiers(leftRuntime, weather, "opponent"));
+  const leftScenarios = speedScenarios(left, pets, leftModifiers);
+  const rightScenarios = speedScenarios(right, pets, rightModifiers);
+  const sideName = (value: UnitState, fallback: string) => petNameOnly(value.display_name || value.name) || fallback;
+  const renderSide = (value: UnitState, scenarios: SpeedScenario[], fallback: string) => (
+    <div className="speed-line-side">
+      <strong>{sideName(value, fallback)}</strong>
+      <div className="speed-line-values">
+        {scenarios.length
+          ? scenarios.map((item) => <span key={item.label}><em>{item.label}</em>{item.value}</span>)
+          : <span>未选择精灵</span>}
+      </div>
     </div>
-  </FloatingTeamPanel>;
+  );
+  const renderBuffRow = (value: UnitState, modifiers: SpeedModifiers, onChange: (partial: Partial<UnitState>) => void) => {
+    const total = Math.round((value.speed_buff || 0) + modifiers.flat);
+    const setTotal = (next: number) => onChange({ speed_buff: Math.min(999, Math.max(-999, next)) - modifiers.flat });
+    return (
+      <div className="speed-buff-row">
+        <NumberInput value={total} min={-999} max={999} step={10} onChange={setTotal} />
+        <span className="speed-buff-percent">{`${modifiers.percent >= 0 ? "+" : ""}${Math.round(modifiers.percent * 100)}%`}</span>
+        <button type="button" className="compact-button speed-buff-reset" onClick={() => onChange({ speed_buff: 0 })}>重置</button>
+      </div>
+    );
+  };
+  return <>
+    <FloatingTeamPanel className="speed-line" layout={layout} onLayoutChange={onLayoutChange}>
+      <div className="speed-line-sides">
+        {renderSide(left, leftScenarios, "己方")}
+        {renderSide(right, rightScenarios, "敌方")}
+      </div>
+    </FloatingTeamPanel>
+    <FloatingTeamPanel
+      className="speed-line speed-buffs"
+      layout={{ ...buffLayout, x: layout.x, y: layout.y + layout.height, width: layout.width }}
+      onLayoutChange={(partial) => {
+        // 位置完全跟随速度线，只保留宽度与高度两个可调项。
+        const next: Partial<PluginOverlayLayout> = {};
+        if (partial.width !== undefined) next.width = partial.width;
+        if (partial.height !== undefined) next.height = partial.height;
+        onBuffLayoutChange(next);
+      }}
+    >
+      <div className="speed-line-buffs">
+        {renderBuffRow(left, leftModifiers, onChangeLeft)}
+        {renderBuffRow(right, rightModifiers, onChangeRight)}
+      </div>
+    </FloatingTeamPanel>
+  </>;
 }
 
 function Roster({
@@ -4689,7 +5074,7 @@ function Roster({
                   }
                 }}
               >
-                <strong title={slot.display_name || slot.name || "空槽位"}>{slot.display_name || slot.name || "空槽位"}</strong>
+                <strong title={slot.display_name || slot.name || "空槽位"}>{petNameOnly(slot.display_name || slot.name) || "空槽位"}</strong>
                 <button
                   className="slot-action"
                   onClick={(event) => {
@@ -4986,6 +5371,66 @@ function QuickSkillResultDisplay({ result }: { result: QuickSkillResult }) {
   </div>;
 }
 
+const ELEMENT_RESULT_COLORS: Record<string, string> = {
+  "光": "rgb(79, 192, 255)",
+  "冰": "rgb(99, 174, 218)",
+  "地": "rgb(152, 125, 68)",
+  "幻": "rgb(156, 169, 255)",
+  "幽": "rgb(148, 70, 236)",
+  "恶": "rgb(207, 70, 122)",
+  "普通": "rgb(244, 238, 225)",
+  "机械": "rgb(36, 185, 163)",
+  "武": "rgb(255, 149, 49)",
+  "毒": "rgb(186, 98, 224)",
+  "水": "rgb(98, 168, 255)",
+  "火": "rgb(223, 86, 30)",
+  "电": "rgb(229, 202, 0)",
+  "翼": "rgb(62, 199, 202)",
+  "草": "rgb(78, 188, 115)",
+  "萌": "rgb(255, 124, 177)",
+  "虫": "rgb(158, 206, 33)",
+  "龙": "rgb(232, 74, 96)",
+};
+
+function EnemyAttackSkillPanel({ value, onClose }: { value: EnemyAttackSkillResponse; onClose: () => void }) {
+  return (
+    <section className="enemy-attack-panel" role="dialog" aria-label="敌方攻击技能结果">
+      <header className="enemy-attack-panel-header">
+        <div>
+          <strong>敌方攻击我方</strong>
+          <span>当前我方 HP：{value.targetHp}</span>
+        </div>
+        <button onClick={onClose}>关闭</button>
+      </header>
+      <div className="enemy-attack-groups">
+        {value.groups.length ? value.groups.map((group) => (
+          <section className="enemy-attack-group" key={group.attackType}>
+            <h3>{group.attackType}</h3>
+            <div className="enemy-attack-grid" style={{ gridTemplateColumns: `72px repeat(${group.skills.length}, minmax(128px, 1fr))` }}>
+              <div className="enemy-attack-state enemy-attack-grid-heading">攻击状态</div>
+              {group.skills.map((skillName) => <div className="enemy-attack-grid-heading" key={skillName}>{skillName}</div>)}
+              {group.rows.map((row) => <Fragment key={row.label}>
+                <div className="enemy-attack-state">{row.label || "无后缀"}</div>
+                {row.skills.map((cell, index) => cell ? (
+                  <div
+                    className="enemy-attack-cell"
+                    key={`${cell.skillName}-${index}`}
+                    style={{ backgroundColor: ELEMENT_RESULT_COLORS[cell.element || "普通"] || ELEMENT_RESULT_COLORS["普通"] }}
+                  >
+                    <strong>{cell.displayName}</strong>
+                    <span>威力 {cell.skillPower ?? "-"}</span>
+                    <span>伤害 {cell.damage ?? "-"}</span>
+                  </div>
+                ) : <div className="enemy-attack-cell is-empty" key={`empty-${index}`}>-</div>)}
+              </Fragment>)}
+            </div>
+          </section>
+        )) : <p className="enemy-attack-empty">没有可用的攻击技能</p>}
+      </div>
+    </section>
+  );
+}
+
 function uiTokenValues(configs: PickerConfigs) {
   const saved = configs.ui_tokens || {};
   const hasBuffOptionConfig = Object.prototype.hasOwnProperty.call(saved, "buff-option-width");
@@ -5227,7 +5672,7 @@ function BurstPanelPage({
 }
 
 function App() {
-  const [tab, setTab] = useState<"team" | "presets" | "replay" | "settings">("team");
+  const [tab, setTab] = useState<"team" | "presets" | "settings">("team");
   const [weather, setWeather] = useState<(typeof WEATHER_OPTIONS)[number]["value"]>("none");
   const [data, setData] = useState<AppState | null>(null);
   const [error, setError] = useState("");
@@ -5315,12 +5760,11 @@ function App() {
     : data?.configs;
 
   return (
-    <main className={`${tab === "presets" || tab === "replay" ? "app-shell preset-shell" : "app-shell"}${overlayAttached ? " overlay-attached" : ""}`} style={data ? (previewUiTokens ? uiTokenStyleFromValues(previewUiTokens) : uiTokenStyle(data.configs)) : undefined}>
+    <main className={`${tab === "presets" ? "app-shell preset-shell" : "app-shell"}${overlayAttached ? " overlay-attached" : ""}`} style={data ? (previewUiTokens ? uiTokenStyleFromValues(previewUiTokens) : uiTokenStyle(data.configs)) : undefined}>
       <header className="app-header overlay-header" onPointerDown={dragWindow}>
         <nav className="tabs">
           <button className={tab === "team" ? "active" : ""} onClick={() => setTab("team")}>队伍面板</button>
           <button className={tab === "presets" ? "active" : ""} onClick={() => setTab("presets")}>精灵保存</button>
-          <button className={tab === "replay" ? "active" : ""} onClick={() => setTab("replay")}>对局回放</button>
           <button className={tab === "settings" ? "active" : ""} onClick={() => setTab("settings")}>界面配置</button>
           <button onClick={() => void load()}>刷新</button>
         </nav>
@@ -5373,7 +5817,6 @@ function App() {
               onConfigsChanged={(configs) => setData({ ...data, configs })}
             />
           </div>
-          <div className="battle-view" hidden={tab !== "replay"}><ReplayPage configs={data.configs} onConfigsChanged={(configs) => setData({ ...data, configs })} /></div>
           <div className="battle-view" hidden={tab !== "settings"}>
             <InterfaceSettingsPage configs={data.configs} onConfigsChanged={(configs) => setData({ ...data, configs })} onPreviewValues={setPreviewUiTokens} burstEffects={data.burstEffects} />
           </div>

@@ -33,6 +33,9 @@ docs/
 .DS_Store
 Thumbs.db
 
+# 对局回放独立程序（完全脱离主程序，本仓库不跟踪该目录）
+replay-app/
+
 #
 AGENTS.md
 CLAUDE.md

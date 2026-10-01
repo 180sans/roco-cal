@@ -6,7 +6,14 @@
     "type": "状态",
     "skill_power": null,
     "description": "自己获得速度+120。",
-    "effect": "normal"
+    "effect": "normal",
+    "buff_effects": [
+      {
+        "target": "self",
+        "field": "speed_buff",
+        "value": 120
+      }
+    ]
   },
   {
     "name": "翼击",
@@ -386,7 +393,7 @@
     "cost": 2,
     "effect": "normal"
   },
-    {
+  {
     "name": "疾风涡轮",
     "cost": 0,
     "element": "翼",

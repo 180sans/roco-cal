@@ -791,7 +791,29 @@
     "type": "状态",
     "skill_power": null,
     "description": "自己获得速度+80，应对防御：改为速度+160。",
-    "effect": "normal"
+    "effect": "normal",
+    "buff_options": [
+      {
+        "label": "自己速度 +80",
+        "effects": [
+          {
+            "target": "self",
+            "field": "speed_buff",
+            "value": 80
+          }
+        ]
+      },
+      {
+        "label": "应对防御：自己速度 +160",
+        "effects": [
+          {
+            "target": "self",
+            "field": "speed_buff",
+            "value": 160
+          }
+        ]
+      }
+    ]
   },
   {
     "name": "旋转突击",
@@ -880,11 +902,16 @@
     "description": "敌方获得物攻-60%，速度-60。",
     "buff_options": [
       {
-        "label": "敌方物攻 -60%",
+        "label": "敌方物攻 -60% / 敌方速度 -60",
         "effects": [
           {
             "target": "opponent",
             "field": "phys_atk_buff",
+            "value": -60
+          },
+          {
+            "target": "opponent",
+            "field": "speed_buff",
             "value": -60
           }
         ]
@@ -1063,7 +1090,7 @@
     "cost": 2,
     "buff_options": [
       {
-        "label": "自己魔攻 +10% / 自己魔防 +10%",
+        "label": "自己魔攻 +10% / 自己魔防 +10% / 自己速度 +10",
         "effects": [
           {
             "target": "self",
@@ -1073,6 +1100,11 @@
           {
             "target": "self",
             "field": "mag_def_buff",
+            "value": 10
+          },
+          {
+            "target": "self",
+            "field": "speed_buff",
             "value": 10
           }
         ]

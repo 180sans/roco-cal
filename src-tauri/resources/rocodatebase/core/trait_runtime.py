@@ -33,6 +33,11 @@ def _resolve_effect_value(effect: dict[str, Any], count: int, stackable: bool) -
 
 
 def _resolve_group_effects(group: dict[str, Any], count: int) -> list[dict[str, Any]]:
+    def with_speed_type(effect: dict[str, Any], source_value: float | int) -> dict[str, Any]:
+        if effect.get("kind") == "stat_buff" and "spd" in (effect.get("stats") or []) and "value_type" not in effect:
+            effect = {**effect, "value_type": "percent" if abs(source_value) <= 1 else "flat"}
+        return effect
+
     resolved_effects = []
     for effect in group.get("effects", []):
         if not isinstance(effect, dict):
@@ -50,12 +55,12 @@ def _resolve_group_effects(group: dict[str, Any], count: int) -> list[dict[str, 
                     continue
                 resolved_value = value * count if isinstance(values_per_stack, dict) else value
                 resolved_effect = {**base_effect, "stats": [stat], "value": resolved_value}
-                resolved_effects.append(resolved_effect)
+                resolved_effects.append(with_speed_type(resolved_effect, value))
             continue
 
         value_per_stack = effect.get("value_per_stack")
         if isinstance(value_per_stack, (int, float)):
-            resolved_effects.append({**base_effect, "value": value_per_stack * count})
+            resolved_effects.append(with_speed_type({**base_effect, "value": value_per_stack * count}, value_per_stack))
             continue
 
         value = effect.get("value")
@@ -64,7 +69,7 @@ def _resolve_group_effects(group: dict[str, Any], count: int) -> list[dict[str, 
             continue
         if not isinstance(value, (int, float)):
             continue
-        resolved_effects.append({**base_effect, "value": value * count if count > 0 else value})
+        resolved_effects.append(with_speed_type({**base_effect, "value": value * count if count > 0 else value}, value))
     return resolved_effects
 
 
@@ -210,6 +215,9 @@ def resolve_trait_runtime(
 
         resolved_effect = {k: v for k, v in effect.items() if k not in {"value", "value_per_stack"}}
         resolved_effect["value"] = value
+        if resolved_effect.get("kind") == "stat_buff" and "spd" in (resolved_effect.get("stats") or []) and "value_type" not in resolved_effect:
+            source_value = effect.get("value_per_stack", effect.get("value"))
+            resolved_effect["value_type"] = "percent" if abs(source_value) <= 1 else "flat"
         resolved_effects.append(resolved_effect)
 
     return {

@@ -85,7 +85,14 @@
     "type": "魔攻",
     "skill_power": 70,
     "description": "造成魔伤，自身获得速度+30。",
-    "effect": "normal"
+    "effect": "normal",
+    "buff_effects": [
+      {
+        "target": "self",
+        "field": "speed_buff",
+        "value": 30
+      }
+    ]
   },
   {
     "name": "超导",
@@ -150,11 +157,16 @@
     "combo": 2,
     "buff_options": [
       {
-        "label": "敌方魔攻 -20%",
+        "label": "敌方魔攻 -20% / 敌方速度 -20",
         "effects": [
           {
             "target": "opponent",
             "field": "mag_atk_buff",
+            "value": -20
+          },
+          {
+            "target": "opponent",
+            "field": "speed_buff",
             "value": -20
           }
         ]

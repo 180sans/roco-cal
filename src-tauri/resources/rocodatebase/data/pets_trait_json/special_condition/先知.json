@@ -23,7 +23,8 @@
                             "target": "self",
                             "values": {
                                 "atk": 0.5,
-                                "mag": 0.5
+                                "mag": 0.5,
+                                "spd": 50
                             }
                         }
                     ]

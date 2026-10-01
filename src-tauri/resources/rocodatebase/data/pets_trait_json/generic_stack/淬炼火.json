@@ -28,7 +28,8 @@
                                 "def": 0.1,
                                 "res": 0.1,
                                 "spd": 10
-                            }
+                            },
+                            "value_type": "flat"
                         }
                     ]
                 }

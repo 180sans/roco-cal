@@ -27,7 +27,8 @@
                                 "res": 0.15,
                                 "def": 0.15,
                                 "spd": 0.15
-                            }
+                            },
+                            "value_type": "percent"
                         }
                     ]
                 }

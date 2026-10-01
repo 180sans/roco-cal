@@ -1683,6 +1683,11 @@ async fn calculate_quick_skills(app: tauri::AppHandle, payload: Value) -> Result
 }
 
 #[tauri::command]
+async fn calculate_enemy_attack_skills(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
+    run_python_payload_async(app, "calculate-enemy-attack-skills", payload).await
+}
+
+#[tauri::command]
 async fn calculate_willpower(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
     run_python_payload_async(app, "calculate-willpower", payload).await
 }
@@ -2168,12 +2173,14 @@ pub fn run() {
                 std::thread::spawn(move || {
                     const OVERLAY_HOTKEY_ID: i32 = 0x524F;
                     const QUICK_CALCULATE_HOTKEY_ID: i32 = 0x5243;
+                    const ENEMY_ATTACK_CALCULATE_HOTKEY_ID: i32 = 0x5249;
                     const HIDE_QUICK_RESULTS_HOTKEY_ID: i32 = 0x5244;
                     const BATTLE_START_SCAN_HOTKEY_ID: i32 = 0x5245;
                     const BATTLE_LIVE_SCAN_HOTKEY_ID: i32 = 0x5246;
                     const BATTLE_POWER_SCAN_HOTKEY_ID: i32 = 0x5247;
                     const VK_F8: u32 = 0x77;
                     const VK_J: u32 = 0x4A;
+                    const VK_K: u32 = 0x4B;
                     const VK_D: u32 = 0x44;
                     const VK_B: u32 = 0x42;
                     const VK_U: u32 = 0x55;
@@ -2189,6 +2196,14 @@ pub fn run() {
                             QUICK_CALCULATE_HOTKEY_ID,
                             MOD_CONTROL,
                             VK_J,
+                        )
+                    } != 0;
+                    let enemy_attack_calculate_registered = unsafe {
+                        RegisterHotKey(
+                            std::ptr::null_mut(),
+                            ENEMY_ATTACK_CALCULATE_HOTKEY_ID,
+                            MOD_CONTROL,
+                            VK_K,
                         )
                     } != 0;
                     let hide_quick_results_registered = unsafe {
@@ -2233,6 +2248,10 @@ pub fn run() {
                             && message.w_param == QUICK_CALCULATE_HOTKEY_ID as usize
                         {
                             let _ = hotkey_app.emit("overlay-quick-calculate", ());
+                        } else if enemy_attack_calculate_registered
+                            && message.w_param == ENEMY_ATTACK_CALCULATE_HOTKEY_ID as usize
+                        {
+                            let _ = hotkey_app.emit("overlay-enemy-attack-calculate", ());
                         } else if hide_quick_results_registered
                             && message.w_param == HIDE_QUICK_RESULTS_HOTKEY_ID as usize
                         {
@@ -2250,6 +2269,9 @@ pub fn run() {
                     }
                     if quick_hotkey_registered {
                         unsafe { UnregisterHotKey(std::ptr::null_mut(), QUICK_CALCULATE_HOTKEY_ID) };
+                    }
+                    if enemy_attack_calculate_registered {
+                        unsafe { UnregisterHotKey(std::ptr::null_mut(), ENEMY_ATTACK_CALCULATE_HOTKEY_ID) };
                     }
                     if hide_quick_results_registered {
                         unsafe {
@@ -2280,6 +2302,7 @@ pub fn run() {
             list_burst_effects,
             calculate_battle,
             calculate_quick_skills,
+            calculate_enemy_attack_skills,
             calculate_willpower,
             calculate_required_power,
             apply_skill_buffs,

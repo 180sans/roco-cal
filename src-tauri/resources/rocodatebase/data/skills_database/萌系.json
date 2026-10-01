@@ -68,7 +68,14 @@
     "type": "状态",
     "skill_power": null,
     "description": "自己获得萌化：速度永久+130。",
-    "effect": "normal"
+    "effect": "normal",
+    "buff_effects": [
+      {
+        "target": "self",
+        "field": "speed_buff",
+        "value": 130
+      }
+    ]
   },
   {
     "name": "碰爪",

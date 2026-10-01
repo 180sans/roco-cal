@@ -31,6 +31,9 @@ REPLAY_SKILL_ALIASES = {
 
 BASE_DIR = Path(__file__).resolve().parent
 CLASSIFIER_DIR = BASE_DIR.parent / "image-classifier"
+# The sprite classifier is image-classifier/legacy_558.onnx; it takes the game's
+# native capture crop as a 76x86 RGB image in [0, 1].
+CLASSIFIER_INPUT_SIZE = (76, 86)
 DATA_DIR = BASE_DIR / "data"
 PETS_DIR = DATA_DIR / "pets_w_skill_json"
 SKILLS_DIR = DATA_DIR / "skills_database"
@@ -502,7 +505,7 @@ def list_burst_effects() -> dict[str, Any]:
 
 
 def calculate_battle(payload: dict[str, Any]) -> dict[str, Any]:
-    from core.damresult import battle_damage
+    from core.damresult import battle_damage, get_personality_bonus_for_attr, parse_personality
 
     attacker = payload.get("attacker") or {}
     defender = payload.get("defender") or {}
@@ -547,6 +550,167 @@ def calculate_quick_skills(payload: dict[str, Any]) -> dict[str, Any]:
             "results": results,
         })
     return {"items": items}
+
+
+def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
+    """Select differentiated enemy attack skills for the OCR-detected player HP."""
+    from itertools import product
+
+    from core.damresult import battle_damage
+    from core.find_pets import pets_dataset
+    from core.skill_finder import skill_dataset
+
+    attacker = payload.get("attacker") or {}
+    defender = payload.get("defender") or {}
+    target_hp = float(payload.get("target_hp") or 0)
+    weather = payload.get("weather") or "none"
+    if target_hp <= 0:
+        raise ValueError("未识别到有效的我方当前血量")
+
+    defender_args = _defender_args(defender)
+    suffix_order = ["++", "+", "", "-"]
+
+    def attack_type_label(skill_type: str) -> str:
+        return "物攻" if skill_type == "物攻" else "魔攻"
+
+    def suffix_for_result(label: str, skill_type: str) -> str:
+        if label.startswith("加") and "天分加性格" in label:
+            return "++"
+        if label.startswith("加") and "天分" in label:
+            return "+"
+        if label.startswith("减"):
+            return "-"
+        if label.startswith("正常"):
+            return ""
+        # A configured personality without a built-in scenario label is returned as「指定攻击」.
+        if label.startswith("指定"):
+            attr_name = "atk" if skill_type == "物攻" else "mag"
+            iv = ((attacker.get("iv") or {}).get(attr_name))
+            personality = parse_personality(attacker.get("personality_bouns"), attacker.get("personality_down"))
+            personality_value = get_personality_bonus_for_attr(personality, attr_name)
+            if personality_value is not None and personality_value < 0:
+                return "-"
+            if iv is not None and iv > 0:
+                return "++" if personality_value and personality_value > 0 else "+"
+            return ""
+        return ""
+
+    def stack_dimensions(skill_data: dict[str, Any]) -> list[int]:
+        triggered = skill_data.get("triggered")
+        options = [triggered] if isinstance(triggered, dict) else triggered if isinstance(triggered, list) else []
+        return [
+            len(option.get("skill_power_by_count")) - 1 if isinstance(option.get("skill_power_by_count"), list) and option.get("skill_power_by_count") else 10
+            for option in options
+            if isinstance(option, dict) and (bool(option.get("multiple")) or bool(option.get("skill_power_by_count")))
+        ]
+
+    def stack_vectors(skill_data: dict[str, Any], state: dict[str, Any], skill_name: str) -> list[list[int]]:
+        dimensions = stack_dimensions(skill_data)
+        if not dimensions:
+            return [[]]
+        vectors = [list(values) for values in product(*(range(maximum + 1) for maximum in dimensions))]
+        vectors.sort(key=lambda values: (sum(values), max(values, default=0), values))
+        return vectors
+
+    def candidate_for_suffix(skill_name: str, skill_data: dict[str, Any], attack_type: str, suffix: str):
+        candidates = []
+        for stacks in stack_vectors(skill_data, attacker, skill_name):
+            stack_state = {
+                **attacker,
+                "current_skill": skill_name,
+                "skill_trigger_stacks": {**(attacker.get("skill_trigger_stacks") or {}), skill_name: stacks},
+            }
+            results = battle_damage(**_attacker_args(stack_state), **defender_args, weather=weather)
+            matching = [item for item in results if suffix_for_result(item.get("atk_label", ""), skill_data.get("type", "")) == suffix]
+            for item in matching:
+                damage = float(item.get("damage") or 0)
+                candidates.append({
+                    "item": item,
+                    "stacks": sum(stacks),
+                    "killed": damage >= target_hp,
+                    "damage": damage,
+                })
+        if not candidates:
+            return None
+        killed = [candidate for candidate in candidates if candidate["killed"]]
+        pool = killed or candidates
+        if killed:
+            chosen = min(pool, key=lambda candidate: (
+                candidate["stacks"],
+                candidate["damage"] - target_hp,
+                bool(candidate["item"].get("is_triggered")),
+            ))
+        else:
+            chosen = max(pool, key=lambda candidate: candidate["damage"])
+        item = chosen["item"]
+        stack_text = str(chosen["stacks"]) if chosen["stacks"] > 0 else ""
+        trigger_text = "*" if item.get("is_triggered") else ""
+        return {
+            "skillName": skill_name,
+            "displayName": f"{skill_name}{trigger_text}{stack_text}",
+            "skillPower": item.get("effective_power"),
+            "damage": item.get("damage"),
+            "element": skill_data.get("element") or "普通",
+            "stacks": chosen["stacks"],
+            "triggered": bool(item.get("is_triggered")),
+        }
+
+    # Ctrl+K 取敌方精灵的技能库（该精灵可学到的全部技能），不是当前携带的技能。
+    mega_form = (attacker.get("mega_form") or "").strip()
+    attacker_pet = pets_dataset.find(
+        mega_form or attacker.get("name") or "",
+        devolution=int(attacker.get("devolution", 0) or 0),
+        mega=bool(attacker.get("mega", False)) and not mega_form,
+    )
+    library_names: list[str] = []
+    if isinstance(attacker_pet, dict):
+        for entry in attacker_pet.get("skills") or []:
+            raw_skill = entry.get("skill_name") if isinstance(entry, dict) else entry
+            name = str(raw_skill or "").strip()
+            if name:
+                library_names.append(name)
+    if not library_names:
+        library_names = [str(raw_name or "").strip() for raw_name in attacker.get("skills") or []]
+
+    profiles: dict[str, list[dict[str, Any]]] = {"物攻": [], "魔攻": []}
+    for raw_name in library_names:
+        skill_name = str(raw_name or "").strip()
+        if not skill_name or any(profile["skillName"] == skill_name for values in profiles.values() for profile in values):
+            continue
+        skill_data = skill_dataset.find_skill(skill_name)
+        if not isinstance(skill_data, dict) or skill_data.get("type") not in {"物攻", "魔攻"}:
+            continue
+        attack_type = attack_type_label(skill_data["type"])
+        cells = {suffix: candidate_for_suffix(skill_name, skill_data, attack_type, suffix) for suffix in suffix_order}
+        values = [float(cell["damage"]) for cell in cells.values() if cell is not None and cell.get("damage") is not None]
+        if not values:
+            continue
+        profiles[attack_type].append({"skillName": skill_name, "cells": cells, "low": min(values), "high": max(values)})
+
+    def select_profiles(values: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        if len(values) <= 4:
+            return sorted(values, key=lambda value: ((value["low"] + value["high"]) / 2, value["skillName"]))
+        ordered = sorted(values, key=lambda value: ((value["low"] + value["high"]) / 2, value["skillName"]))
+        chosen = []
+        for position in [0, 1 / 3, 2 / 3, 1]:
+            index = round(position * (len(ordered) - 1))
+            if ordered[index] not in chosen:
+                chosen.append(ordered[index])
+        return chosen
+
+    groups = []
+    for attack_type in ("物攻", "魔攻"):
+        selected = select_profiles(profiles[attack_type])
+        if not selected:
+            continue
+        rows = []
+        for suffix in suffix_order:
+            cells = [profile["cells"].get(suffix) for profile in selected]
+            if not any(cells):
+                continue
+            rows.append({"label": suffix, "skills": cells})
+        groups.append({"attackType": attack_type, "skills": [profile["skillName"] for profile in selected], "rows": rows})
+    return {"targetHp": target_hp, "groups": groups}
 
 
 def calculate_willpower(payload: dict[str, Any]) -> dict[str, Any]:
@@ -1445,10 +1609,10 @@ def classify_image_samples(payload: dict[str, Any]) -> dict[str, Any]:
     from PIL import Image
 
     if IMAGE_CLASSIFIER is None:
-        model_path = CLASSIFIER_DIR / "model.onnx"
-        classes_path = CLASSIFIER_DIR / "classes.json"
-        with classes_path.open("r", encoding="utf-8") as file:
-            classes = json_module.load(file)
+        model_path = CLASSIFIER_DIR / "legacy_558.onnx"
+        metadata_path = CLASSIFIER_DIR / "legacy_558.onnx.json"
+        with metadata_path.open("r", encoding="utf-8") as file:
+            classes = json_module.load(file)["class_order"]
         IMAGE_CLASSIFIER = (ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"]), classes)
     session, classes = IMAGE_CLASSIFIER
     images = payload.get("images")
@@ -1458,13 +1622,19 @@ def classify_image_samples(payload: dict[str, Any]) -> dict[str, Any]:
     for image in images:
         _, encoded = str(image.get("imageDataUrl", "")).split(",", 1)
         source = Image.open(io.BytesIO(base64.b64decode(encoded))).convert("RGBA")
-        source.thumbnail((72, 72), Image.Resampling.LANCZOS)
-        canvas = Image.new("RGBA", (72, 72), (0, 0, 0, 0))
-        canvas.alpha_composite(source, ((72 - source.width) // 2, (72 - source.height) // 2))
+        source.thumbnail(CLASSIFIER_INPUT_SIZE, Image.Resampling.LANCZOS)
+        canvas = Image.new("RGBA", CLASSIFIER_INPUT_SIZE, (0, 0, 0, 0))
+        canvas.alpha_composite(
+            source,
+            (
+                (CLASSIFIER_INPUT_SIZE[0] - source.width) // 2,
+                (CLASSIFIER_INPUT_SIZE[1] - source.height) // 2,
+            ),
+        )
         # Keep transparent pixels black while dropping alpha for the RGB model.
         rgb_canvas = canvas.convert("RGB")
         tensor = np.asarray(rgb_canvas, dtype=np.float32).transpose(2, 0, 1)[None] / 255.0
-        logits = session.run(["logits"], {"input": tensor})[0][0]
+        logits = session.run(["logits"], {"images": tensor})[0][0]
         probabilities = np.exp(logits - np.max(logits))
         probabilities /= probabilities.sum()
         indices = np.argsort(probabilities)[::-1][:6]
@@ -1586,6 +1756,7 @@ def main() -> int:
             "list-burst-effects",
             "calculate-battle",
             "calculate-quick-skills",
+            "calculate-enemy-attack-skills",
             "calculate-willpower",
             "calculate-required-power",
             "apply-skill-buffs",
@@ -1631,6 +1802,8 @@ def main() -> int:
                 payload = calculate_battle(payload_arg)
             elif args.command == "calculate-quick-skills":
                 payload = calculate_quick_skills(payload_arg)
+            elif args.command == "calculate-enemy-attack-skills":
+                payload = calculate_enemy_attack_skills(payload_arg)
             elif args.command == "calculate-willpower":
                 payload = calculate_willpower(payload_arg)
             elif args.command == "calculate-required-power":

@@ -69,12 +69,17 @@
     "description": "自己获得物防+140%和速度-30。",
     "buff_options": [
       {
-        "label": "自己物防 +140%",
+        "label": "自己物防 +140% / 自己速度 -30",
         "effects": [
           {
             "target": "self",
             "field": "phys_def_buff",
             "value": 140
+          },
+          {
+            "target": "self",
+            "field": "speed_buff",
+            "value": -30
           }
         ]
       }
@@ -472,22 +477,32 @@
     "cost": 2,
     "buff_options": [
       {
-        "label": "自己物防 +90%",
+        "label": "自己物防 +90% / 自己速度 -20",
         "effects": [
           {
             "target": "self",
             "field": "phys_def_buff",
             "value": 90
+          },
+          {
+            "target": "self",
+            "field": "speed_buff",
+            "value": -20
           }
         ]
       },
       {
-        "label": "自己魔防 +90%",
+        "label": "自己魔防 +90% / 自己速度 -20",
         "effects": [
           {
             "target": "self",
             "field": "mag_def_buff",
             "value": 90
+          },
+          {
+            "target": "self",
+            "field": "speed_buff",
+            "value": -20
           }
         ]
       }

@@ -188,6 +188,21 @@
             "value": 90
           }
         ]
+      },
+      {
+        "label": "敌方替换时：自己魔攻 +90% / 自己速度 +70",
+        "effects": [
+          {
+            "target": "self",
+            "field": "mag_atk_buff",
+            "value": 90
+          },
+          {
+            "target": "self",
+            "field": "speed_buff",
+            "value": 70
+          }
+        ]
       }
     ],
     "effect": "normal"

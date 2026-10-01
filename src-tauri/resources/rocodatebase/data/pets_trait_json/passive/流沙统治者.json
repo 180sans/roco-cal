@@ -24,7 +24,8 @@
                             "target": "self",
                             "values": {
                                 "spd": 50
-                            }
+                            },
+                            "value_type": "flat"
                         }
                     ]
                 }

@@ -27,7 +27,8 @@
                                 "def": 0.2,
                                 "res": 0.2,
                                 "spd": 0.2
-                            }
+                            },
+                            "value_type": "percent"
                         }
                     ]
                 }

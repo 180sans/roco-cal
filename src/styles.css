@@ -439,12 +439,18 @@ body:has(.battle-page.mixed-active) .app-header,
   margin: 0;
   max-height: min(320px, calc(100vh - 32px));
   max-width: min(360px, calc(100vw - 24px));
-  min-width: 250px;
+  /* 不再强制 250px 最小宽度：短描述不再被撑出空白，长描述交给 max-width 换行。 */
+  min-width: 0;
   overflow: auto;
-  padding: 10px;
+  padding: 7px;
   position: absolute;
   top: calc(100% + 7px);
   z-index: 60;
+}
+
+/* 特性展开层按正文宽度展开；绝对定位下若不写宽度，会被宿主面板的窄宽度挤成一条。 */
+.battle-page.plugin-mode .trait-expanded-content {
+  width: max-content;
 }
 
 .battle-page.plugin-mode .team-buff-grid {
@@ -452,11 +458,12 @@ body:has(.battle-page.mixed-active) .app-header,
   border: 1px solid var(--ov-panel-border);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
   box-sizing: border-box;
-  gap: 7px 8px;
-  min-width: min(280px, calc(100vw - 24px));
-  padding: 10px;
+  gap: 5px 6px;
+  /* 按内容收紧：9 个字段两列只需要约 250px，原先固定 360px 右侧全是空白。 */
+  min-width: 0;
+  padding: 7px;
   top: 0;
-  width: min(360px, calc(100vw - 24px));
+  width: max-content;
 }
 
 .battle-page.plugin-mode .team-left-buff .team-buff-grid {
@@ -470,6 +477,23 @@ body:has(.battle-page.mixed-active) .app-header,
 /* 右侧面板反向对齐，避免贴边溢出屏幕。 */
 .battle-page.plugin-mode .team-right-trait .trait-expanded-content,
 .battle-page.plugin-mode .team-right-buff .team-buff-grid {
+  left: auto;
+  right: calc(100% + 8px);
+}
+
+/* 贴到屏幕下边或右边时，展开层翻到另一侧，保证完整可见。 */
+.battle-page.plugin-mode .team-buff-panel[data-popup-flip="up"] .team-buff-grid {
+  bottom: 0;
+  top: auto;
+}
+
+.battle-page.plugin-mode .team-slot-section[data-popup-flip="up"] .trait-expanded-content {
+  bottom: calc(100% + 7px);
+  top: auto;
+}
+
+.battle-page.plugin-mode .team-buff-panel[data-popup-side="left"] .team-buff-grid,
+.battle-page.plugin-mode .team-slot-section[data-popup-side="left"] .trait-expanded-content {
   left: auto;
   right: calc(100% + 8px);
 }
@@ -506,6 +530,27 @@ body:has(.battle-page.mixed-active) .app-header,
   grid-template-columns: 1fr;
 }
 
+/* 字段标签列固定宽度，行与行之间的数字框能对齐，不再各自留一大截空白。 */
+.battle-page.plugin-mode .team-buff-grid .buff-group-fields {
+  grid-template-columns: repeat(2, max-content);
+  justify-content: start;
+}
+
+.battle-page.plugin-mode .team-buff-grid .buff-field {
+  grid-template-columns: 38px var(--buff-width);
+}
+
+/* 收起态一行只有三个格子；间距收窄，值列允许收缩，窄面板不再被内容顶出去。 */
+.battle-page.plugin-mode .team-buff-panel summary {
+  gap: 6px;
+}
+
+.battle-page.plugin-mode .buff-summary-values,
+.battle-page.plugin-mode .buff-summary-values span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* 触发控件在展开态高亮，明确浮层的从属关系。 */
 .battle-page.plugin-mode .trait-summary-button,
 .battle-page.plugin-mode .trait-summary-button[aria-expanded="true"] {
@@ -516,10 +561,45 @@ body:has(.battle-page.mixed-active) .app-header,
   background: var(--ov-accent-bg) !important;
 }
 
-.battle-page.plugin-mode .team-buff-panel[open] > summary {
-  background: var(--ov-accent-bg);
-  border-radius: 6px;
-  padding: 2px 4px;
+/* buff 面板展开高亮铺满整块面板，不再只是里面一小条。 */
+.battle-page.immersive-mode.plugin-mode .team-layout > .team-buff-panel[open],
+.battle-page.plugin-mode .team-layout > .team-buff-panel[open] {
+  background: var(--ov-accent-bg, rgba(36, 107, 88, 0.62)) !important;
+}
+
+/* 特性面板沿用插件面板的深色底，但不画那圈浅色描边（你之前看到的白框就是它）。 */
+.battle-page.immersive-mode.plugin-mode .floating-team-panel.trait-floating-panel:is(.team-left-trait, .team-right-trait) {
+  background: var(--ov-panel) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 标题按钮自身不画框，避免再叠一层浅色矩形。 */
+.battle-page.immersive-mode.plugin-mode .floating-team-panel:is(.team-left-trait, .team-right-trait) .trait-summary-button,
+.battle-page.immersive-mode.plugin-mode .floating-team-panel:is(.team-left-trait, .team-right-trait) .trait-summary-button:hover,
+.battle-page.immersive-mode.plugin-mode .floating-team-panel:is(.team-left-trait, .team-right-trait) .trait-summary-button[aria-expanded="true"] {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* 标题按钮铺满整块面板：点面板任意位置都能展开/收起。 */
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-trait, .team-right-trait):hover {
+  /* 悬停不再出现任何额外描边层。 */
+  outline: none !important;
+  border-color: transparent !important;
+}
+
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-trait, .team-right-trait) .team-slot-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-trait, .team-right-trait) .trait-summary-button.compact {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 23px;
 }
 
 .preset-shell {
@@ -1725,6 +1805,23 @@ body:has(.battle-page.mixed-active) .app-header,
   grid-template-columns: 1fr;
 }
 
+/* 插件模式的队伍面板：标题缩小、导入下拉收紧，省掉一整行的高度占用。 */
+.battle-page.plugin-mode .roster-header {
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.battle-page.plugin-mode .roster-header h2 {
+  font-size: 11px;
+}
+
+.battle-page.plugin-mode .roster-import-select {
+  flex: 0 0 78px;
+  font-size: 11px;
+  height: 22px;
+  width: 78px;
+}
+
 .plugin-mode .roster:hover,
 .plugin-mode .roster:focus-within {
   opacity: 1;
@@ -1746,8 +1843,9 @@ body:has(.battle-page.mixed-active) .app-header,
 /* 所有插件可缩放面板统一按外框尺寸计算，缩放时不被内容的默认最小尺寸撑回去。 */
 .battle-page.plugin-mode [data-plugin-resizable] {
   box-sizing: border-box;
-  min-height: 0 !important;
-  min-width: 0 !important;
+  /* 下界取“内容自然尺寸”，外框再也不会比里面的控件还小；同时留出最小抓取区。 */
+  min-height: max(24px, min-content) !important;
+  min-width: max(26px, min-content) !important;
 }
 
 /* 插件坐标和面板尺寸都是像素值。窗口变小时允许滚动或裁切，
@@ -1916,28 +2014,20 @@ body:has(.battle-page.mixed-active) .app-header,
   color: #111;
 }
 
-.speed-line-title {
-  color: #28323c;
-  font-size: 12px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
 .speed-line-sides {
   display: grid;
   gap: 8px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.speed-line-sides > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 5px;
+/* 一只精灵最多四个速度，固定成 2×2，左右两列分别是己方和敌方。 */
+.speed-line-side {
+  display: grid;
+  gap: 2px;
   min-width: 0;
 }
 
-.speed-line-sides strong,
-.speed-line-sides span {
+.speed-line-side strong {
   font-size: 11px;
   line-height: 1.3;
   overflow: hidden;
@@ -1945,8 +2035,123 @@ body:has(.battle-page.mixed-active) .app-header,
   white-space: nowrap;
 }
 
-.speed-line-sides strong {
-  flex-basis: 100%;
+.speed-line-values {
+  display: grid;
+  gap: 1px 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.speed-line-values span {
+  align-items: baseline;
+  display: flex;
+  font-size: 11px;
+  gap: 4px;
+  justify-content: space-between;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.speed-line-values em {
+  font-style: normal;
+  opacity: 0.72;
+}
+
+/* 速度数值增益：紧贴速度线下方，同样左右两列，不再写己方/敌方字样。 */
+.speed-line-buffs {
+  display: grid;
+  gap: 4px 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.speed-buff-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.speed-buff-percent {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* 增益面板高度由内容决定，不再留固定高度的空白。 */
+.battle-page.plugin-mode .speed-buffs {
+  height: auto !important;
+}
+
+/* 数值框沿用 buff 面板的同款控件与宽度，箭头样式保持一致。 */
+.speed-buff-row .number-input-control {
+  width: var(--buff-width);
+}
+
+.speed-buff-row .num-input {
+  font-size: var(--buff-number-font-size);
+  height: var(--buff-height);
+}
+
+.speed-buff-reset {
+  height: 18px;
+  padding: 0 5px;
+}
+
+/* 敌方“醒目技能”：只列出我方关注且敌方当前精灵可能拥有的技能。 */
+.battle-page.plugin-mode .watch-skill-panel {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(139, 153, 168, 0.55);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.watch-skill-title {
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.watch-skill-list {
+  display: grid;
+  gap: 3px;
+}
+
+.watch-skill-item {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  justify-content: space-between;
+}
+
+.watch-skill-item span {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.watch-skill-remove {
+  flex: 0 0 auto;
+  font-size: 11px;
+  height: 18px;
+  min-width: 18px;
+  padding: 0 4px;
+}
+
+.watch-skill-empty {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.watch-skill-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.watch-skill-chip {
+  font-size: 10px;
+  height: 20px;
+  padding: 0 5px;
 }
 
 .slot-cell {
@@ -2070,6 +2275,13 @@ body:has(.plugin-mode) .app-header .weather-panel {
   width: var(--buff-option-width);
 }
 
+/* 计算框宽度是用户拉出来的；多出来的宽度交给 buff 选择框吸收，不再留成空白。 */
+.battle-page.plugin-mode .team-action-floating .buff-option-select {
+  flex: 1 1 var(--buff-option-width);
+  min-width: var(--buff-option-width);
+  width: auto;
+}
+
 .roster,
 .team-buff-panel,
 .team-skill-panel,
@@ -2178,12 +2390,13 @@ body:has(.plugin-mode) .app-header .weather-panel {
 
 .plugin-drag-zone {
   cursor: move;
-  height: 8px;
+  /* 顶部留一条拖动条：面板缩到最小时也能抓住它拖动。 */
+  height: 10px;
   left: 0;
   position: absolute;
   right: 0;
-  top: 0;
-  z-index: 6;
+  top: 3px;
+  z-index: 1100;
 }
 
 .plugin-resize-edge {
@@ -2194,7 +2407,7 @@ body:has(.plugin-mode) .app-header .weather-panel {
 
 .plugin-resize-edge.top,
 .plugin-resize-edge.bottom {
-  height: 8px;
+  height: 6px;
   left: 0;
   right: 0;
   touch-action: none;
@@ -2203,11 +2416,11 @@ body:has(.plugin-mode) .app-header .weather-panel {
 
 .plugin-resize-edge.top {
   cursor: ns-resize;
-  top: -4px;
+  top: -3px;
 }
 
 .plugin-resize-edge.bottom {
-  bottom: -4px;
+  bottom: -3px;
   cursor: ns-resize;
 }
 
@@ -2215,19 +2428,19 @@ body:has(.plugin-mode) .app-header .weather-panel {
 .plugin-resize-edge.right {
   bottom: 0;
   top: 0;
-  width: 8px;
+  width: 6px;
   touch-action: none;
   z-index: 1000;
 }
 
 .plugin-resize-edge.left {
   cursor: ew-resize;
-  left: -4px;
+  left: -3px;
 }
 
 .plugin-resize-edge.right {
   cursor: ew-resize;
-  right: -4px;
+  right: -3px;
 }
 
 /* 保留右下角拖拽缩放，隐藏 WebView 默认绘制的系统图标。 */
@@ -2913,6 +3126,110 @@ body:has(.plugin-mode) .app-header .weather-panel {
   color: #384958;
   font-size: 9px;
   white-space: nowrap;
+}
+
+.enemy-attack-panel {
+  background: rgba(20, 28, 36, 0.97);
+  border: 1px solid rgba(182, 205, 221, 0.55);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.42);
+  color: #edf5fa;
+  left: 50%;
+  max-height: min(86vh, 760px);
+  max-width: min(94vw, 1180px);
+  overflow: auto;
+  padding: 14px;
+  position: fixed;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: max-content;
+  z-index: 1200;
+}
+
+.enemy-attack-panel-header {
+  align-items: center;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.enemy-attack-panel-header > div {
+  display: grid;
+  gap: 3px;
+}
+
+.enemy-attack-panel-header span {
+  color: #b9cbd7;
+  font-size: 12px;
+}
+
+.enemy-attack-groups {
+  display: grid;
+  gap: 16px;
+}
+
+.enemy-attack-group {
+  display: grid;
+  gap: 6px;
+}
+
+.enemy-attack-group h3 {
+  font-size: 13px;
+  margin: 0;
+}
+
+.enemy-attack-grid {
+  display: grid;
+  gap: 4px;
+}
+
+.enemy-attack-grid-heading,
+.enemy-attack-state {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: center;
+  min-height: 30px;
+  padding: 4px 6px;
+  text-align: center;
+}
+
+.enemy-attack-state {
+  color: #d7e7ef;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.enemy-attack-cell {
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  color: #17212b;
+  display: grid;
+  gap: 2px;
+  min-height: 62px;
+  padding: 5px 7px;
+}
+
+.enemy-attack-cell strong {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.enemy-attack-cell span {
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.enemy-attack-cell.is-empty {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  color: #91a4b0;
+  display: flex;
+  justify-content: center;
+}
+
+.enemy-attack-empty {
+  color: #b9cbd7;
+  margin: 8px 0 0;
 }
 
 .battle-page.immersive-mode .quick-skill-result :is(span, b) {
@@ -3612,6 +3929,14 @@ body:has(.plugin-mode) .app-header .weather-panel {
   background: #d9f1e4;
   border-color: #3b996d;
   color: #176343;
+}
+
+/* 深色插件模式下通用按钮底色带 !important，触发态必须用同等权重覆盖，否则看不出来是否触发。 */
+.battle-page.immersive-mode.plugin-mode .floating-team-panel .trait-trigger-button.active,
+.battle-page.immersive-mode.plugin-mode .floating-team-panel .trait-trigger-button.active:hover {
+  background: var(--ov-accent-bg) !important;
+  border-color: var(--ov-accent-border) !important;
+  color: #f0fff8 !important;
 }
 
 .trait-select-button {
@@ -4819,15 +5144,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
   outline: none !important;
 }
 
-/* 只移除特性摘要的边框，所有背景、文字和阴影沿用原有配色。 */
-.battle-page.immersive-mode.plugin-mode .team-left-trait .trait-summary-button,
-.battle-page.immersive-mode.plugin-mode .team-right-trait .trait-summary-button,
-.battle-page.immersive-mode.plugin-mode .team-left-trait .trait-summary-button:hover,
-.battle-page.immersive-mode.plugin-mode .team-right-trait .trait-summary-button:hover {
-  background: transparent !important;
-  border: 0 !important;
-}
-
 /* 队伍卡片里的“取消”只是动作文字，不再单独绘制按钮内框。 */
 .battle-page.immersive-mode.plugin-mode .roster .slot-action,
 .battle-page.immersive-mode.plugin-mode .roster .slot-action:hover {
@@ -5025,10 +5341,56 @@ body:has(.plugin-mode) .app-header .weather-panel {
   z-index: 30;
 }
 
-/* 速度线的两列宽度取首次渲染值；收缩外框时只让边线变窄。 */
+/* 技能浮层只有一层：外框尺寸就是技能卡尺寸，点击后的高亮框跟着外框走。 */
+.battle-page.plugin-mode .skill-card-floating > .plugin-panel-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  transform: none !important;
+  width: 100%;
+}
+
+.battle-page.plugin-mode .skill-card-floating .skill-card-grid {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.battle-page.plugin-mode .skill-card-floating .plugin-skill-controls {
+  /* 叠层/应用控件脱离技能框内部空间，浮在框正下方：技能框只放卡片，不再被挤。 */
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(139, 153, 168, 0.55);
+  border-radius: 6px;
+  box-shadow: 0 10px 24px rgba(20, 31, 43, 0.32);
+  left: 0;
+  max-width: min(320px, calc(100vw - 24px));
+  min-width: 0;
+  padding: 4px 6px;
+  position: absolute;
+  top: calc(100% + 4px);
+  /* 与上面的技能框同宽，数字框和重置按钮平分这一行。 */
+  width: 100%;
+  box-sizing: border-box;
+  z-index: 40;
+}
+
+.battle-page.immersive-mode.plugin-mode .skill-card-floating .plugin-skill-controls {
+  background: rgba(20, 28, 39, 0.94);
+  border-color: var(--ov-panel-border);
+}
+
+/* 速度线两列跟随面板宽度，框变宽时不再在两侧精灵之间留出空白。 */
 .battle-page.plugin-mode .speed-line > .speed-line-sides {
   max-width: none;
-  width: var(--speed-line-content-width, auto);
+  width: 100%;
+}
+
+/* 速度线去掉标题后高度由内容决定，不再保留固定高度的空白。 */
+.battle-page.plugin-mode .speed-line:not(.speed-buffs) {
+  height: auto !important;
 }
 
 .battle-page.immersive-mode.plugin-mode .quick-skill-result span {
@@ -5052,20 +5414,22 @@ body:has(.plugin-mode) .app-header .weather-panel {
   box-sizing: border-box;
   box-shadow: none !important;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 30px;
-  height: var(--skill-card-height) !important;
+  grid-template-columns: minmax(0, 1fr) 26px;
+  height: 100% !important;
   justify-content: normal;
   max-width: none;
-  min-height: var(--skill-card-height) !important;
-  min-width: var(--skill-card-width);
-  gap: 6px;
-  overflow: visible;
-  padding: 4px 8px;
+  min-height: 0 !important;
+  min-width: 0;
+  gap: 4px;
+  overflow: hidden;
+  padding: 4px 6px;
   position: relative;
-  width: var(--skill-card-width);
+  width: 100%;
 }
 
 .battle-page.plugin-mode .skill-card-floating .team-skill-card strong {
+  /* 技能名最长四个字，字号降到 12px 保证完整显示，不再出现省略号。 */
+  font-size: 12px;
   grid-column: 1;
   grid-row: 1;
   min-width: 0;
@@ -5086,16 +5450,22 @@ body:has(.plugin-mode) .app-header .weather-panel {
 }
 
 .battle-page.plugin-mode .skill-card-floating .plugin-skill-controls {
-  border: 0 !important;
   display: flex;
+  /* 不换行：空间不足时压缩重置按钮，叠层数字框保持不动。 */
   flex-wrap: nowrap;
   grid-template-columns: none;
   margin-top: 0;
-  padding-top: 0;
 }
 
 .battle-page.plugin-mode .skill-card-floating .skill-stack-control {
+  /* 叠层数字框保持自身宽度：空间不够时优先压缩重置按钮。 */
   flex: 0 0 auto;
   min-width: max-content;
   width: max-content;
+}
+
+.battle-page.plugin-mode .skill-card-floating .plugin-skill-controls .compact-button {
+  flex: 1 1 auto;
+  min-width: 24px;
+  overflow: hidden;
 }
