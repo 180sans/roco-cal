@@ -11,6 +11,9 @@ export default defineConfig({
         watch: {
       ignored: [
         '**/src-tauri/target/**',
+        '**/__pycache__/**',
+        '**/*.pyc',
+        '**/*.pyo',
       ],
     },
   },

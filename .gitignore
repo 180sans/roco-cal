@@ -6,6 +6,8 @@ dist/
 # Tauri and Rust build output
 src-tauri/target/
 src-tauri/gen/
+.cargo-check-overlay/
+.cargo-check-replay/
 
 # Bundled Python runtime (downloaded during the Windows build)
 src-tauri/resources/python/

@@ -1291,6 +1291,8 @@ def battle_damage(
                 "case_label": case_label,
                 "is_triggered": is_active_trigger,
                 "effective_power": effective_power,
+                "combo": combo,
+                "usage_time": usage_count,
                 "atk_label": atk_s["atk_label"],
                 "def_label": def_s["def_label"],
                 "atk_value": atk,

@@ -374,6 +374,7 @@ fn run_python_with_input(
         .map_err(|error| format!("Cannot create app data dir: {error}"))?;
     let mut command = Command::new(&python);
     command
+        .arg("-B")
         .arg(&script)
         .args(args)
         .env("PYTHONUTF8", "1")
@@ -487,6 +488,7 @@ fn start_ocr_worker(app: &tauri::AppHandle) -> Result<OcrWorkerProcess, String> 
         .map_err(|error| format!("Cannot create app data dir: {error}"))?;
     let mut command = Command::new(&python);
     command
+        .arg("-B")
         .arg(&script)
         .arg("ocr-worker")
         .env("PYTHONUTF8", "1")
@@ -2234,9 +2236,12 @@ pub fn run() {
                             .lock()
                             .ok()
                             .and_then(|binding| *binding);
-                        let Some(_binding) = binding else {
+                        let calculation_hotkey = message.w_param == QUICK_CALCULATE_HOTKEY_ID as usize
+                            || message.w_param == ENEMY_ATTACK_CALCULATE_HOTKEY_ID as usize
+                            || message.w_param == HIDE_QUICK_RESULTS_HOTKEY_ID as usize;
+                        if binding.is_none() && !calculation_hotkey {
                             continue;
-                        };
+                        }
                         if hotkey_visibility_state.collapsed.load(Ordering::Relaxed) {
                             continue;
                         }

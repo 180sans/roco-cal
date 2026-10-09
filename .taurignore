@@ -1,0 +1,4 @@
+# Python import caches are runtime output, not source changes.
+**/__pycache__/**
+*.pyc
+*.pyo

@@ -553,10 +553,10 @@ def calculate_quick_skills(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
-    """Select differentiated enemy attack skills for the OCR-detected player HP."""
+    """Calculate enemy skills, optionally selecting stacks for known player HP."""
     from itertools import product
 
-    from core.damresult import battle_damage
+    from core.damresult import battle_damage, get_personality_bonus_for_attr, parse_personality
     from core.find_pets import pets_dataset
     from core.skill_finder import skill_dataset
 
@@ -564,8 +564,7 @@ def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
     defender = payload.get("defender") or {}
     target_hp = float(payload.get("target_hp") or 0)
     weather = payload.get("weather") or "none"
-    if target_hp <= 0:
-        raise ValueError("未识别到有效的我方当前血量")
+    selected_skill = str(payload.get("skill_name") or "").strip()
 
     defender_args = _defender_args(defender)
     suffix_order = ["++", "+", "", "-"]
@@ -608,6 +607,11 @@ def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
         dimensions = stack_dimensions(skill_data)
         if not dimensions:
             return [[]]
+        if target_hp <= 0 or selected_skill:
+            configured = (state.get("skill_trigger_stacks") or {}).get(skill_name)
+            if not isinstance(configured, list):
+                configured = [state.get("multiple", 0) or 0]
+            return [configured]
         vectors = [list(values) for values in product(*(range(maximum + 1) for maximum in dimensions))]
         vectors.sort(key=lambda values: (sum(values), max(values, default=0), values))
         return vectors
@@ -627,7 +631,7 @@ def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
                 candidates.append({
                     "item": item,
                     "stacks": sum(stacks),
-                    "killed": damage >= target_hp,
+                    "killed": target_hp > 0 and damage >= target_hp,
                     "damage": damage,
                 })
         if not candidates:
@@ -645,11 +649,28 @@ def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
         item = chosen["item"]
         stack_text = str(chosen["stacks"]) if chosen["stacks"] > 0 else ""
         trigger_text = "*" if item.get("is_triggered") else ""
+        combo = item.get("combo") or 1
+        usage_count = item.get("usage_time") or 1
+        extra_damage = (item.get("starfall") or {}).get("damage", 0)
+        usage_results = item.get("usage_results") or [{
+            "effective_power": item.get("effective_power"),
+            "combo": combo,
+            "damage": (item.get("damage", 0) - extra_damage) / usage_count,
+        }] * usage_count
+        hit_segments = [{
+            "power": usage.get("effective_power"),
+            "combo": usage.get("combo") or 1,
+            "damage": usage.get("damage", 0) / (usage.get("combo") or 1),
+        } for usage in usage_results]
         return {
             "skillName": skill_name,
             "displayName": f"{skill_name}{trigger_text}{stack_text}",
             "skillPower": item.get("effective_power"),
             "damage": item.get("damage"),
+            "combo": combo,
+            "hitSegments": hit_segments,
+            "totalSkillPower": sum(segment["power"] * segment["combo"] for segment in hit_segments if segment["power"] is not None),
+            "extraDamage": extra_damage,
             "element": skill_data.get("element") or "普通",
             "stacks": chosen["stacks"],
             "triggered": bool(item.get("is_triggered")),
@@ -671,6 +692,8 @@ def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
                 library_names.append(name)
     if not library_names:
         library_names = [str(raw_name or "").strip() for raw_name in attacker.get("skills") or []]
+    if selected_skill:
+        library_names = [selected_skill]
 
     profiles: dict[str, list[dict[str, Any]]] = {"物攻": [], "魔攻": []}
     for raw_name in library_names:

@@ -3216,7 +3216,8 @@ body:has(.plugin-mode) .app-header .weather-panel {
 
 .enemy-attack-cell span {
   font-size: 10px;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .enemy-attack-cell.is-empty {

@@ -491,10 +491,15 @@ type EnemyAttackSkillCell = {
   skillPower?: number | null;
   damage?: number | null;
   element?: string;
+  combo?: number;
+  hitSegments?: Array<{ power: number | null; damage: number; combo: number }>;
+  totalSkillPower?: number;
+  extraDamage?: number;
 };
 type EnemyAttackSkillRow = { label: string; skills: Array<EnemyAttackSkillCell | null> };
 type EnemyAttackSkillGroup = { attackType: "物攻" | "魔攻"; skills: string[]; rows: EnemyAttackSkillRow[] };
 type EnemyAttackSkillResponse = { targetHp: number; groups: EnemyAttackSkillGroup[] };
+type EnemyAttackPayload = { attacker: UnitState & { other_bonuses: TeamOtherBonuses }; defender: UnitState & { other_bonuses: TeamOtherBonuses }; target_hp: number; weather: string };
 type WillpowerElementResult = { element: string; advantage: number; has_stab: boolean; results: BattleResult[] };
 type WillpowerResponse = { attack_type: "atk" | "mag"; elements: WillpowerElementResult[] };
 type RequiredPowerRow = { attack_type: "物攻" | "魔攻"; attacker_label: string; required_power: number };
@@ -514,6 +519,8 @@ type BattleContext = {
 
 type PickerMode = "pet" | "skill" | "trait";
 type BonusTool = "dedication" | "marks" | "thunderstorm";
+type BonusToolPosition = { x: number; y: number };
+type BonusToolPositions = Record<string, BonusToolPosition>;
 type MarkField = "charge" | "attack" | "momentum" | "starfall";
 type SkillListResult = { petSkills: SkillItem[]; allSkills: SkillItem[] };
 type PresetManagerResult = { presets: PresetGroup[]; groupName?: string; presetName?: string };
@@ -554,6 +561,12 @@ function cachedListSkills(petQuery: string) {
     skillListCache.set(key, invoke<SkillListResult>("list_skills", { payload: { petQuery, query: "" } }));
   }
   return skillListCache.get(key)!;
+}
+
+function groupWatchSkills(configs: PickerConfigs, groupName: string, firstGroupName: string): string[] {
+  const groups = configs.team_layout?.watch_skills_by_group as Record<string, unknown> | undefined;
+  const saved = groups?.[groupName] ?? (groupName === firstGroupName ? configs.team_layout?.watch_skills : []);
+  return Array.isArray(saved) ? saved.filter((item): item is string => typeof item === "string") : [];
 }
 
 function cachedTraitInfo(payload: Record<string, unknown>) {
@@ -1014,6 +1027,22 @@ function PluginResizeEdges({ onPointerDown }: { onPointerDown?: ReactPointerEven
 
 function PluginDragZone() {
   return <div className="plugin-drag-zone" aria-label="拖动面板" />;
+}
+
+function traitSummaryAtPoint(target: HTMLElement, x: number, y: number): HTMLButtonElement | null {
+  if (target.closest(".trait-expanded-content, .modal-backdrop")) return null;
+  const panel = target.closest<HTMLElement>(".trait-floating-panel");
+  const button = panel?.querySelector<HTMLButtonElement>(".trait-summary-button");
+  if (!panel || !button) return null;
+  const control = target.closest("button, input, select, textarea, [role=button]");
+  if (control && control !== button) return null;
+  const row = button.getBoundingClientRect();
+  const label = button.querySelector("strong")?.getBoundingClientRect() || row;
+  const bounds = panel.getBoundingClientRect();
+  return x >= Math.min(bounds.left, row.left, label.left)
+    && x <= Math.max(bounds.right, row.right, label.right)
+    && y >= Math.min(row.top, label.top)
+    && y <= Math.max(row.bottom, label.bottom) ? button : null;
 }
 
 /* 展开浮层默认向下、向右展开；贴到屏幕边缘时自动翻到另一侧，避免被裁掉。 */
@@ -1858,6 +1887,17 @@ function pluginDensityStyle(configs: PickerConfigs, density: number): CSSPropert
   ) as CSSProperties;
 }
 
+function savedBonusToolPositions(configs: PickerConfigs): BonusToolPositions {
+  const saved = configs.team_layout?.bonus_tool_positions;
+  if (!saved || typeof saved !== "object") return {};
+  return Object.fromEntries(Object.entries(saved).flatMap(([id, item]) => {
+    if (!item || typeof item !== "object") return [];
+    const { x, y } = item as Record<string, unknown>;
+    return typeof x === "number" && Number.isFinite(x) && typeof y === "number" && Number.isFinite(y)
+      ? [[id, { x, y }]] : [];
+  }));
+}
+
 function TeamBattlePage({
   presets,
   pets,
@@ -1915,6 +1955,7 @@ function TeamBattlePage({
   const [rightSlots, setRightSlots] = useState<UnitState[]>(() => Array.from({ length: teamSlotCount }, blankUnit));
   const [leftIndex, setLeftIndex] = useState(0);
   const [rightIndex, setRightIndex] = useState(0);
+  const [leftGroupName, setLeftGroupName] = useState("");
   const [petPicker, setPetPicker] = useState<{ side: "left" | "right"; index: number } | null>(null);
   const [leftAttacks, setLeftAttacks] = useState(true);
   const [leftOtherBonuses, setLeftOtherBonuses] = useState<TeamOtherBonuses>(blankTeamOtherBonuses);
@@ -1934,6 +1975,10 @@ function TeamBattlePage({
   const [selectedBuffOption, setSelectedBuffOption] = useState(0);
   const [bonusTool, setBonusTool] = useState<BonusTool | null>(null);
   const [bonusSide, setBonusSide] = useState<"left" | "right">("left");
+  const [bonusToolPositions, setBonusToolPositions] = useState<BonusToolPositions>(() => savedBonusToolPositions(configs));
+  const enemyAttackPayloadRef = useRef<EnemyAttackPayload | null>(null);
+  const [enemySkillPicker, setEnemySkillPicker] = useState(false);
+  const [enemySkillData, setEnemySkillData] = useState<SkillListResult>({ petSkills: [], allSkills: [] });
   const [layoutMessage, setLayoutMessage] = useState("");
   const [targetHwnd, setTargetHwnd] = useState("");
   const [targetStatus, setTargetStatus] = useState("");
@@ -2064,6 +2109,7 @@ function TeamBattlePage({
     };
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as HTMLElement | null;
+      if (target && traitSummaryAtPoint(target, event.clientX, event.clientY)) return;
       if (target?.closest(".trait-expanded-content, .team-buff-grid, .trait-summary-button, .team-buff-panel summary, .modal-backdrop")) return;
       close();
     };
@@ -2479,6 +2525,7 @@ function TeamBattlePage({
   useEffect(() => {
     if (displayMode !== "plugin") return;
     const startResize = (event: PointerEvent) => {
+      if (event.target instanceof HTMLElement && traitSummaryAtPoint(event.target, event.clientX, event.clientY)) return;
       const path = event.composedPath();
       const resizeEdge = path.find((node): node is HTMLElement => node instanceof HTMLElement && node.classList.contains("plugin-resize-edge"));
       const panel = resizeEdge?.closest<HTMLElement>("[data-plugin-resizable]")
@@ -2593,6 +2640,7 @@ function TeamBattlePage({
       if (nextMode === "plugin") {
         setRegionPositions(savedTeamRegionPositions(data.configs, teamValues["team-region-width"], teamValues["team-region-height"]));
         setOverlayLayouts(savedPluginOverlayLayouts(data.configs));
+        setBonusToolPositions(savedBonusToolPositions(data.configs));
         setDetectionReadoutLayouts(savedDetectionReadoutLayouts(data.configs));
         setDetectionReadoutCoordinateMode(savedDetectionReadoutCoordinateMode(data.configs));
       }
@@ -2610,6 +2658,7 @@ function TeamBattlePage({
           values: {
             regions: regionPositions,
             overlays: overlayLayouts,
+            bonus_tool_positions: bonusToolPositions,
             detection_regions: detectionRegions,
             detection_readouts: { ...detectionReadoutLayouts, coordinate_space: "page" },
           },
@@ -2630,6 +2679,7 @@ function TeamBattlePage({
   function resetLayout() {
     setRegionPositions(initialTeamRegionPositions(teamValues["team-region-width"], teamValues["team-region-height"]));
     setOverlayLayouts({});
+    setBonusToolPositions({});
     setDetectionRegions(DEFAULT_DETECTION_REGIONS);
     setDetectionReadoutLayouts({ health: { x: 0, y: 0 }, powers: { x: 0, y: 0 } });
     setDetectionReadoutCoordinateMode("viewport-offset");
@@ -2637,18 +2687,19 @@ function TeamBattlePage({
   }
 
   function resetBattle() {
-    setLeftSlots(Array.from({ length: teamSlotCount }, blankUnit));
+    const group = presets.find((item) => item.name === leftGroupName);
+    setLeftSlots(Array.from({ length: teamSlotCount }, (_, index) => group?.items[index] ? unitFromPreset(group.items[index], true) : blankUnit()));
     setRightSlots(Array.from({ length: teamSlotCount }, blankUnit));
     setLeftIndex(0);
     setRightIndex(0);
     setLeftAttacks(true);
     setLeftOtherBonuses(blankTeamOtherBonuses());
     setRightOtherBonuses(blankTeamOtherBonuses());
-    setLeftMarkFields([]);
-    setRightMarkFields([]);
     setResults([]);
     setQuickSkillResults(null);
     setEnemyAttackResults(null);
+    enemyAttackPayloadRef.current = null;
+    setEnemySkillPicker(false);
     setWillpower(null);
     setRequiredPower(null);
     setBattleContext(null);
@@ -3034,6 +3085,7 @@ function TeamBattlePage({
     const setter = side === "left" ? setLeftSlots : setRightSlots;
     setter((slots) => slots.map((slot, index) => (index < group.items.length ? mergePresetIntoUnit(slot, group.items[index]) : slot)));
     if (side === "left") {
+      setLeftGroupName(groupName);
       setLeftIndex(0);
     } else {
       setRightIndex(0);
@@ -3090,25 +3142,24 @@ function TeamBattlePage({
     }
   }
 
-  async function calculateEnemyAttackSkills() {
+  async function calculateEnemyAttackSkills(skillName?: string) {
     if (displayMode !== "plugin") return;
     const attacker = rightSlots[rightIndex];
     const defender = leftSlots[leftIndex];
     const targetHp = Number(detectedHealth.self.match(/^\s*(\d+)/)?.[1] || 0);
-    if (!targetHp) {
-      setError("未识别到有效的我方当前血量");
-      return;
-    }
+    const payload = skillName ? enemyAttackPayloadRef.current : {
+      attacker: { ...attacker, other_bonuses: rightOtherBonuses },
+      defender: { ...defender, other_bonuses: leftOtherBonuses },
+      target_hp: targetHp,
+      weather,
+    };
+    if (!payload) return;
     setError("");
     try {
       const data = await invoke<EnemyAttackSkillResponse>("calculate_enemy_attack_skills", {
-        payload: {
-          attacker: { ...attacker, other_bonuses: rightOtherBonuses },
-          defender: { ...defender, other_bonuses: leftOtherBonuses },
-          target_hp: targetHp,
-          weather,
-        },
+        payload: { ...payload, skill_name: skillName },
       });
+      enemyAttackPayloadRef.current = payload;
       setEnemyAttackResults(data);
       setQuickSkillResults(null);
       setResults([]);
@@ -3121,11 +3172,25 @@ function TeamBattlePage({
     }
   }
 
+  async function openEnemySkillPicker() {
+    const attacker = enemyAttackPayloadRef.current?.attacker;
+    if (!attacker) return;
+    try {
+      const data = await cachedListSkills(attacker.mega_form || attacker.name);
+      const damaging = (skill: SkillItem) => ["物攻", "魔攻"].includes(skill.detail?.type || skill.type || "");
+      setEnemySkillData({ petSkills: data.petSkills.filter(damaging), allSkills: data.allSkills.filter(damaging) });
+      setEnemySkillPicker(true);
+    } catch (err) {
+      setError(asError(err));
+    }
+  }
+
   calculateQuickSkillsRef.current = () => void calculateQuickSkills();
   calculateEnemyAttackSkillsRef.current = () => void calculateEnemyAttackSkills();
   hideQuickSkillResultsRef.current = () => {
     setQuickSkillResults(null);
     setEnemyAttackResults(null);
+    setEnemySkillPicker(false);
   };
 
   useEffect(() => {
@@ -3271,15 +3336,15 @@ function TeamBattlePage({
   const pluginSkillCardCount = Math.max(DEFAULT_SKILL_CARD_COUNT, teamSkillCardCount);
   const leftPluginSkillSlots = skillCardSlots(leftSlots[leftIndex].skills, pluginSkillCardCount);
   const rightPluginSkillSlots = skillCardSlots(rightSlots[rightIndex].skills, pluginSkillCardCount);
-  // 醒目技能：关注敌方当前精灵是否可能携带某些技能，配置存在 team_layout 里，默认空。
+  // 醒目技能跟随我方当前导入的分组。
   const watchSkills = useMemo(() => {
-    const saved = configs.team_layout?.watch_skills;
-    return Array.isArray(saved) ? saved.filter((item): item is string => typeof item === "string") : [];
-  }, [configs]);
+    return groupWatchSkills(configs, leftGroupName, presets[0]?.name || "attackers");
+  }, [configs, leftGroupName, presets]);
   async function setWatchSkills(next: string[]) {
+    if (!leftGroupName) return;
     try {
       const data = await invoke<{ configs: PickerConfigs }>("save_picker_config", {
-        payload: { section: "team_layout", values: { watch_skills: next } },
+        payload: { section: "team_layout", values: { watch_skills_by_group: { ...(configs.team_layout?.watch_skills_by_group as Record<string, unknown> || {}), [leftGroupName]: next } } },
       });
       onConfigsChanged(data.configs);
     } catch (err) {
@@ -3348,7 +3413,7 @@ function TeamBattlePage({
             <button onClick={() => void recognizeDetection("battleStart")} disabled={!targetAttached}>开始识别 Ctrl+B</button>
             <button onClick={() => void recognizeDetection("battleLive")} disabled={!targetAttached}>战斗识别 Ctrl+U</button>
             <button onClick={() => void recognizeSkillPowers()} disabled={!targetAttached}>威力识别 Ctrl+P</button>
-            <button onClick={() => void calculateEnemyAttackSkills()} disabled={!targetAttached}>敌方攻击 Ctrl+K</button>
+            <button onClick={() => void calculateEnemyAttackSkills()}>敌方攻击 Ctrl+K</button>
           </div>
         </details> : null}
         {targetStatus || layoutMessage || detectionMessage ? <span>{targetStatus || layoutMessage || detectionMessage}</span> : null}
@@ -3371,7 +3436,7 @@ function TeamBattlePage({
             return <button key={key} ref={(element) => { detectionRoiRefs.current[key] = element; }} className={`detection-roi ${key.includes("Image") ? "image" : "number"}${visible ? "" : " hidden"}`} style={{ left: `${region.x}%`, top: `${region.y}%`, width: `${region.width}%`, height: `${region.height}%` }} onPointerDown={(event) => startDetectionPointer(event, key)} title={`拖动 ${detectionLabel(key)}；拖动边缘缩放`}><span>{detectionLabel(key)}</span></button>;
           })}
         </div> : null}
-        <Roster panelState={panelState(leftSlots.some((slot) => Boolean(slot.name)))} pluginMode={displayMode === "plugin"} className="team-left-roster" title="队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={leftSlots} activeIndex={leftIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("left", groupName)} onSelect={setLeftIndex} onPatchSlot={(partial) => patchSlot("left", leftIndex, partial)} onPatchSlotAt={(index, partial) => patchSlot("left", index, partial)} onChoose={(index) => { setLeftIndex(index); setPetPicker({ side: "left", index }); }} onClear={(index) => setSlot("left", index, blankUnit())} />
+        <Roster selectedGroup={leftGroupName} panelState={panelState(leftSlots.some((slot) => Boolean(slot.name)))} pluginMode={displayMode === "plugin"} className="team-left-roster" title="队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={leftSlots} activeIndex={leftIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("left", groupName)} onSelect={setLeftIndex} onPatchSlot={(partial) => patchSlot("left", leftIndex, partial)} onPatchSlotAt={(index, partial) => patchSlot("left", index, partial)} onChoose={(index) => { setLeftIndex(index); setPetPicker({ side: "left", index }); }} onClear={(index) => setSlot("left", index, blankUnit())} />
         <Roster panelState={panelState(rightSlots.some((slot) => Boolean(slot.name)))} pluginMode={displayMode === "plugin"} className="team-right-roster" title="队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={rightSlots} activeIndex={rightIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("right", groupName)} onSelect={setRightIndex} onPatchSlot={(partial) => patchSlot("right", rightIndex, partial)} onPatchSlotAt={(index, partial) => patchSlot("right", index, partial)} onChoose={(index) => { setRightIndex(index); setPetPicker({ side: "right", index }); }} onClear={(index) => setSlot("right", index, blankUnit())} />
         {displayMode === "plugin" ? <>
           <SpeedLine
@@ -3439,9 +3504,12 @@ function TeamBattlePage({
         <TeamActionPanel pluginMode={displayMode === "plugin"} layout={displayMode === "plugin" ? overlayLayout("action") : undefined} onLayoutChange={(partial) => updateOverlayLayout("action", partial)} leftAttacks={leftAttacks} onToggleDirection={() => setLeftAttacks((value) => !value)} onCalculate={() => void calculate()} onApplyBuff={() => void applyBuff()} onResetBattle={resetBattle} targetHp={targetHp} onTargetHpChange={setTargetHp} onCalculateRequiredPower={() => void calculateRequiredPower()} buffOptions={buffOptions} selectedBuffOption={selectedBuffOption} onSelectBuffOption={setSelectedBuffOption} />
         {bonusTool ? (
           <BattleBonusToolPanel
+            key={`${bonusSide}-${bonusTool}`}
             tool={bonusTool}
             pluginMode={displayMode === "plugin"}
             side={bonusSide}
+            position={bonusToolPositions[`${bonusSide}-${bonusTool}`] || { x: Math.max(8, window.innerWidth - 348), y: 84 }}
+            onPositionChange={(position) => setBonusToolPositions((current) => ({ ...current, [`${bonusSide}-${bonusTool}`]: position }))}
             value={bonusSide === "left" ? leftOtherBonuses : rightOtherBonuses}
             burstEffects={burstEffects}
             markFields={bonusSide === "left" ? leftMarkFields : rightMarkFields}
@@ -3461,8 +3529,16 @@ function TeamBattlePage({
           onSelectWillpowerElement={selectWillpowerElement}
         />
         {requiredPower ? <RequiredPowerView value={requiredPower} context={battleContext} /> : null}
-        {enemyAttackResults ? <EnemyAttackSkillPanel value={enemyAttackResults} onClose={() => setEnemyAttackResults(null)} /> : null}
+        {enemyAttackResults ? <EnemyAttackSkillPanel value={enemyAttackResults} onPickSkill={() => void openEnemySkillPicker()} onClose={() => { setEnemyAttackResults(null); setEnemySkillPicker(false); }} /> : null}
       </div>
+      {enemySkillPicker ? (
+        <PickerModal
+          mode="skill" pets={[]} elements={elements} petSkills={enemySkillData.petSkills} allSkills={enemySkillData.allSkills}
+          traits={[]} configs={configs} onConfigsChanged={onConfigsChanged}
+          onClose={() => setEnemySkillPicker(false)} onPickPet={() => undefined} onPickTrait={() => undefined}
+          onPickSkill={(skill) => { setEnemySkillPicker(false); void calculateEnemyAttackSkills(skill.name); }}
+        />
+      ) : null}
       {petPicker ? (
         <PickerModal
           mode="pet"
@@ -3545,11 +3621,10 @@ function PresetManagerPage({
     void cachedListSkills(editor.name).then(setSkillData).catch(() => setSkillData({ petSkills: [], allSkills: [] }));
   }, [editor.name, skillPickerIndex]);
 
-  // 醒目技能：全局关注列表，存在 team_layout 里；插件模式的敌方面板按它提示。
+  // 每个预设分组保存独立的醒目技能列表。
   const watchSkills = useMemo(() => {
-    const saved = configs.team_layout?.watch_skills;
-    return Array.isArray(saved) ? saved.filter((item): item is string => typeof item === "string") : [];
-  }, [configs]);
+    return groupWatchSkills(configs, currentGroup?.name || "", firstGroupName);
+  }, [configs, currentGroup?.name, firstGroupName]);
 
   useEffect(() => {
     if (!watchPicker) return;
@@ -3557,9 +3632,10 @@ function PresetManagerPage({
   }, [watchPicker]);
 
   async function saveWatchSkills(next: string[]) {
+    if (!currentGroup) return;
     try {
       const data = await invoke<{ configs: PickerConfigs }>("save_picker_config", {
-        payload: { section: "team_layout", values: { watch_skills: next } },
+        payload: { section: "team_layout", values: { watch_skills_by_group: { ...(configs.team_layout?.watch_skills_by_group as Record<string, unknown> || {}), [currentGroup.name]: next } } },
       });
       onConfigsChanged(data.configs);
       setMessage("醒目技能已保存");
@@ -3813,7 +3889,7 @@ function PresetManagerPage({
                 >{name} ×</button>
               ))}
             </div>
-          ) : <p className="muted preset-watch-hint">未配置。选中的技能会在插件模式右侧「醒目技能」面板里，按敌方当前精灵技能库命中情况显示。</p>}
+          ) : <p className="muted preset-watch-hint">当前分组未配置醒目技能。</p>}
         </section>
         <section className="preset-editor-section preset-transfer-section">
           <div className="preset-transfer-target">
@@ -4359,6 +4435,8 @@ function BattleBonusToolPanel({
   tool,
   pluginMode,
   side,
+  position,
+  onPositionChange,
   value,
   burstEffects,
   markFields,
@@ -4369,6 +4447,8 @@ function BattleBonusToolPanel({
   tool: BonusTool;
   pluginMode: boolean;
   side: "left" | "right";
+  position: BonusToolPosition;
+  onPositionChange: (position: BonusToolPosition) => void;
   value: TeamOtherBonuses;
   burstEffects: BurstEffectItem[];
   markFields: MarkField[];
@@ -4376,7 +4456,6 @@ function BattleBonusToolPanel({
   onChange: (partial: Partial<TeamOtherBonuses>) => void;
   onClose: () => void;
 }) {
-  const [position, setPosition] = useState(() => ({ x: Math.max(8, window.innerWidth - 348), y: 84 }));
   const panelRef = useRef<HTMLElement | null>(null);
   const dragRef = useRef<{ pointerX: number; pointerY: number; x: number; y: number } | null>(null);
   const title = `${side === "left" ? "己方" : "敌方"}${{ dedication: "奉献", marks: "印记", thunderstorm: "雷暴" }[tool]}`;
@@ -4392,10 +4471,10 @@ function BattleBonusToolPanel({
 
   useEffect(() => {
     if (pluginMode) return;
-    const keepVisible = () => setPosition((current) => clampToViewport(current.x, current.y));
+    const keepVisible = () => onPositionChange(clampToViewport(position.x, position.y));
     window.addEventListener("resize", keepVisible);
     return () => window.removeEventListener("resize", keepVisible);
-  }, [pluginMode]);
+  }, [pluginMode, position.x, position.y, onPositionChange]);
 
   function startDrag(event: ReactPointerEvent<HTMLElement>) {
     if ((event.target as HTMLElement).closest("button, input, select, textarea, [role=button], summary")) return;
@@ -4403,7 +4482,7 @@ function BattleBonusToolPanel({
     dragRef.current = { pointerX: event.clientX, pointerY: event.clientY, x: position.x, y: position.y };
     const move = (moveEvent: PointerEvent) => {
       const start = dragRef.current;
-      if (start) setPosition(clampToViewport(start.x + moveEvent.clientX - start.pointerX, start.y + moveEvent.clientY - start.pointerY));
+      if (start) onPositionChange(clampToViewport(start.x + moveEvent.clientX - start.pointerX, start.y + moveEvent.clientY - start.pointerY));
     };
     const stop = () => {
       dragRef.current = null;
@@ -4722,7 +4801,6 @@ function TeamTraitEditor({
     <section ref={sectionRef} className="team-slot-section" data-popup-flip={popupPlacement.up ? "up" : undefined} data-popup-side={popupPlacement.left ? "left" : undefined}>
       <button className="trait-summary-button compact" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
         <strong className="ui-field-title">{traitLabel}</strong>
-        <span>{expanded ? "收起" : "展开"}</span>
       </button>
       <div className="trait-control-grid compact">
         <div className="inline-row trait-status-row">
@@ -4892,7 +4970,18 @@ function FloatingTeamPanel({ className, layout, onLayoutChange, panelState: stat
     return () => observer.disconnect();
   }, []);
 
-  return <section ref={panelRef} className={`floating-team-panel ${className}`} data-panel-state={isSpeedLine ? undefined : state} data-overlay-control data-plugin-resizable style={{ left: layout.x, top: layout.y, width: layout.width, height: layout.height, ...pluginContentStyle(layout), ...(isSpeedLine ? { "--speed-line-content-width": `${speedLineContentWidth.current}px` } : {}) }} onPointerDown={startDrag}>
+  return <section ref={panelRef} className={`floating-team-panel ${className}`} data-panel-state={isSpeedLine ? undefined : state} data-overlay-control data-plugin-resizable style={{ left: layout.x, top: layout.y, width: layout.width, height: layout.height, ...pluginContentStyle(layout), ...(isSpeedLine ? { "--speed-line-content-width": `${speedLineContentWidth.current}px` } : {}) }} onPointerDown={startDrag} onPointerDownCapture={(event) => {
+    const button = traitSummaryAtPoint(event.target as HTMLElement, event.clientX, event.clientY);
+    if (!button) return;
+    event.stopPropagation();
+    button.focus({ preventScroll: true });
+  }} onClickCapture={(event) => {
+    const button = traitSummaryAtPoint(event.target as HTMLElement, event.clientX, event.clientY);
+    if (!button || (event.target as HTMLElement).closest(".trait-summary-button") === button) return;
+    event.preventDefault();
+    event.stopPropagation();
+    button.click();
+  }}>
     <div className="plugin-drag-zone" aria-label="拖动面板" />
     <PluginResizeEdges />
     {isSpeedLine ? children : <div className="plugin-panel-content">{children}</div>}
@@ -4984,6 +5073,7 @@ function SpeedLine({ left, right, pets, weather, layout, buffLayout, onLayoutCha
 }
 
 function Roster({
+  selectedGroup = "",
   title,
   className = "",
   presets,
@@ -5002,6 +5092,7 @@ function Roster({
   pluginMode,
   panelState: state,
 }: {
+  selectedGroup?: string;
   title: string;
   className?: string;
   presets: PresetGroup[];
@@ -5042,7 +5133,7 @@ function Roster({
         <h2>{title}</h2>
         <select
           className="roster-import-select"
-          value=""
+          value={selectedGroup}
           title="导入分组"
           onChange={(event) => {
             if (event.target.value) onImportGroup(event.target.value);
@@ -5392,14 +5483,23 @@ const ELEMENT_RESULT_COLORS: Record<string, string> = {
   "龙": "rgb(232, 74, 96)",
 };
 
-function EnemyAttackSkillPanel({ value, onClose }: { value: EnemyAttackSkillResponse; onClose: () => void }) {
+function EnemyAttackSkillPanel({ value, onPickSkill, onClose }: { value: EnemyAttackSkillResponse; onPickSkill: () => void; onClose: () => void }) {
+  function hitExpression(cell: EnemyAttackSkillCell, field: "power" | "damage") {
+    const segments = cell.hitSegments || [];
+    const total = field === "power" ? cell.totalSkillPower : cell.damage;
+    const numberText = (number: number) => Number(number.toFixed(6)).toString();
+    const terms = segments.map((segment) => segment[field] == null ? "-" : `${numberText(segment[field]!)}${segment.combo > 1 ? `*${segment.combo}` : ""}`);
+    if (field === "damage" && cell.extraDamage) terms.push(numberText(cell.extraDamage));
+    return `${terms.join(" + ")}=${total == null ? "-" : numberText(total)}`;
+  }
   return (
     <section className="enemy-attack-panel" role="dialog" aria-label="敌方攻击技能结果">
       <header className="enemy-attack-panel-header">
         <div>
           <strong>敌方攻击我方</strong>
-          <span>当前我方 HP：{value.targetHp}</span>
+          <span>当前我方 HP：{value.targetHp > 0 ? value.targetHp : "-"}</span>
         </div>
+        <button onClick={onPickSkill}>选择技能计算</button>
         <button onClick={onClose}>关闭</button>
       </header>
       <div className="enemy-attack-groups">
@@ -5418,8 +5518,14 @@ function EnemyAttackSkillPanel({ value, onClose }: { value: EnemyAttackSkillResp
                     style={{ backgroundColor: ELEMENT_RESULT_COLORS[cell.element || "普通"] || ELEMENT_RESULT_COLORS["普通"] }}
                   >
                     <strong>{cell.displayName}</strong>
-                    <span>威力 {cell.skillPower ?? "-"}</span>
-                    <span>伤害 {cell.damage ?? "-"}</span>
+                    {cell.hitSegments?.some((segment) => segment.combo > 1) ? <>
+                      <span>连击 {cell.hitSegments.map((segment) => segment.combo).join(" + ")}</span>
+                      <span>威力 {hitExpression(cell, "power")}</span>
+                      <span>伤害 {hitExpression(cell, "damage")}</span>
+                    </> : <>
+                      <span>威力 {cell.skillPower ?? "-"}</span>
+                      <span>伤害 {cell.damage ?? "-"}</span>
+                    </>}
                   </div>
                 ) : <div className="enemy-attack-cell is-empty" key={`empty-${index}`}>-</div>)}
               </Fragment>)}
