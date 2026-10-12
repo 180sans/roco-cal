@@ -12,6 +12,12 @@ src-tauri/gen/
 # Bundled Python runtime (downloaded during the Windows build)
 src-tauri/resources/python/
 
+src-tauri/icons/pet/
+src-tauri/icons/skill_type/
+
+src-tauri/icons/skill/
+src-tauri/icons/element/
+
 # Obsolete OCR engine and local OCR capture output.
 src-tauri/resources/Tesseract-OCR/
 src-tauri/resources/ocr-debug-inputs/

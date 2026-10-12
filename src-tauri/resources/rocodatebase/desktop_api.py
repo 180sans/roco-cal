@@ -113,8 +113,11 @@ def _pet_summary(pet: dict[str, Any]) -> dict[str, Any]:
 
 def _load_presets() -> dict[str, Any]:
     presets = _load_json(PRESETS_PATH, _load_json(DEFAULT_PRESETS_PATH, {}))
-    presets.setdefault("attackers", {})
-    presets.setdefault("defenders", {})
+    # Default groups are created only before a user preset file exists, so a
+    # deliberately deleted group stays deleted on subsequent reads.
+    if not PRESETS_PATH.exists():
+        presets.setdefault("attackers", {})
+        presets.setdefault("defenders", {})
     return presets
 
 
@@ -965,6 +968,12 @@ def manage_preset(payload: dict[str, Any]) -> dict[str, Any]:
             raise ValueError("分组名不能为空")
         presets.setdefault(group_name, {})
         result_group = group_name
+        result_name = ""
+    elif action == "delete_group":
+        if not group_name or group_name not in presets or not isinstance(presets[group_name], dict):
+            raise ValueError("未找到来源分组")
+        del presets[group_name]
+        result_group = next((name for name, items in presets.items() if isinstance(items, dict)), "")
         result_name = ""
     elif action in {"delete_preset", "copy_preset", "move_preset"}:
         if not group_name or group_name not in presets or not isinstance(presets[group_name], dict):

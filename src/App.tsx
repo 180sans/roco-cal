@@ -508,6 +508,8 @@ type RequiredPowerResponse = { target_hp: number; rows: RequiredPowerRow[] };
 type BattleContext = {
   attackerName: string;
   defenderName: string;
+  attackerPetName: string;
+  defenderPetName: string;
   skillName: string;
   attackerIv: Record<string, number> | null;
   attackerPersonalityBouns: string | null;
@@ -536,6 +538,140 @@ const WEATHER_OPTIONS = [
   { value: "thunder", label: "雷鸣（电）" },
 ] as const;
 const SKILL_TYPE_FILTERS = ["物攻", "魔攻", "防御", "状态"] as const;
+const ELEMENT_ICONS = import.meta.glob<string>("../src-tauri/icons/element/*.png", { eager: true, query: "?url", import: "default" });
+const SKILL_TYPE_ICONS = import.meta.glob<string>("../src-tauri/icons/skill_type/*.png", { eager: true, query: "?url", import: "default" });
+const SKILL_ICONS = import.meta.glob<string>("../src-tauri/icons/skill/*.png", { eager: true, query: "?url", import: "default" });
+const PET_ICONS = import.meta.glob<string>("../src-tauri/icons/pet/*.png", { eager: true, query: "?url", import: "default" });
+
+function normalizePetIconName(value: string) {
+  return value.trim().replace(/^0*(\d+)\s*/, "$1");
+}
+
+function buildIconLookup(icons: Record<string, string>, normalize = (value: string) => value.trim()) {
+  const exact = new Map<string, string>();
+  const defaultForms = new Map<string, string>();
+  const suffix = "（本来的样子）";
+  for (const [path, src] of Object.entries(icons)) {
+    const name = path.slice(path.lastIndexOf("/") + 1).replace(/\.png$/, "");
+    exact.set(normalize(name), src);
+    if (name.endsWith(suffix)) defaultForms.set(normalize(name.slice(0, -suffix.length)), src);
+  }
+  return { exact, defaultForms };
+}
+
+function buildPetIconLookup(icons: Record<string, string>) {
+  const { exact, defaultForms } = buildIconLookup(icons, normalizePetIconName);
+  const names = new Map<string, string | null>();
+  const fallbackNames = new Map<string, string | null>();
+  for (const [identity, src] of exact) {
+    const name = identity.replace(/^\d+/, "");
+    names.set(name, names.has(name) ? null : src);
+  }
+  for (const [identity, src] of defaultForms) {
+    const name = identity.replace(/^\d+/, "");
+    fallbackNames.set(name, fallbackNames.has(name) ? null : src);
+  }
+  return (value: string) => /^\d/.test(value.trim())
+    ? exact.get(normalizePetIconName(value)) || defaultForms.get(normalizePetIconName(value))
+    : names.has(value.trim()) ? names.get(value.trim()) || undefined : fallbackNames.get(value.trim()) || undefined;
+}
+
+const petIconSource = buildPetIconLookup(PET_ICONS);
+const skillIconLookup = buildIconLookup(SKILL_ICONS);
+const croppedPetIcons = new Map<string, Promise<string>>();
+
+function visibleImageBounds(pixels: Uint8ClampedArray, width: number, height: number) {
+  let left = width, top = height, right = -1, bottom = -1;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (pixels[(y * width + x) * 4 + 3] === 0) continue;
+      left = Math.min(left, x);
+      top = Math.min(top, y);
+      right = Math.max(right, x);
+      bottom = Math.max(bottom, y);
+    }
+  }
+  return right < left ? null : { left, top, width: right - left + 1, height: bottom - top + 1 };
+}
+
+function croppedPetIconSource(src: string): Promise<string> {
+  const cached = croppedPetIcons.get(src);
+  if (cached) return cached;
+  const result = new Promise<string>((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        const context = canvas.getContext("2d");
+        if (!context) { resolve(src); return; }
+        context.drawImage(image, 0, 0);
+        const bounds = visibleImageBounds(context.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
+        if (!bounds || (bounds.width === canvas.width && bounds.height === canvas.height)) { resolve(src); return; }
+        const cropped = document.createElement("canvas");
+        cropped.width = bounds.width;
+        cropped.height = bounds.height;
+        const croppedContext = cropped.getContext("2d");
+        if (!croppedContext) { resolve(src); return; }
+        croppedContext.drawImage(image, bounds.left, bounds.top, bounds.width, bounds.height, 0, 0, bounds.width, bounds.height);
+        resolve(cropped.toDataURL("image/png"));
+      } catch {
+        resolve(src);
+      }
+    };
+    image.onerror = () => resolve(src);
+    image.src = src;
+  });
+  croppedPetIcons.set(src, result);
+  return result;
+}
+
+function ImageLabel({ src, children, iconOnly = false, className = "", imageClassName = "entity-icon", title, trimTransparent = false }: {
+  src?: string;
+  children: ReactNode;
+  iconOnly?: boolean;
+  className?: string;
+  imageClassName?: string;
+  title?: string;
+  trimTransparent?: boolean;
+}) {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
+  const [cropped, setCropped] = useState<{ source: string; url: string } | null>(null);
+  useEffect(() => {
+    if (!src || !trimTransparent) return;
+    let cancelled = false;
+    void croppedPetIconSource(src).then((url) => {
+      if (!cancelled) setCropped({ source: src, url });
+    });
+    return () => { cancelled = true; };
+  }, [src, trimTransparent]);
+  if (!src || failedSrc === src) return <>{children}</>;
+  const displaySrc = trimTransparent && cropped?.source === src ? cropped.url : src;
+  return <span className={`image-label ${className}`.trim()} title={title}>
+    <img className={imageClassName} src={displaySrc} alt="" draggable={false} onLoad={() => setLoadedSrc(src)} onError={() => setFailedSrc(src)} />
+    {iconOnly && loadedSrc === src ? <span className="image-label-hidden-text">{children}</span> : <span className="image-label-text">{children}</span>}
+  </span>;
+}
+
+function EntityLabel({ kind, value, children = value, iconOnly = false, className = "" }: {
+  kind: "pet" | "skill";
+  value: string;
+  children?: ReactNode;
+  iconOnly?: boolean;
+  className?: string;
+}) {
+  const src = kind === "pet" ? petIconSource(value) : skillIconLookup.exact.get(value.trim()) || skillIconLookup.defaultForms.get(value.trim());
+  return <ImageLabel key={src || value} src={src} iconOnly={iconOnly} className={className} imageClassName={kind === "pet" ? "entity-icon pet-icon" : "entity-icon"} trimTransparent={kind === "pet"} title={typeof children === "string" ? children : value}>{children}</ImageLabel>;
+}
+
+function PickerIcon({ value, kind = "element" }: { value: string; kind?: "element" | "skill-type" }) {
+  const src = kind === "element"
+    ? ELEMENT_ICONS[`../src-tauri/icons/element/${value.replace(/系$/, "")}.png`]
+    : SKILL_TYPE_ICONS[`../src-tauri/icons/skill_type/${value === "变化" ? "状态" : value}.png`];
+  return <ImageLabel key={src || value} src={src} iconOnly imageClassName="picker-type-icon" title={value}>{value}</ImageLabel>;
+}
 
 function petMatchesPickerFilters(pet: Pet, elements: string[], finalOnly: boolean) {
   return elements.every((element) => pet.elements.includes(element)) && (!finalOnly || pet.isFinal);
@@ -762,6 +898,8 @@ function battleContextFromUnits(attacker: UnitState, defender: UnitState): Battl
   return {
     attackerName: petNameOnly(attacker.mega_form || attacker.display_name || attacker.name) || "攻击方",
     defenderName: petNameOnly(defender.mega_form || defender.display_name || defender.name) || "防御方",
+    attackerPetName: attacker.mega_form || attacker.name,
+    defenderPetName: defender.mega_form || defender.name,
     skillName: attacker.current_skill || attacker.skills[0] || "",
     attackerIv: attacker.iv,
     attackerPersonalityBouns: attacker.personality_bouns,
@@ -910,12 +1048,16 @@ function skillDetail(skill: SkillItem) {
 
 function skillMeta(skill: SkillItem) {
   const detail = skillDetail(skill);
-  return [
-    detail.element || null,
-    detail.type || null,
+  const numbers = [
     detail.skill_power !== null && detail.skill_power !== undefined ? `威力 ${detail.skill_power}` : null,
     detail.cost !== undefined ? `费用 ${detail.cost}` : null,
   ].filter(Boolean).join(" / ");
+  if (!detail.element && !detail.type && !numbers) return null;
+  return <span className="picker-card-meta">
+    {detail.element ? <PickerIcon value={detail.element} /> : null}
+    {detail.type ? <PickerIcon value={detail.type} kind="skill-type" /> : null}
+    {numbers ? <span>{numbers}</span> : null}
+  </span>;
 }
 
 function skillText(skill: SkillItem) {
@@ -1241,6 +1383,8 @@ function PickerModal({
   onPickPet,
   onPickSkill,
   onPickTrait,
+  initialPetName = "",
+  onClearPet,
 }: {
   mode: PickerMode;
   presets?: PresetGroup[];
@@ -1257,12 +1401,18 @@ function PickerModal({
   onPickPet: (pet: Pet) => void;
   onPickSkill: (skill: SkillItem) => void;
   onPickTrait: (pet: Pet) => void;
+  initialPetName?: string;
+  onClearPet?: () => void;
 }) {
   const section = mode === "pet" ? "pet_picker" : mode === "trait" ? "trait_picker" : "skill_picker";
   const config = configs[section] || {};
+  const locateCurrentPet = mode === "pet" && Boolean(initialPetName);
+  const initialPet = pets.find((pet) => pet.label === initialPetName || pet.name === initialPetName || `${pet.id}${pet.name}` === initialPetName);
+  const initialPetRef = useRef<HTMLButtonElement | null>(null);
   const [query, setQuery] = useState("");
   const [element, setElement] = useState((config.element as string) || "");
   const [petElements, setPetElements] = useState<string[]>(() => {
+    if (locateCurrentPet) return [];
     const savedElements = Array.isArray(config.selected_elements)
       ? config.selected_elements.filter((value): value is string => typeof value === "string" && Boolean(value))
       : [];
@@ -1270,12 +1420,12 @@ function PickerModal({
   });
   const [skillType, setSkillType] = useState((config.skill_type as string) || "");
   const [sortDesc, setSortDesc] = useState(Boolean(config.sort_desc));
-  const [finalOnly, setFinalOnly] = useState(Boolean(config.final_only));
+  const [finalOnly, setFinalOnly] = useState(locateCurrentPet ? false : Boolean(config.final_only));
   const configuredPetTab = config.active_tab === "preset" || config.active_tab === "library" ? config.active_tab : null;
   const groupConfigKey = `preset_group_${preferredGroup}`;
   const configuredGroupName = typeof config[groupConfigKey] === "string" ? (config[groupConfigKey] as string) : "";
   const [petTab, setPetTab] = useState<"preset" | "library">(
-    onPickPreset && presets.length ? configuredPetTab || "preset" : "library",
+    locateCurrentPet ? "library" : onPickPreset && presets.length ? configuredPetTab || "preset" : "library",
   );
   const [groupName, setGroupName] = useState(configuredGroupName || preferredGroup);
   const [skillTab, setSkillTab] = useState<"pet" | "library">((config.active_tab as "pet" | "library") || "pet");
@@ -1344,6 +1494,10 @@ function PickerModal({
     void invoke("update_overlay_click_through", { enabled: false }).catch(() => undefined);
   }, []);
 
+  useLayoutEffect(() => {
+    if (locateCurrentPet) initialPetRef.current?.scrollIntoView({ block: "center", inline: "nearest" });
+  }, [locateCurrentPet, initialPet?.label]);
+
   return createPortal(
     <div data-overlay-control className={`modal-backdrop${mode === "skill" || mode === "pet" ? " skill-picker-backdrop" : ""}${document.documentElement.classList.contains("overlay-attached") ? " overlay-attached-picker" : ""}`} onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
@@ -1351,7 +1505,10 @@ function PickerModal({
       <section className="picker-modal compact-picker" onMouseDown={(event) => event.stopPropagation()}>
         <header>
           <h2>{mode === "pet" ? "选择精灵" : mode === "skill" ? "选择技能" : "选择特性"}</h2>
-          <button onClick={onClose}>关闭</button>
+          <div className="header-actions">
+            {mode === "pet" && onClearPet ? <button onClick={onClearPet}>取消</button> : null}
+            <button onClick={onClose}>关闭</button>
+          </div>
         </header>
         <div className={mode === "pet" ? "picker-tools pet-picker-tools" : "picker-tools"}>
           <div className="picker-tools-main">
@@ -1436,6 +1593,8 @@ function PickerModal({
                   key={item}
                   className={selected ? "active" : ""}
                   aria-pressed={selected}
+                  aria-label={item}
+                  title={item}
                   onClick={() => {
                     if (mode !== "pet") {
                       setElement((current) => current === item ? "" : item);
@@ -1446,7 +1605,7 @@ function PickerModal({
                       : [...current.slice(0, 1), item]);
                   }}
                 >
-                  {item}
+                  <PickerIcon value={item} />
                 </button>;
               })}
             </div>
@@ -1455,9 +1614,11 @@ function PickerModal({
                 key={item}
                 className={skillType === item ? "active" : ""}
                 aria-pressed={skillType === item}
+                aria-label={item}
+                title={item}
                 onClick={() => setSkillType((current) => current === item ? "" : item)}
               >
-                {item}
+                <PickerIcon value={item} kind="skill-type" />
               </button>)}
             </div> : null}
           </div>
@@ -1496,28 +1657,29 @@ function PickerModal({
           {mode === "skill"
             ? filteredSkills.map((skill, index) => (
                 <button key={`${skill.name}-${index}`} className="compact-picker-card" onClick={() => onPickSkill(skill)}>
-                  <strong>{skill.name}</strong>
-                  {skillMeta(skill) ? <span>{skillMeta(skill)}</span> : null}
+                  <strong><EntityLabel kind="skill" value={skill.name} /></strong>
+                  {skillMeta(skill)}
                   {skillText(skill) ? <em>{skillText(skill)}</em> : null}
                 </button>
               ))
             : mode === "pet" && petTab === "preset" && onPickPreset
               ? filteredPresets.map((preset) => (
                   <button key={preset.key} className="compact-picker-card" onClick={() => onPickPreset(preset)}>
-                    <strong className="preset-name" title={`${preset.id} ${preset.name}`}>{preset.key}</strong>
-                    <span>{preset.id} {preset.name} | {preset.skills?.slice(0, DEFAULT_SKILL_CARD_COUNT).filter(Boolean).join(" / ") || "未保存技能"}</span>
+                    <strong className="preset-name" title={`${preset.id} ${preset.name}`}><EntityLabel kind="pet" value={`${preset.id}${preset.name}`}>{preset.key}</EntityLabel></strong>
+                    <span>{preset.id} {preset.name} | {(preset.skills || []).slice(0, DEFAULT_SKILL_CARD_COUNT).filter(Boolean).length ? preset.skills.slice(0, DEFAULT_SKILL_CARD_COUNT).filter(Boolean).map((name, index) => <Fragment key={`${name}-${index}`}>{index ? " / " : ""}<EntityLabel kind="skill" value={name} /></Fragment>) : "未保存技能"}</span>
                   </button>
                 ))
               : filteredPets.map((pet) => (
                 <button
                   key={`${mode}-${pet.label}`}
+                  ref={locateCurrentPet && pet.label === initialPet?.label ? initialPetRef : undefined}
                   className="compact-picker-card"
                   onClick={() => (mode === "trait" ? onPickTrait(pet) : onPickPet(pet))}
                 >
                   <strong>
-                    {pet.id} {pet.name}
+                    <EntityLabel kind="pet" value={pet.label}>{pet.id} {pet.name}</EntityLabel>
                   </strong>
-                  <span>{pet.elements.join(" / ")}</span>
+                  <span className="picker-card-meta">{pet.elements.map((item) => <PickerIcon key={item} value={item} />)}</span>
                   <em>{mode === "trait" ? `${pet.traitName || "-"}：${pet.traitEffect || ""}` : `种族 ${pet.race ?? "-"}，技能 ${pet.skillCount}`}</em>
                 </button>
               ))}
@@ -1536,6 +1698,7 @@ function TeamActionPanel({
   onToggleDirection,
   onCalculate,
   onApplyBuff,
+  onReverseBuff,
   onResetBattle,
   targetHp,
   onTargetHpChange,
@@ -1551,6 +1714,7 @@ function TeamActionPanel({
   onToggleDirection: () => void;
   onCalculate: () => void;
   onApplyBuff: () => void;
+  onReverseBuff: () => void;
   onResetBattle: () => void;
   targetHp: number;
   onTargetHpChange: (value: number) => void;
@@ -1629,6 +1793,7 @@ function TeamActionPanel({
           {buffOptions.length ? buffOptions.map((option, index) => <option key={`${option.label}-${index}`} value={index}>{option.label}</option>) : <option value="">无可应用 Buff</option>}
         </select>
         <button className="buff-button" onClick={onApplyBuff} disabled={!buffOptions.length}>应用</button>
+        {pluginMode ? <button className="buff-button" onClick={onReverseBuff} disabled={!buffOptions.length}>反向</button> : null}
       </div>
     </section>
   );
@@ -3283,7 +3448,7 @@ function TeamBattlePage({
     setResults(element.results);
   }
 
-  async function applyBuff(skillName?: string) {
+  async function applyBuff(skillName?: string, reverse = false) {
     setError("");
     const attackerSide = leftAttacks ? "left" : "right";
     const opponentSide = leftAttacks ? "right" : "left";
@@ -3315,8 +3480,9 @@ function TeamBattlePage({
     };
 
     selectedOption.effects.forEach((effect) => {
-      if (effect.target === "self" || effect.target === "both") applyTo(attackerSide, effect);
-      if (effect.target === "opponent" || effect.target === "both") applyTo(opponentSide, effect);
+      const appliedEffect = reverse ? { ...effect, value: -effect.value } : effect;
+      if (effect.target === "self" || effect.target === "both") applyTo(attackerSide, appliedEffect);
+      if (effect.target === "opponent" || effect.target === "both") applyTo(opponentSide, appliedEffect);
     });
     setLeftSlots(nextLeft);
     setRightSlots(nextRight);
@@ -3436,8 +3602,8 @@ function TeamBattlePage({
             return <button key={key} ref={(element) => { detectionRoiRefs.current[key] = element; }} className={`detection-roi ${key.includes("Image") ? "image" : "number"}${visible ? "" : " hidden"}`} style={{ left: `${region.x}%`, top: `${region.y}%`, width: `${region.width}%`, height: `${region.height}%` }} onPointerDown={(event) => startDetectionPointer(event, key)} title={`拖动 ${detectionLabel(key)}；拖动边缘缩放`}><span>{detectionLabel(key)}</span></button>;
           })}
         </div> : null}
-        <Roster selectedGroup={leftGroupName} panelState={panelState(leftSlots.some((slot) => Boolean(slot.name)))} pluginMode={displayMode === "plugin"} className="team-left-roster" title="队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={leftSlots} activeIndex={leftIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("left", groupName)} onSelect={setLeftIndex} onPatchSlot={(partial) => patchSlot("left", leftIndex, partial)} onPatchSlotAt={(index, partial) => patchSlot("left", index, partial)} onChoose={(index) => { setLeftIndex(index); setPetPicker({ side: "left", index }); }} onClear={(index) => setSlot("left", index, blankUnit())} />
-        <Roster panelState={panelState(rightSlots.some((slot) => Boolean(slot.name)))} pluginMode={displayMode === "plugin"} className="team-right-roster" title="队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={rightSlots} activeIndex={rightIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("right", groupName)} onSelect={setRightIndex} onPatchSlot={(partial) => patchSlot("right", rightIndex, partial)} onPatchSlotAt={(index, partial) => patchSlot("right", index, partial)} onChoose={(index) => { setRightIndex(index); setPetPicker({ side: "right", index }); }} onClear={(index) => setSlot("right", index, blankUnit())} />
+        <Roster selectedGroup={leftGroupName} panelState={panelState(leftSlots.some((slot) => Boolean(slot.name)))} pluginMode={displayMode === "plugin"} className="team-left-roster" title="队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={leftSlots} activeIndex={leftIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("left", groupName)} onSelect={setLeftIndex} onPatchSlot={(partial) => patchSlot("left", leftIndex, partial)} onPatchSlotAt={(index, partial) => patchSlot("left", index, partial)} onChoose={(index) => { setLeftIndex(index); setPetPicker({ side: "left", index }); }} />
+        <Roster panelState={panelState(rightSlots.some((slot) => Boolean(slot.name)))} pluginMode={displayMode === "plugin"} className="team-right-roster" title="队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={rightSlots} activeIndex={rightIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("right", groupName)} onSelect={setRightIndex} onPatchSlot={(partial) => patchSlot("right", rightIndex, partial)} onPatchSlotAt={(index, partial) => patchSlot("right", index, partial)} onChoose={(index) => { setRightIndex(index); setPetPicker({ side: "right", index }); }} />
         {displayMode === "plugin" ? <>
           <SpeedLine
             left={leftSlots[leftIndex]}
@@ -3501,7 +3667,7 @@ function TeamBattlePage({
             </select>
           </label>
         </section> : null}
-        <TeamActionPanel pluginMode={displayMode === "plugin"} layout={displayMode === "plugin" ? overlayLayout("action") : undefined} onLayoutChange={(partial) => updateOverlayLayout("action", partial)} leftAttacks={leftAttacks} onToggleDirection={() => setLeftAttacks((value) => !value)} onCalculate={() => void calculate()} onApplyBuff={() => void applyBuff()} onResetBattle={resetBattle} targetHp={targetHp} onTargetHpChange={setTargetHp} onCalculateRequiredPower={() => void calculateRequiredPower()} buffOptions={buffOptions} selectedBuffOption={selectedBuffOption} onSelectBuffOption={setSelectedBuffOption} />
+        <TeamActionPanel pluginMode={displayMode === "plugin"} layout={displayMode === "plugin" ? overlayLayout("action") : undefined} onLayoutChange={(partial) => updateOverlayLayout("action", partial)} leftAttacks={leftAttacks} onToggleDirection={() => setLeftAttacks((value) => !value)} onCalculate={() => void calculate()} onApplyBuff={() => void applyBuff()} onReverseBuff={() => void applyBuff(undefined, true)} onResetBattle={resetBattle} targetHp={targetHp} onTargetHpChange={setTargetHp} onCalculateRequiredPower={() => void calculateRequiredPower()} buffOptions={buffOptions} selectedBuffOption={selectedBuffOption} onSelectBuffOption={setSelectedBuffOption} />
         {bonusTool ? (
           <BattleBonusToolPanel
             key={`${bonusSide}-${bonusTool}`}
@@ -3543,6 +3709,7 @@ function TeamBattlePage({
         <PickerModal
           mode="pet"
           preferredGroup={petPicker.side === "left" ? "attackers" : "defenders"}
+          initialPetName={(petPicker.side === "left" ? leftSlots : rightSlots)[petPicker.index].name}
           presets={presets}
           pets={pets}
           elements={elements}
@@ -3552,6 +3719,10 @@ function TeamBattlePage({
           configs={configs}
           onConfigsChanged={onConfigsChanged}
           onClose={() => setPetPicker(null)}
+          onClearPet={() => {
+            setSlot(petPicker.side, petPicker.index, blankUnit());
+            setPetPicker(null);
+          }}
           onPickPreset={(preset) => {
             setSlot(petPicker.side, petPicker.index, unitFromPreset(preset, true));
             setPetPicker(null);
@@ -3603,6 +3774,8 @@ function PresetManagerPage({
   const [codeMessage, setCodeMessage] = useState("");
   const [codeError, setCodeError] = useState("");
   const [codeReport, setCodeReport] = useState<string[]>([]);
+  const [deleteGroupConfirm, setDeleteGroupConfirm] = useState<PresetGroup | null>(null);
+  const [deleteGroupBusy, setDeleteGroupBusy] = useState(false);
 
   const currentGroup = presets.find((group) => group.name === groupName) || presets[0];
   const selectedPreset = currentGroup?.items.find((item) => item.key === selectedKey) || null;
@@ -3741,6 +3914,27 @@ function PresetManagerPage({
     newPreset();
   }
 
+  async function deleteGroup() {
+    if (!deleteGroupConfirm || deleteGroupBusy) return;
+    setError("");
+    setDeleteGroupBusy(true);
+    try {
+      const data = await invoke<PresetManagerResult>("manage_preset", {
+        payload: { action: "delete_group", groupName: deleteGroupConfirm.name },
+      });
+      onPresetsChanged(data.presets);
+      setGroupName(data.groupName || "");
+      setTargetGroup(data.groupName || "");
+      newPreset();
+      setMessage(`已删除分组：${deleteGroupConfirm.name}`);
+      setDeleteGroupConfirm(null);
+    } catch (err) {
+      setError(asError(err));
+    } finally {
+      setDeleteGroupBusy(false);
+    }
+  }
+
   function openTeamCode() {
     setCodeOpen(true);
     setCodeMessage("");
@@ -3807,6 +4001,7 @@ function PresetManagerPage({
               <option key={group.name} value={group.name}>{group.name}</option>
             ))}
           </select>
+          <button className="compact-button preset-delete-group-button" disabled={!currentGroup} onClick={() => { setError(""); setDeleteGroupConfirm(currentGroup || null); }}>删除分组</button>
         </div>
         <div className="preset-create-row">
           <input className="preset-new-group-input" value={newGroupName} onChange={(event) => setNewGroupName(event.target.value)} placeholder="新分组名" />
@@ -3815,9 +4010,9 @@ function PresetManagerPage({
         <div className="preset-list">
           {(currentGroup?.items || []).map((preset) => (
             <button key={preset.key} className={preset.key === selectedKey ? "preset-list-item preset-list-control active" : "preset-list-item preset-list-control"} onClick={() => selectPreset(preset)}>
-              <strong>{preset.key}</strong>
+              <strong><EntityLabel kind="pet" value={`${preset.id}${preset.name}`}>{preset.key}</EntityLabel></strong>
               <span>{preset.id} {preset.name}</span>
-              <em>{preset.skills?.filter(Boolean).join(" / ") || "未保存技能"}</em>
+              <em>{(preset.skills || []).filter(Boolean).length ? preset.skills.filter(Boolean).map((name, index) => <Fragment key={`${name}-${index}`}>{index ? " / " : ""}<EntityLabel kind="skill" value={name} /></Fragment>) : "未保存技能"}</em>
             </button>
           ))}
         </div>
@@ -3886,7 +4081,7 @@ function PresetManagerPage({
                   key={name}
                   title="点击移除"
                   onClick={() => void saveWatchSkills(watchSkills.filter((item) => item !== name))}
-                >{name} ×</button>
+                ><EntityLabel kind="skill" value={name} /> ×</button>
               ))}
             </div>
           ) : <p className="muted preset-watch-hint">当前分组未配置醒目技能。</p>}
@@ -3971,6 +4166,22 @@ function PresetManagerPage({
           }}
           onPickTrait={() => undefined}
         />
+      ) : null}
+      {deleteGroupConfirm ? createPortal(
+        <div data-overlay-control className="modal-backdrop" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !deleteGroupBusy) setDeleteGroupConfirm(null);
+        }}>
+          <section className="team-code-modal preset-group-delete-modal" role="dialog" aria-modal="true" aria-labelledby="preset-group-delete-title">
+            <h2 id="preset-group-delete-title">删除分组</h2>
+            <p>删除“{deleteGroupConfirm.name}”分组及其中全部 {deleteGroupConfirm.items.length} 个精灵预设？</p>
+            <div className="header-actions">
+              <button className="compact-button" disabled={deleteGroupBusy} onClick={() => setDeleteGroupConfirm(null)}>取消</button>
+              <button className="compact-button" disabled={deleteGroupBusy} onClick={() => void deleteGroup()}>{deleteGroupBusy ? "删除中…" : "确认删除"}</button>
+            </div>
+            {error ? <p className="error-text">错误：{error}</p> : null}
+          </section>
+        </div>,
+        document.body,
       ) : null}
       {codeOpen ? createPortal(
         <div
@@ -4265,7 +4476,7 @@ function EnemyWatchSkillsPanel({ layout, onLayoutChange, watchSkills, enemyName,
         <div className="watch-skill-list">
           {matched.map((name) => (
             <div className="watch-skill-item" key={name}>
-              <span>{name}</span>
+              <span><EntityLabel kind="skill" value={name} /></span>
               <button type="button" className="compact-button watch-skill-remove" title="从醒目技能移除" onClick={() => onRemove(name)}>×</button>
             </div>
           ))}
@@ -4570,7 +4781,7 @@ function TeamSkillCardGrid({
             }
           }}
         >
-          <strong>{skill?.name || `空技能${emptySkillOffset + index + 1}`}</strong>
+          <strong>{skill && !pluginMode ? <EntityLabel kind="skill" value={skill.name} /> : skill?.name || `空技能${emptySkillOffset + index + 1}`}</strong>
           {quickResult && quickResult.skillName === skill?.name && quickResult.displayPower !== null && quickResult.displayPower !== undefined ? <span className="quick-skill-power">{quickResult.displayPower}</span> : null}
           {!pluginMode ? <div className="skill-card-actions">
             <button className="slot-action" onClick={(event) => { event.stopPropagation(); skill ? onClear(index) : onChoose(index); }}>
@@ -5027,7 +5238,7 @@ function SpeedLine({ left, right, pets, weather, layout, buffLayout, onLayoutCha
   const sideName = (value: UnitState, fallback: string) => petNameOnly(value.display_name || value.name) || fallback;
   const renderSide = (value: UnitState, scenarios: SpeedScenario[], fallback: string) => (
     <div className="speed-line-side">
-      <strong>{sideName(value, fallback)}</strong>
+      <strong><EntityLabel kind="pet" value={value.name}>{sideName(value, fallback)}</EntityLabel></strong>
       <div className="speed-line-values">
         {scenarios.length
           ? scenarios.map((item) => <span key={item.label}><em>{item.label}</em>{item.value}</span>)
@@ -5088,7 +5299,6 @@ function Roster({
   onPatchSlot,
   onPatchSlotAt,
   onChoose,
-  onClear,
   pluginMode,
   panelState: state,
 }: {
@@ -5107,7 +5317,6 @@ function Roster({
   onPatchSlot: (partial: Partial<UnitState>) => void;
   onPatchSlotAt: (index: number, partial: Partial<UnitState>) => void;
   onChoose: (index: number) => void;
-  onClear: (index: number) => void;
   pluginMode: boolean;
   panelState?: PanelState;
 }) {
@@ -5165,15 +5374,15 @@ function Roster({
                   }
                 }}
               >
-                <strong title={slot.display_name || slot.name || "空槽位"}>{petNameOnly(slot.display_name || slot.name) || "空槽位"}</strong>
+                <strong title={slot.display_name || slot.name || "空槽位"}><EntityLabel kind="pet" value={slot.name} iconOnly={pluginMode} className={pluginMode ? "roster-pet-image" : ""}>{petNameOnly(slot.display_name || slot.name) || "空槽位"}</EntityLabel></strong>
                 <button
                   className="slot-action"
                   onClick={(event) => {
                     event.stopPropagation();
-                    slot.name ? onClear(index) : onChoose(index);
+                    onChoose(index);
                   }}
                 >
-                  {slot.name ? "取消" : "选择"}
+                  {slot.name ? "更换" : "选择"}
                 </button>
               </div>
               {pluginMode && hoveredIndex === index && slot.name ? <div className="slot-iv-popover" onMouseEnter={() => openPopover(index)} onMouseLeave={schedulePopoverClose} onPointerDown={(event) => event.stopPropagation()}>
@@ -5251,7 +5460,7 @@ function ResultView({
         <div>
           <h2>对战结果</h2>
           <p>
-            {attackerName} → {defenderName}，{skillName}
+            <EntityLabel kind="pet" value={context?.attackerPetName || attackerName}>{attackerName}</EntityLabel> → <EntityLabel kind="pet" value={context?.defenderPetName || defenderName}>{defenderName}</EntityLabel>，<EntityLabel kind="skill" value={skillName} />
           </p>
         </div>
         <button onClick={() => setVisible(false)}>关闭</button>
@@ -5427,7 +5636,7 @@ function RequiredPowerView({ value, context }: { value: RequiredPowerResponse; c
       <header onPointerDown={startDrag}>
         <div>
           <strong>判死所需威力</strong>
-          <span>{context?.attackerName || "敌方"} 击杀 {context?.defenderName || "我方"}（{value.target_hp} HP）</span>
+          <span><EntityLabel kind="pet" value={context?.attackerPetName || ""}>{context?.attackerName || "敌方"}</EntityLabel> 击杀 <EntityLabel kind="pet" value={context?.defenderPetName || ""}>{context?.defenderName || "我方"}</EntityLabel>（{value.target_hp} HP）</span>
         </div>
         <button onClick={() => setVisible(false)}>关闭</button>
       </header>
@@ -5508,7 +5717,7 @@ function EnemyAttackSkillPanel({ value, onPickSkill, onClose }: { value: EnemyAt
             <h3>{group.attackType}</h3>
             <div className="enemy-attack-grid" style={{ gridTemplateColumns: `72px repeat(${group.skills.length}, minmax(128px, 1fr))` }}>
               <div className="enemy-attack-state enemy-attack-grid-heading">攻击状态</div>
-              {group.skills.map((skillName) => <div className="enemy-attack-grid-heading" key={skillName}>{skillName}</div>)}
+              {group.skills.map((skillName) => <div className="enemy-attack-grid-heading" key={skillName}><EntityLabel kind="skill" value={skillName} /></div>)}
               {group.rows.map((row) => <Fragment key={row.label}>
                 <div className="enemy-attack-state">{row.label || "无后缀"}</div>
                 {row.skills.map((cell, index) => cell ? (
@@ -5517,7 +5726,7 @@ function EnemyAttackSkillPanel({ value, onPickSkill, onClose }: { value: EnemyAt
                     key={`${cell.skillName}-${index}`}
                     style={{ backgroundColor: ELEMENT_RESULT_COLORS[cell.element || "普通"] || ELEMENT_RESULT_COLORS["普通"] }}
                   >
-                    <strong>{cell.displayName}</strong>
+                    <strong><EntityLabel kind="skill" value={cell.skillName}>{cell.displayName}</EntityLabel></strong>
                     {cell.hitSegments?.some((segment) => segment.combo > 1) ? <>
                       <span>连击 {cell.hitSegments.map((segment) => segment.combo).join(" + ")}</span>
                       <span>威力 {hitExpression(cell, "power")}</span>
@@ -5721,7 +5930,7 @@ function BurstPanelPage({
     return (
       <article className={`burst-card ${isExpanded ? "expanded" : ""}`} key={effect.id}>
         <button className="burst-card-summary" onClick={() => setExpanded(isExpanded ? null : effect.id)} aria-expanded={isExpanded}>
-          <strong>{effect.name}</strong>
+          <strong>{effect.kind === "skill" ? <EntityLabel kind="skill" value={effect.name} /> : effect.name}</strong>
           {effect.kind === "skill" ? (
             <span className="burst-card-stats">
               <span>威力 {effect.skill_power ?? "-"}</span>

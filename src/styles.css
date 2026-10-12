@@ -3563,6 +3563,21 @@ body:has(.plugin-mode) .app-header .weather-panel {
   min-width: 0;
 }
 
+.preset-group-row .preset-group-control {
+  min-width: 0;
+}
+
+.preset-delete-group-button {
+  flex: 0 0 auto;
+  font-size: var(--preset-create-font-size);
+  height: var(--preset-create-height);
+  padding: 0 6px;
+}
+
+.team-code-modal.preset-group-delete-modal {
+  width: min(400px, calc(100vw - 36px));
+}
+
 .preset-pet-row input,
 .preset-main-section input,
 .preset-transfer-section select {
@@ -4625,6 +4640,94 @@ body:has(.plugin-mode) .app-header .weather-panel {
   grid-template-rows: repeat(2, 20px);
 }
 
+.picker-element-grid,
+.picker-skill-type-grid {
+  border: 1px solid #9aa8b5;
+  border-radius: 5px;
+  padding: 4px;
+}
+
+.picker-type-icon {
+  flex: 0 0 auto;
+  height: 18px;
+  object-fit: contain;
+  vertical-align: middle;
+  width: 18px;
+}
+
+.image-label.image-label {
+  align-items: center;
+  color: inherit;
+  display: inline-flex;
+  font-size: inherit;
+  font-weight: inherit;
+  gap: 4px;
+  margin: 0;
+  max-width: 100%;
+  min-width: 0;
+  vertical-align: middle;
+}
+
+.image-label .entity-icon {
+  flex: 0 0 auto;
+  height: 20px;
+  object-fit: contain;
+  width: 20px;
+}
+
+.image-label .entity-icon.pet-icon {
+  max-width: 32px;
+  width: auto;
+}
+
+.image-label .image-label-text {
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.image-label .image-label-hidden-text {
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.plugin-mode .roster .slot:has(.roster-pet-image .entity-icon) {
+  gap: 4px;
+  padding: 2px 5px;
+}
+
+.plugin-mode .roster .slot:has(.roster-pet-image .entity-icon) > strong {
+  height: 100%;
+}
+
+.plugin-mode .roster .roster-pet-image {
+  height: 100%;
+  justify-content: center;
+  width: 100%;
+}
+
+.plugin-mode .roster .roster-pet-image .entity-icon.pet-icon {
+  flex: 0 1 auto;
+  height: 100%;
+  max-width: 100%;
+  width: auto;
+}
+
+.compact-picker-card .picker-card-meta {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  line-height: 14px;
+}
+
 .picker-element-grid button,
 .picker-skill-type-grid button {
   font-size: 12px;
@@ -4706,6 +4809,58 @@ body:has(.plugin-mode) .app-header .weather-panel {
   overflow: hidden;
   padding: 6px;
   text-align: left;
+}
+
+.compact-picker-card:has(> strong .entity-icon) {
+  padding-left: 56px;
+  position: relative;
+}
+
+.compact-picker-card > strong .entity-icon {
+  height: 44px;
+  left: 6px;
+  position: absolute;
+  top: 6px;
+  width: 44px;
+}
+
+.compact-picker-card > strong .entity-icon.pet-icon {
+  height: 48px;
+  left: 42px;
+  max-width: 72px;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: auto;
+}
+
+.compact-picker-card:has(> strong .pet-icon) {
+  padding-left: 84px;
+}
+
+.preset-list-item:has(> strong .entity-icon) {
+  padding-left: 58px;
+  position: relative;
+}
+
+.preset-list-item > strong .entity-icon {
+  height: calc(100% - 16px);
+  left: 8px;
+  position: absolute;
+  top: 8px;
+  width: 44px;
+}
+
+.preset-list-item > strong .entity-icon.pet-icon {
+  height: calc(var(--preset-list-height) - 8px);
+  left: 50px;
+  max-width: 90px;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: auto;
+}
+
+.preset-list-item:has(> strong .pet-icon) {
+  padding-left: 100px;
 }
 
 .compact-picker-card strong,

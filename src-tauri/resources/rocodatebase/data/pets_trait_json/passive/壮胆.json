@@ -11,7 +11,6 @@
                         "subject": "ally_team",
                         "timing": "current"
                     },
-                    "passive": true,
                     "stack": {
                         "enabled": false,
                         "input": false,
