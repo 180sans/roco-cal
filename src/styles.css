@@ -606,6 +606,12 @@ body:has(.battle-page.mixed-active) .app-header,
   overflow: auto;
 }
 
+html:has(.preset-shell),
+body:has(.preset-shell) {
+  height: 100%;
+  overflow: hidden;
+}
+
 .app-header {
   align-items: center;
   display: flex;
@@ -1802,7 +1808,8 @@ body:has(.battle-page.mixed-active) .app-header,
 }
 
 .plugin-mode .roster .slot-grid {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, max-content);
+  justify-content: start;
 }
 
 /* 插件模式的队伍面板：标题缩小、导入下拉收紧，省掉一整行的高度占用。 */
@@ -3459,11 +3466,12 @@ body:has(.plugin-mode) .app-header .weather-panel {
 
 .preset-manager-page {
   --personality-pair-width: calc(var(--personality-width) + var(--personality-width) + 78px);
-  --preset-editor-width: max(248px, calc(var(--personality-pair-width) + 44px));
+  --preset-skill-card-width: max(176px, var(--preset-skill-width));
+  --preset-editor-width: max(408px, calc(var(--personality-pair-width) + 44px), calc(var(--preset-skill-card-width) * 2 + 44px));
   align-items: start;
   display: grid;
   gap: 10px;
-  grid-template-columns: minmax(190px, 250px) var(--preset-editor-width);
+  grid-template-columns: minmax(190px, 380px) var(--preset-editor-width);
   min-height: calc(100vh - 76px);
   justify-content: center;
   min-width: 0;
@@ -3517,9 +3525,13 @@ body:has(.plugin-mode) .app-header .weather-panel {
   align-self: start;
   display: flex;
   flex-direction: column;
-  height: auto;
-  min-height: calc(100vh - 76px);
+  height: max(240px, calc(100vh - 76px));
+  min-height: 0;
   overflow: hidden;
+}
+
+.preset-library-panel > :not(.preset-list) {
+  flex: 0 0 auto;
 }
 
 .preset-editor-section {
@@ -3568,10 +3580,32 @@ body:has(.plugin-mode) .app-header .weather-panel {
 }
 
 .preset-delete-group-button {
+  background: #fff1f0;
+  border-color: #e7a09b;
+  color: #b42318;
   flex: 0 0 auto;
   font-size: var(--preset-create-font-size);
   height: var(--preset-create-height);
   padding: 0 6px;
+}
+
+.preset-delete-group-button:hover {
+  background: #ffe3e0;
+  border-color: #c93b30;
+}
+
+.preset-library-panel .preset-manager-header .preset-group-control {
+  flex: 1 1 var(--preset-group-width);
+}
+
+.preset-create-group-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.preset-create-group-modal .preset-new-group-input {
+  width: 100%;
 }
 
 .team-code-modal.preset-group-delete-modal {
@@ -3617,9 +3651,78 @@ body:has(.plugin-mode) .app-header .weather-panel {
   margin-bottom: 8px;
 }
 
+.preset-create-row > button {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding-left: 6px;
+  padding-right: 6px;
+  white-space: nowrap;
+}
+
+.preset-watch-button {
+  font-size: var(--preset-create-font-size);
+  height: var(--preset-create-height);
+}
+
+.preset-name-input.is-new-preset {
+  background: #fff4cf;
+  border-color: #ba7b00;
+  box-shadow: 0 0 0 2px rgba(186, 123, 0, 0.18);
+}
+
+.preset-name-input.is-new-preset::placeholder {
+  color: #865800;
+  font-weight: 700;
+  opacity: 1;
+}
+
+.team-code-modal.preset-watch-modal {
+  width: min(420px, calc(100vw - 36px));
+}
+
+.preset-watch-modal .watch-skill-chip {
+  height: auto;
+  min-height: 28px;
+}
+
+.preset-runtime-section > .team-slot-section:has(> .trait-summary-button) {
+  align-items: center;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.preset-runtime-section .trait-summary-button.compact {
+  margin-bottom: 0;
+}
+
+.preset-runtime-section .trait-expanded-content {
+  grid-column: 1 / -1;
+}
+
 .preset-main-section {
   display: grid;
   gap: 6px;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+}
+
+.preset-editor-header > h2,
+.preset-editor-header > .header-actions {
+  flex: 0 0 auto;
+}
+
+.preset-editor-header > .preset-name-input {
+  flex: 1 1 var(--preset-name-width);
+  min-width: 0;
+}
+
+.preset-main-section .preset-pet-row,
+.preset-main-section .preset-bloodline-row {
+  flex: 1 1 auto;
+}
+
+.preset-main-section .preset-pet-picker-button {
+  flex: 0 0 auto;
 }
 
 .preset-main-section label {
@@ -3631,14 +3734,18 @@ body:has(.plugin-mode) .app-header .weather-panel {
   min-width: 0;
 }
 
+.preset-main-section label > .ui-field-title {
+  flex: 0 0 auto;
+}
+
 .ui-field-title {
   font-family: inherit;
   font-weight: 700;
 }
 
 .preset-transfer-section {
-  align-items: stretch;
-  flex-direction: column;
+  align-items: center;
+  flex-direction: row;
 }
 
 .preset-transfer-target,
@@ -3670,6 +3777,7 @@ body:has(.plugin-mode) .app-header .weather-panel {
 
 .preset-editor-panel .skill-card-grid {
   gap: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .preset-editor-panel .team-skill-card {
@@ -3677,7 +3785,7 @@ body:has(.plugin-mode) .app-header .weather-panel {
   height: var(--preset-skill-height);
   min-height: var(--preset-skill-height);
   padding: 4px 6px;
-  width: var(--preset-skill-width);
+  width: 100%;
 }
 
 .preset-editor-panel .iv-grid {
@@ -3686,8 +3794,15 @@ body:has(.plugin-mode) .app-header .weather-panel {
 }
 
 .preset-editor-panel .personality-pair {
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
   margin-top: 6px;
+}
+
+.preset-editor-panel .personality-row {
+  justify-content: space-between;
+  min-width: 0;
 }
 
 .preset-runtime-section .preset-iv-editor summary {
@@ -3708,21 +3823,22 @@ body:has(.plugin-mode) .app-header .weather-panel {
   gap: 6px;
   max-height: none;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding-right: 2px;
 }
 
 .preset-list-item {
   align-items: flex-start;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 4px;
   font-size: var(--preset-list-font-size);
-  height: var(--preset-list-height);
-  min-height: var(--preset-list-height);
+  height: max(96px, var(--preset-list-height));
+  min-height: max(96px, var(--preset-list-height));
   padding: 8px;
   text-align: left;
-  width: min(100%, var(--preset-list-width));
+  width: min(100%, max(340px, var(--preset-list-width)));
 }
 
 .preset-list-item.active {
@@ -4655,6 +4771,23 @@ body:has(.plugin-mode) .app-header .weather-panel {
   width: 18px;
 }
 
+.picker-type-icon.skill-type-icon {
+  background: #596d82;
+  border-radius: 3px;
+  padding: 2px;
+}
+
+.skill-picker-backdrop .picker-modal .picker-tools-main button.picker-clear-skill {
+  background: #fff1f0 !important;
+  border-color: #e7a09b !important;
+  color: #b42318 !important;
+}
+
+.skill-picker-backdrop .picker-modal .picker-tools-main button.picker-clear-skill:hover {
+  background: #ffe3e0 !important;
+  border-color: #c93b30 !important;
+}
+
 .image-label.image-label {
   align-items: center;
   color: inherit;
@@ -4699,9 +4832,41 @@ body:has(.plugin-mode) .app-header .weather-panel {
   width: 1px;
 }
 
+.plugin-mode .roster .slot.is-empty {
+  gap: 4px;
+  min-width: calc(var(--team-pet-width) * 0.75);
+  padding: 2px 5px;
+  width: 100%;
+}
+
 .plugin-mode .roster .slot:has(.roster-pet-image .entity-icon) {
   gap: 4px;
   padding: 2px 5px;
+}
+
+.plugin-mode .roster .slot:has(.roster-pet-image[data-image-loaded="true"]) {
+  --roster-pet-image-max-width: calc(var(--team-pet-width) - 16px - var(--team-pet-font-size) * 2);
+  max-width: min(100%, var(--team-pet-width));
+  min-width: calc(var(--team-pet-width) * 0.75);
+  width: 100%;
+}
+
+.plugin-mode .roster .slot.active:has(.roster-pet-image[data-image-loaded="true"]) {
+  --roster-pet-image-max-width: calc(var(--team-pet-width) - 18px - var(--team-pet-font-size) * 2);
+}
+
+.plugin-mode .roster .slot:has(.roster-pet-image[data-image-loaded="true"]) > strong {
+  flex: 0 0 auto;
+}
+
+.plugin-mode .roster .roster-pet-image[data-image-loaded="true"] {
+  width: auto;
+}
+
+.plugin-mode .roster .roster-pet-image[data-image-loaded="true"] .entity-icon.pet-icon {
+  flex: 0 0 auto;
+  max-width: var(--roster-pet-image-max-width);
+  width: calc((var(--team-pet-height) - 6px) * var(--pet-image-aspect-ratio, 1));
 }
 
 .plugin-mode .roster .slot:has(.roster-pet-image .entity-icon) > strong {
@@ -4782,6 +4947,27 @@ body:has(.plugin-mode) .app-header .weather-panel {
   scrollbar-gutter: stable;
 }
 
+.compact-picker-grid.windowed-picker-grid {
+  display: block;
+  min-height: 0;
+  overflow-anchor: none;
+}
+
+.picker-list-space {
+  position: relative;
+  width: 100%;
+}
+
+.picker-list-row {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  height: 58px;
+  left: 0;
+  position: absolute;
+  right: 0;
+}
+
 .compact-picker-grid::-webkit-scrollbar {
   width: 10px;
 }
@@ -4837,30 +5023,50 @@ body:has(.plugin-mode) .app-header .weather-panel {
   padding-left: 84px;
 }
 
-.preset-list-item:has(> strong .entity-icon) {
-  padding-left: 58px;
-  position: relative;
+.preset-list-item .preset-card-body {
+  align-items: stretch;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(48px, 80px) minmax(0, 1fr);
+  height: 100%;
+  width: 100%;
 }
 
-.preset-list-item > strong .entity-icon {
-  height: calc(100% - 16px);
-  left: 8px;
-  position: absolute;
-  top: 8px;
-  width: 44px;
+.preset-list-item .preset-card-pet {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  height: 100%;
 }
 
-.preset-list-item > strong .entity-icon.pet-icon {
-  height: calc(var(--preset-list-height) - 8px);
-  left: 50px;
-  max-width: 90px;
-  top: 50%;
-  transform: translate(-50%, -50%);
+.preset-card-pet > .image-label {
+  height: 100%;
+  justify-content: center;
+  width: 100%;
+}
+
+.preset-card-pet .entity-icon.pet-icon {
+  flex: 0 1 auto;
+  height: 100%;
+  max-width: 100%;
   width: auto;
 }
 
-.preset-list-item:has(> strong .pet-icon) {
-  padding-left: 100px;
+.preset-list-item .preset-card-skills {
+  align-items: center;
+  display: grid;
+  gap: 4px 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.preset-list-item .preset-card-skill {
+  display: block;
+}
+
+.preset-card-skill .entity-icon {
+  height: 24px;
+  width: 24px;
 }
 
 .compact-picker-card strong,
@@ -4887,6 +5093,26 @@ body:has(.plugin-mode) .app-header .weather-panel {
   color: #667789;
   font-size: 11px;
   font-style: normal;
+}
+
+.compact-picker-card.picker-skill-card {
+  align-content: center;
+  grid-template-rows: 20px 18px;
+}
+
+.compact-picker-card.picker-skill-card > strong {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  width: 100%;
+}
+
+.picker-skill-card > strong > .image-label {
+  flex: 1 1 auto;
+}
+
+.picker-skill-card > strong > .picker-card-meta {
+  flex: 0 0 auto;
 }
 
 .picker-modal header,
@@ -4985,6 +5211,12 @@ body:has(.plugin-mode) .app-header .weather-panel {
   background: #fff1f0;
   border-color: #f0b8b1;
   color: #9c2f27;
+}
+
+@media (max-width: 680px) {
+  .preset-manager-page {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 540px) {

@@ -112,16 +112,6 @@ impl Default for OcrWorker {
     }
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct ReplayOcrFrame {
-    region: String,
-    image_data_url: String,
-    video_time: f64,
-    session_id: u64,
-    category: Option<String>,
-}
-
 #[cfg(windows)]
 #[repr(C)]
 struct Guid {
@@ -523,8 +513,8 @@ fn run_ocr_worker(
     worker: &OcrWorker,
     payload: Value,
 ) -> Result<Value, String> {
-    // Replay OCR has one lane per side. Alternate calls across two persistent
-    // processes so enemy and self events can be recognized concurrently.
+    // Alternate numeric OCR requests across two persistent processes so enemy
+    // and self health can be recognized concurrently.
     let process_index = worker.next_process.fetch_add(1, Ordering::Relaxed) % OCR_WORKER_COUNT;
     let mut guard = worker.processes[process_index]
         .lock()
@@ -1735,33 +1725,6 @@ async fn classify_image_samples(app: tauri::AppHandle, payload: Value) -> Result
 }
 
 #[tauri::command]
-async fn recognize_image_text(
-    app: tauri::AppHandle,
-    worker: tauri::State<'_, OcrWorker>,
-    image_data_url: String,
-    mode: String,
-) -> Result<String, String> {
-    let worker = worker.inner().clone();
-    let response = tauri::async_runtime::spawn_blocking(move || {
-        run_ocr_worker(
-            &app,
-            &worker,
-            serde_json::json!({ "images": [{ "imageDataUrl": image_data_url, "mode": mode }] }),
-        )
-    })
-    .await
-    .map_err(|error| format!("ONNX OCR task failed: {error}"))??;
-    response
-        .get("items")
-        .and_then(Value::as_array)
-        .and_then(|items| items.first())
-        .and_then(|item| item.get("text"))
-        .and_then(Value::as_str)
-        .map(str::to_string)
-        .ok_or_else(|| "ONNX OCR response is missing text".to_string())
-}
-
-#[tauri::command]
 async fn recognize_images(
     app: tauri::AppHandle,
     worker: tauri::State<'_, OcrWorker>,
@@ -1800,157 +1763,6 @@ async fn save_ocr_debug_images(app: tauri::AppHandle, category: String, images: 
         }
         Ok(serde_json::json!({ "saved": saved, "directory": directory.to_string_lossy() }))
     }).await.map_err(|error| format!("Saving OCR debug images failed: {error}"))?
-}
-
-#[tauri::command]
-async fn save_labeled_ocr_sample(
-    app: tauri::AppHandle,
-    image_data_url: String,
-    region: String,
-    label: String,
-    video_time: f64,
-) -> Result<Value, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        let allowed_regions = [
-            "enemyHealth", "selfHealth", "enemyDamage", "selfDamage",
-            "skill1", "skill2", "skill3", "skill4",
-        ];
-        if !allowed_regions.contains(&region.as_str()) {
-            return Err("Only numeric OCR regions can be labeled".to_string());
-        }
-        let normalized_label = label.trim().replace(' ', "");
-        if normalized_label.is_empty()
-            || !(normalized_label == "-"
-                || normalized_label
-                    .chars()
-                    .all(|ch| ch.is_ascii_digit() || matches!(ch, '/' | '%')))
-        {
-            return Err("Numeric sample labels can contain only digits, /, %, and -".to_string());
-        }
-        let (_, encoded) = image_data_url
-            .split_once(',')
-            .ok_or_else(|| "Sample image must be a data URL".to_string())?;
-        let bytes = decode_base64(encoded)?;
-        let samples_dir = app_data_dir(&app).join("ocr-samples").join(&region);
-        std::fs::create_dir_all(&samples_dir)
-            .map_err(|error| format!("Cannot create OCR samples directory: {error}"))?;
-        let stamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_err(|error| error.to_string())?
-            .as_millis();
-        let file_name = format!("{stamp}-{}.png", normalized_label.replace('/', "_"));
-        let image_path = samples_dir.join(&file_name);
-        std::fs::write(&image_path, bytes)
-            .map_err(|error| format!("Cannot save OCR sample image: {error}"))?;
-        let record = serde_json::json!({
-            "file": format!("{region}/{file_name}"),
-            "region": region,
-            "label": normalized_label,
-            "videoTime": video_time,
-            "createdAt": stamp,
-        });
-        let manifest_path = app_data_dir(&app).join("ocr-samples").join("labels.jsonl");
-        use std::io::Write as _;
-        let mut manifest = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&manifest_path)
-            .map_err(|error| format!("Cannot open OCR labels manifest: {error}"))?;
-        writeln!(manifest, "{}", record)
-            .map_err(|error| format!("Cannot write OCR label: {error}"))?;
-        Ok(serde_json::json!({ "file": image_path.to_string_lossy(), "manifest": manifest_path.to_string_lossy() }))
-    })
-    .await
-    .map_err(|error| format!("Saving OCR sample failed: {error}"))?
-}
-
-#[tauri::command]
-async fn save_labeled_image_sample(
-    app: tauri::AppHandle,
-    image_data_url: String,
-    region: String,
-    truth: String,
-    video_time: f64,
-) -> Result<Value, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        let allowed_regions = ["enemyImage", "selfImage"];
-        if !allowed_regions.contains(&region.as_str()) {
-            return Err("Only player image regions can be saved".to_string());
-        }
-        let folder_name = truth.trim();
-        if folder_name.is_empty()
-            || folder_name.contains(['/', '\\', ':', '*', '?', '"', '<', '>', '|'])
-            || folder_name == "."
-            || folder_name == ".."
-        {
-            return Err("Image truth must be a valid folder name".to_string());
-        }
-        let (_, encoded) = image_data_url
-            .split_once(',')
-            .ok_or_else(|| "Image sample must be a data URL".to_string())?;
-        let bytes = decode_base64(encoded)?;
-        let side = if region == "enemyImage" { "enemy" } else { "self" };
-        let samples_dir = app_data_dir(&app).join("image-samples").join(side).join(folder_name);
-        std::fs::create_dir_all(&samples_dir)
-            .map_err(|error| format!("Cannot create image sample directory: {error}"))?;
-        let stamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_err(|error| error.to_string())?
-            .as_millis();
-        let image_path = samples_dir.join(format!("{stamp}-{:.0}.png", video_time.max(0.0) * 1000.0));
-        std::fs::write(&image_path, bytes)
-            .map_err(|error| format!("Cannot save image sample: {error}"))?;
-        Ok(serde_json::json!({ "file": image_path.to_string_lossy() }))
-    })
-    .await
-    .map_err(|error| format!("Saving image sample failed: {error}"))?
-}
-
-#[tauri::command]
-async fn save_replay_ocr_frames(
-    app: tauri::AppHandle,
-    frames: Vec<ReplayOcrFrame>,
-) -> Result<Value, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        let allowed_regions = ["enemyHealth", "selfHealth", "enemyDamage", "selfDamage"];
-        let root = app_data_dir(&app).join("replay-frames");
-        let stamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_err(|error| error.to_string())?
-            .as_millis();
-        let mut saved = 0usize;
-        for (index, frame) in frames.into_iter().enumerate() {
-            if !allowed_regions.contains(&frame.region.as_str()) {
-                return Err(format!("Unsupported replay OCR region: {}", frame.region));
-            }
-            let root = match frame.category.as_deref() {
-                None | Some("captured") => root.clone(),
-                Some("ocr-analysis") => root.join("ocr-analysis"),
-                Some(category) => {
-                    return Err(format!("Unsupported replay frame category: {category}"))
-                }
-            };
-            let (_, encoded) = frame
-                .image_data_url
-                .split_once(',')
-                .ok_or_else(|| "Replay OCR image must be a data URL".to_string())?;
-            let bytes = decode_base64(encoded)?;
-            let region_dir = root.join(&frame.region);
-            std::fs::create_dir_all(&region_dir)
-                .map_err(|error| format!("Cannot create replay frame directory: {error}"))?;
-            let video_millis = (frame.video_time.max(0.0) * 1000.0).round() as u64;
-            let file_name = format!(
-                "{}-{}-{}-{}.png",
-                frame.session_id, video_millis, stamp, index
-            );
-            std::fs::write(region_dir.join(file_name), bytes)
-                .map_err(|error| format!("Cannot save replay OCR frame: {error}"))?;
-            saved += 1;
-        }
-        Ok(serde_json::json!({ "saved": saved, "directory": root.to_string_lossy() }))
-    })
-    .await
-    .map_err(|error| format!("Saving replay OCR frames failed: {error}"))?
 }
 
 fn decode_base64(input: &str) -> Result<Vec<u8>, String> {
@@ -2317,12 +2129,8 @@ pub fn run() {
             import_team_code,
             save_picker_config,
             classify_image_samples,
-            recognize_image_text,
             recognize_images,
             save_ocr_debug_images,
-            save_labeled_ocr_sample,
-            save_labeled_image_sample,
-            save_replay_ocr_frames,
             capture_overlay_target,
             attach_overlay_target,
             detach_overlay_target,

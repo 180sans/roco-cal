@@ -96,8 +96,10 @@ import onnxruntime as ort
 from PIL import Image
 
 models = Path(sys.argv[1])
-for model in (models / "det" / "model.onnx", models / "rec" / "model.onnx", Path(sys.argv[2])):
+for model in (models / "number" / "model.onnx", Path(sys.argv[2])):
     ort.InferenceSession(str(model), providers=["CPUExecutionProvider"])
+if not (models / "number" / "charset.txt").read_text(encoding="utf-8").splitlines():
+    raise ValueError("Numeric OCR charset is empty")
 print(f"Runtime verified: Python {sys.version_info.major}.{sys.version_info.minor}, OpenCV {cv2.__version__}, NumPy {numpy.__version__}, ONNX Runtime {ort.__version__}, Pillow {Image.__version__}")
 '@
     $smokeTestPath = Join-Path $stagingDir "_runtime_smoke_test.py"

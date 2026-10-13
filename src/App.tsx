@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { cursorPosition, getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { Fragment, type CSSProperties, type PointerEvent as ReactPointerEvent, type PointerEventHandler as ReactPointerEventHandler, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { prepareNumericImage, type NumericOcrMode } from "./numericOcr";
 
@@ -579,6 +579,8 @@ function buildPetIconLookup(icons: Record<string, string>) {
 const petIconSource = buildPetIconLookup(PET_ICONS);
 const skillIconLookup = buildIconLookup(SKILL_ICONS);
 const croppedPetIcons = new Map<string, Promise<string>>();
+const croppedPetIconUrls = new Map<string, string>();
+const loadedIconRatios = new Map<string, number>();
 
 function visibleImageBounds(pixels: Uint8ClampedArray, width: number, height: number) {
   let left = width, top = height, right = -1, bottom = -1;
@@ -622,12 +624,15 @@ function croppedPetIconSource(src: string): Promise<string> {
     };
     image.onerror = () => resolve(src);
     image.src = src;
+  }).then((url) => {
+    croppedPetIconUrls.set(src, url);
+    return url;
   });
   croppedPetIcons.set(src, result);
   return result;
 }
 
-function ImageLabel({ src, children, iconOnly = false, className = "", imageClassName = "entity-icon", title, trimTransparent = false }: {
+function ImageLabel({ src, children, iconOnly = false, className = "", imageClassName = "entity-icon", title, trimTransparent = false, hideTextWhileLoading = false, imageLoading = "eager" }: {
   src?: string;
   children: ReactNode;
   iconOnly?: boolean;
@@ -635,42 +640,64 @@ function ImageLabel({ src, children, iconOnly = false, className = "", imageClas
   imageClassName?: string;
   title?: string;
   trimTransparent?: boolean;
+  hideTextWhileLoading?: boolean;
+  imageLoading?: "eager" | "lazy";
 }) {
+  const initialDisplaySrc = src && trimTransparent ? croppedPetIconUrls.get(src) || src : src;
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
-  const [cropped, setCropped] = useState<{ source: string; url: string } | null>(null);
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(() => initialDisplaySrc && loadedIconRatios.has(initialDisplaySrc) ? src || null : null);
+  const [loadedAspectRatio, setLoadedAspectRatio] = useState<{ source: string; ratio: number } | null>(() => {
+    const ratio = initialDisplaySrc && trimTransparent && iconOnly ? loadedIconRatios.get(initialDisplaySrc) : undefined;
+    return initialDisplaySrc && ratio ? { source: initialDisplaySrc, ratio } : null;
+  });
+  const [cropped, setCropped] = useState<{ source: string; url: string } | null>(() => {
+    const url = src && trimTransparent ? croppedPetIconUrls.get(src) : undefined;
+    return src && url ? { source: src, url } : null;
+  });
+  const [cropReadySrc, setCropReadySrc] = useState<string | null>(null);
   useEffect(() => {
-    if (!src || !trimTransparent) return;
+    if (!src || !trimTransparent || cropped?.source === src || (imageLoading === "lazy" && cropReadySrc !== src)) return;
     let cancelled = false;
     void croppedPetIconSource(src).then((url) => {
       if (!cancelled) setCropped({ source: src, url });
     });
     return () => { cancelled = true; };
-  }, [src, trimTransparent]);
+  }, [src, trimTransparent, imageLoading, cropReadySrc, cropped?.source]);
   if (!src || failedSrc === src) return <>{children}</>;
   const displaySrc = trimTransparent && cropped?.source === src ? cropped.url : src;
-  return <span className={`image-label ${className}`.trim()} title={title}>
-    <img className={imageClassName} src={displaySrc} alt="" draggable={false} onLoad={() => setLoadedSrc(src)} onError={() => setFailedSrc(src)} />
-    {iconOnly && loadedSrc === src ? <span className="image-label-hidden-text">{children}</span> : <span className="image-label-text">{children}</span>}
+  return <span className={`image-label ${className}`.trim()} title={title} data-image-loaded={loadedSrc === src || undefined} style={loadedAspectRatio?.source === displaySrc ? { "--pet-image-aspect-ratio": loadedAspectRatio.ratio } as CSSProperties : undefined}>
+    <img className={imageClassName} src={displaySrc} alt="" draggable={false} loading={imageLoading} decoding={imageLoading === "lazy" ? "async" : undefined} onLoad={(event) => {
+      if (loadedSrc !== src) setLoadedSrc(src);
+      if (trimTransparent && imageLoading === "lazy" && cropped?.source !== src && cropReadySrc !== src) setCropReadySrc(src);
+      if (event.currentTarget.naturalHeight > 0) {
+        const ratio = event.currentTarget.naturalWidth / event.currentTarget.naturalHeight;
+        loadedIconRatios.set(displaySrc, ratio);
+        if (trimTransparent && iconOnly && (loadedAspectRatio?.source !== displaySrc || loadedAspectRatio.ratio !== ratio)) {
+          setLoadedAspectRatio({ source: displaySrc, ratio });
+        }
+      }
+    }} onError={() => setFailedSrc(src)} />
+    {iconOnly && (loadedSrc === src || hideTextWhileLoading) ? <span className="image-label-hidden-text">{children}</span> : <span className="image-label-text">{children}</span>}
   </span>;
 }
 
-function EntityLabel({ kind, value, children = value, iconOnly = false, className = "" }: {
+function EntityLabel({ kind, value, children = value, iconOnly = false, className = "", imageLoading = "eager" }: {
   kind: "pet" | "skill";
   value: string;
   children?: ReactNode;
   iconOnly?: boolean;
   className?: string;
+  imageLoading?: "eager" | "lazy";
 }) {
   const src = kind === "pet" ? petIconSource(value) : skillIconLookup.exact.get(value.trim()) || skillIconLookup.defaultForms.get(value.trim());
-  return <ImageLabel key={src || value} src={src} iconOnly={iconOnly} className={className} imageClassName={kind === "pet" ? "entity-icon pet-icon" : "entity-icon"} trimTransparent={kind === "pet"} title={typeof children === "string" ? children : value}>{children}</ImageLabel>;
+  return <ImageLabel key={src || value} src={src} iconOnly={iconOnly} className={className} imageClassName={kind === "pet" ? "entity-icon pet-icon" : "entity-icon"} trimTransparent={kind === "pet"} imageLoading={imageLoading} title={typeof children === "string" ? children : value}>{children}</ImageLabel>;
 }
 
-function PickerIcon({ value, kind = "element" }: { value: string; kind?: "element" | "skill-type" }) {
+function PickerIcon({ value, kind = "element", imageLoading = "eager" }: { value: string; kind?: "element" | "skill-type"; imageLoading?: "eager" | "lazy" }) {
   const src = kind === "element"
     ? ELEMENT_ICONS[`../src-tauri/icons/element/${value.replace(/系$/, "")}.png`]
     : SKILL_TYPE_ICONS[`../src-tauri/icons/skill_type/${value === "变化" ? "状态" : value}.png`];
-  return <ImageLabel key={src || value} src={src} iconOnly imageClassName="picker-type-icon" title={value}>{value}</ImageLabel>;
+  return <ImageLabel key={src || value} src={src} iconOnly hideTextWhileLoading imageLoading={imageLoading} imageClassName={`picker-type-icon${kind === "skill-type" ? " skill-type-icon" : ""}`} title={value}>{value}</ImageLabel>;
 }
 
 function petMatchesPickerFilters(pet: Pet, elements: string[], finalOnly: boolean) {
@@ -795,7 +822,7 @@ function unitFromPreset(preset: PresetItem, showPresetName = false): UnitState {
     mega: Boolean(preset.mega),
     mega_form: preset.mega_form ?? null,
     skills,
-    current_skill: skills[0] || "",
+    current_skill: skills.find(Boolean) || "",
   };
 }
 
@@ -817,10 +844,10 @@ function mergePresetIntoUnit(current: UnitState, preset: PresetItem): UnitState 
     next.personality_down = preset.personality_down;
   }
 
-  const skills = (preset.skills || []).filter(Boolean);
-  if (skills.length) {
+  const skills = preset.skills || [];
+  if (skills.some(Boolean)) {
     next.skills = skills;
-    next.current_skill = skills[0];
+    next.current_skill = skills.find(Boolean) || "";
     next.skill_trigger_stacks = {};
   }
 
@@ -900,7 +927,7 @@ function battleContextFromUnits(attacker: UnitState, defender: UnitState): Battl
     defenderName: petNameOnly(defender.mega_form || defender.display_name || defender.name) || "防御方",
     attackerPetName: attacker.mega_form || attacker.name,
     defenderPetName: defender.mega_form || defender.name,
-    skillName: attacker.current_skill || attacker.skills[0] || "",
+    skillName: attacker.current_skill || attacker.skills.find(Boolean) || "",
     attackerIv: attacker.iv,
     attackerPersonalityBouns: attacker.personality_bouns,
     attackerPersonalityDown: attacker.personality_down,
@@ -1046,7 +1073,7 @@ function skillDetail(skill: SkillItem) {
   return skill.detail || skill;
 }
 
-function skillMeta(skill: SkillItem) {
+function skillMeta(skill: SkillItem, imageLoading: "eager" | "lazy" = "eager", part: "all" | "icons" | "numbers" = "all") {
   const detail = skillDetail(skill);
   const numbers = [
     detail.skill_power !== null && detail.skill_power !== undefined ? `威力 ${detail.skill_power}` : null,
@@ -1054,9 +1081,9 @@ function skillMeta(skill: SkillItem) {
   ].filter(Boolean).join(" / ");
   if (!detail.element && !detail.type && !numbers) return null;
   return <span className="picker-card-meta">
-    {detail.element ? <PickerIcon value={detail.element} /> : null}
-    {detail.type ? <PickerIcon value={detail.type} kind="skill-type" /> : null}
-    {numbers ? <span>{numbers}</span> : null}
+    {part !== "numbers" && detail.element ? <PickerIcon value={detail.element} imageLoading={imageLoading} /> : null}
+    {part !== "numbers" && detail.type ? <PickerIcon value={detail.type} kind="skill-type" imageLoading={imageLoading} /> : null}
+    {part !== "icons" && numbers ? <span>{numbers}</span> : null}
   </span>;
 }
 
@@ -1367,6 +1394,79 @@ function PersonalityEditor({
   );
 }
 
+function PickerCardList({ itemCount, renderItem, initialIndex = -1 }: {
+  itemCount: number;
+  renderItem: (index: number) => ReactNode;
+  initialIndex?: number;
+}) {
+  const rowHeight = 58;
+  const rowStep = rowHeight + 6;
+  const rowCount = Math.ceil(itemCount / 2);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const [viewport, setViewport] = useState(() => ({
+    top: initialIndex >= 0 ? Math.max(0, Math.floor(initialIndex / 2) * rowStep - 120) : 0,
+    height: 440,
+  }));
+  const [focusedRow, setFocusedRow] = useState<number | null>(null);
+  const initialPositionedRef = useRef(false);
+
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list || initialIndex < 0 || initialPositionedRef.current) return;
+    initialPositionedRef.current = true;
+    list.scrollTop = Math.max(0, Math.floor(initialIndex / 2) * rowStep - (list.clientHeight - rowHeight) / 2);
+    setViewport({ top: list.scrollTop, height: list.clientHeight });
+  }, [initialIndex]);
+
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    let frame = 0;
+    const measure = () => setViewport({ top: list.scrollTop, height: list.clientHeight });
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(() => { frame = 0; measure(); });
+    };
+    const observer = new ResizeObserver(schedule);
+    observer.observe(list);
+    list.addEventListener("scroll", schedule, { passive: true });
+    measure();
+    return () => {
+      observer.disconnect();
+      list.removeEventListener("scroll", schedule);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  const firstRow = Math.max(0, Math.min(rowCount, Math.floor(viewport.top / rowStep) - 4));
+  const lastRow = Math.min(rowCount, Math.ceil((viewport.top + viewport.height) / rowStep) + 4);
+  const rows = Array.from({ length: Math.max(0, lastRow - firstRow) }, (_, index) => firstRow + index);
+  if (focusedRow !== null && focusedRow < rowCount && !rows.includes(focusedRow)) rows.push(focusedRow);
+  rows.sort((a, b) => a - b);
+
+  return <div className="compact-picker-grid windowed-picker-grid" ref={listRef} onKeyDown={(event) => {
+    if (event.key !== "Tab" || event.ctrlKey || event.altKey || event.metaKey) return;
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".compact-picker-card");
+    const rowElement = button?.parentElement;
+    if (!button || !rowElement?.dataset.pickerRow) return;
+    const index = Number(rowElement.dataset.pickerRow) * 2 + Array.from(rowElement.children).indexOf(button);
+    const nextIndex = index + (event.shiftKey ? -1 : 1);
+    if (nextIndex < 0 || nextIndex >= itemCount) return;
+    event.preventDefault();
+    const nextRow = Math.floor(nextIndex / 2);
+    flushSync(() => setFocusedRow(nextRow));
+    listRef.current?.querySelector<HTMLButtonElement>(`[data-picker-row="${nextRow}"] > button:nth-child(${nextIndex % 2 + 1})`)?.focus();
+  }} onBlur={(event) => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocusedRow(null);
+  }}>
+    <div className="picker-list-space" style={{ height: Math.max(0, rowCount * rowStep - 6) }}>
+      {rows.map((row) => <div className="picker-list-row" data-picker-row={row} key={row} style={{ top: row * rowStep }} onFocus={() => setFocusedRow(row)}>
+        {renderItem(row * 2)}
+        {row * 2 + 1 < itemCount ? renderItem(row * 2 + 1) : null}
+      </div>)}
+    </div>
+  </div>;
+}
+
 function PickerModal({
   mode,
   presets = [],
@@ -1385,6 +1485,8 @@ function PickerModal({
   onPickTrait,
   initialPetName = "",
   onClearPet,
+  initialSkillName = "",
+  onClearSkill,
 }: {
   mode: PickerMode;
   presets?: PresetGroup[];
@@ -1403,14 +1505,16 @@ function PickerModal({
   onPickTrait: (pet: Pet) => void;
   initialPetName?: string;
   onClearPet?: () => void;
+  initialSkillName?: string;
+  onClearSkill?: () => void;
 }) {
   const section = mode === "pet" ? "pet_picker" : mode === "trait" ? "trait_picker" : "skill_picker";
   const config = configs[section] || {};
   const locateCurrentPet = mode === "pet" && Boolean(initialPetName);
+  const locateCurrentSkill = mode === "skill" && Boolean(initialSkillName);
   const initialPet = pets.find((pet) => pet.label === initialPetName || pet.name === initialPetName || `${pet.id}${pet.name}` === initialPetName);
-  const initialPetRef = useRef<HTMLButtonElement | null>(null);
   const [query, setQuery] = useState("");
-  const [element, setElement] = useState((config.element as string) || "");
+  const [element, setElement] = useState(locateCurrentSkill ? "" : (config.element as string) || "");
   const [petElements, setPetElements] = useState<string[]>(() => {
     if (locateCurrentPet) return [];
     const savedElements = Array.isArray(config.selected_elements)
@@ -1418,7 +1522,7 @@ function PickerModal({
       : [];
     return (savedElements.length ? savedElements : [(config.element as string) || ""]).filter(Boolean).slice(-2);
   });
-  const [skillType, setSkillType] = useState((config.skill_type as string) || "");
+  const [skillType, setSkillType] = useState(locateCurrentSkill ? "" : (config.skill_type as string) || "");
   const [sortDesc, setSortDesc] = useState(Boolean(config.sort_desc));
   const [finalOnly, setFinalOnly] = useState(locateCurrentPet ? false : Boolean(config.final_only));
   const configuredPetTab = config.active_tab === "preset" || config.active_tab === "library" ? config.active_tab : null;
@@ -1428,60 +1532,69 @@ function PickerModal({
     locateCurrentPet ? "library" : onPickPreset && presets.length ? configuredPetTab || "preset" : "library",
   );
   const [groupName, setGroupName] = useState(configuredGroupName || preferredGroup);
-  const [skillTab, setSkillTab] = useState<"pet" | "library">((config.active_tab as "pet" | "library") || "pet");
+  const [skillTab, setSkillTab] = useState<"pet" | "library">(locateCurrentSkill ? "pet" : (config.active_tab as "pet" | "library") || "pet");
+  const skillTabLocatedRef = useRef(false);
+  useEffect(() => {
+    if (!locateCurrentSkill || skillTabLocatedRef.current || (!petSkills.length && !allSkills.length)) return;
+    skillTabLocatedRef.current = true;
+    setSkillTab(petSkills.some((skill) => skill.name === initialSkillName) ? "pet" : "library");
+  }, [locateCurrentSkill, initialSkillName, petSkills, allSkills]);
   const normalizedQuery = query.trim().toLowerCase();
   const currentGroup = presets.find((group) => group.name === groupName) || presets.find((group) => group.name === preferredGroup) || presets[0];
-  const petLookup = useMemo(() => buildPetLookup(pets), [pets]);
-  const filteredPresets = (currentGroup?.items || [])
+  const petLookup = useMemo(() => mode === "pet" && petTab === "preset" ? buildPetLookup(pets) : new Map<string, Pet>(), [pets, mode, petTab]);
+  const filteredPresets = useMemo(() => mode === "pet" && petTab === "preset" ? (currentGroup?.items || [])
     .filter((preset) => !normalizedQuery || `${preset.id}${preset.name}${preset.key}`.toLowerCase().includes(normalizedQuery))
     .filter((preset) => {
       const pet = petFromPreset(preset, petLookup);
       return !pet || petMatchesPickerFilters(pet, petElements, finalOnly);
-    });
+    }) : [], [mode, petTab, currentGroup, normalizedQuery, petLookup, petElements, finalOnly]);
   const sourcePets = mode === "trait" ? traits : pets;
-  const petMatchesSearch = (pet: Pet) => {
-    const searchable = mode === "trait"
-      ? `${pet.id}${pet.name}${pet.traitName || ""}`
-      : `${pet.id}${pet.name}`;
-    return searchable.toLowerCase().includes(normalizedQuery);
-  };
-  const matchingEvolutionForms = new Set(
-    sourcePets
-      .filter((pet) => normalizedQuery && petMatchesSearch(pet))
-      .flatMap((pet) => [pet.label, ...(pet.evolutionChain || [])]),
-  );
-  let evolutionChainExpanded = true;
-  while (evolutionChainExpanded) {
-    evolutionChainExpanded = false;
-    for (const pet of sourcePets) {
-      const chainMembers = [pet.label, ...(pet.evolutionChain || [])];
-      if (!chainMembers.some((member) => matchingEvolutionForms.has(member))) continue;
-      for (const member of chainMembers) {
-        if (!matchingEvolutionForms.has(member)) {
-          matchingEvolutionForms.add(member);
-          evolutionChainExpanded = true;
+  const filteredPets = useMemo(() => {
+    if (mode === "skill" || (mode === "pet" && petTab === "preset")) return [];
+    const petMatchesSearch = (pet: Pet) => {
+      const searchable = mode === "trait"
+        ? `${pet.id}${pet.name}${pet.traitName || ""}`
+        : `${pet.id}${pet.name}`;
+      return searchable.toLowerCase().includes(normalizedQuery);
+    };
+    const matchingEvolutionForms = new Set(
+      sourcePets
+        .filter((pet) => normalizedQuery && petMatchesSearch(pet))
+        .flatMap((pet) => [pet.label, ...(pet.evolutionChain || [])]),
+    );
+    let evolutionChainExpanded = true;
+    while (normalizedQuery && evolutionChainExpanded) {
+      evolutionChainExpanded = false;
+      for (const pet of sourcePets) {
+        const chainMembers = [pet.label, ...(pet.evolutionChain || [])];
+        if (!chainMembers.some((member) => matchingEvolutionForms.has(member))) continue;
+        for (const member of chainMembers) {
+          if (!matchingEvolutionForms.has(member)) {
+            matchingEvolutionForms.add(member);
+            evolutionChainExpanded = true;
+          }
         }
       }
     }
-  }
-  const filteredPets = sourcePets
-    .filter((pet) => !normalizedQuery || petMatchesSearch(pet) || matchingEvolutionForms.has(pet.label))
-    .filter((pet) => petMatchesPickerFilters(pet, mode === "pet" ? petElements : element ? [element] : [], finalOnly))
-    .sort((a, b) => {
-      const idA = Number(a.id) || Number.MAX_SAFE_INTEGER;
-      const idB = Number(b.id) || Number.MAX_SAFE_INTEGER;
-      const result = idA === idB ? a.name.localeCompare(b.name, "zh-Hans-CN") : idA - idB;
-      return sortDesc ? -result : result;
-    });
+    return sourcePets
+      .filter((pet) => !normalizedQuery || petMatchesSearch(pet) || matchingEvolutionForms.has(pet.label))
+      .filter((pet) => petMatchesPickerFilters(pet, mode === "pet" ? petElements : element ? [element] : [], finalOnly))
+      .sort((a, b) => {
+        const idA = Number(a.id) || Number.MAX_SAFE_INTEGER;
+        const idB = Number(b.id) || Number.MAX_SAFE_INTEGER;
+        const result = idA === idB ? a.name.localeCompare(b.name, "zh-Hans-CN") : idA - idB;
+        return sortDesc ? -result : result;
+      });
+  }, [mode, petTab, sourcePets, normalizedQuery, petElements, element, finalOnly, sortDesc]);
   const currentSkillSource = skillTab === "pet" ? petSkills : allSkills;
-  const filteredSkills = currentSkillSource
+  const filteredSkills = useMemo(() => mode === "skill" ? currentSkillSource
     .filter((skill) => !normalizedQuery || skill.name.toLowerCase().includes(normalizedQuery))
     .filter((skill) => {
       if (!element) return true;
       const detail = skill.detail || skill;
       return detail.element === element;
     })
-    .filter((skill) => mode !== "skill" || !skillType || skillDetail(skill).type === skillType);
+    .filter((skill) => !skillType || skillDetail(skill).type === skillType) : [], [mode, currentSkillSource, normalizedQuery, element, skillType]);
 
   async function saveConfig(values: Record<string, unknown>) {
     const data = await invoke<{ configs: PickerConfigs }>("save_picker_config", {
@@ -1493,10 +1606,6 @@ function PickerModal({
   useLayoutEffect(() => {
     void invoke("update_overlay_click_through", { enabled: false }).catch(() => undefined);
   }, []);
-
-  useLayoutEffect(() => {
-    if (locateCurrentPet) initialPetRef.current?.scrollIntoView({ block: "center", inline: "nearest" });
-  }, [locateCurrentPet, initialPet?.label]);
 
   return createPortal(
     <div data-overlay-control className={`modal-backdrop${mode === "skill" || mode === "pet" ? " skill-picker-backdrop" : ""}${document.documentElement.classList.contains("overlay-attached") ? " overlay-attached-picker" : ""}`} onMouseDown={(event) => {
@@ -1582,7 +1691,10 @@ function PickerModal({
                 </button>
               </>
             ) : (
-              <button onClick={() => void saveConfig({ element, skill_type: skillType })}>保存筛选</button>
+              <>
+                <button onClick={() => void saveConfig({ element, skill_type: skillType })}>保存筛选</button>
+                {onClearSkill ? <button className="picker-clear-skill" onClick={onClearSkill}>置空</button> : null}
+              </>
             )}
           </div>
           <div className={`picker-filter-row${mode === "skill" ? " with-skill-types" : ""}`}>
@@ -1653,37 +1765,44 @@ function PickerModal({
             </div>
           ) : null}
         </div>
-        <div className="compact-picker-grid">
-          {mode === "skill"
-            ? filteredSkills.map((skill, index) => (
-                <button key={`${skill.name}-${index}`} className="compact-picker-card" onClick={() => onPickSkill(skill)}>
-                  <strong><EntityLabel kind="skill" value={skill.name} /></strong>
-                  {skillMeta(skill)}
-                  {skillText(skill) ? <em>{skillText(skill)}</em> : null}
+        <PickerCardList
+          itemCount={mode === "skill" ? filteredSkills.length : mode === "pet" && petTab === "preset" && onPickPreset ? filteredPresets.length : filteredPets.length}
+          initialIndex={locateCurrentPet ? filteredPets.findIndex((pet) => pet.label === initialPet?.label) : locateCurrentSkill ? filteredSkills.findIndex((skill) => skill.name === initialSkillName) : -1}
+          renderItem={(index) => {
+            const skill = filteredSkills[index];
+            const preset = filteredPresets[index];
+            const pet = filteredPets[index];
+            return (
+          mode === "skill"
+            ? (
+                <button key={`${skill.name}-${index}`} className="compact-picker-card picker-skill-card" title={[skill.name, skillText(skill)].filter(Boolean).join("\n")} onClick={() => onPickSkill(skill)}>
+                  <strong><EntityLabel kind="skill" value={skill.name} imageLoading="lazy" />{skillMeta(skill, "lazy", "icons")}</strong>
+                  {skillMeta(skill, "lazy", "numbers")}
                 </button>
-              ))
+              )
             : mode === "pet" && petTab === "preset" && onPickPreset
-              ? filteredPresets.map((preset) => (
+              ? (
                   <button key={preset.key} className="compact-picker-card" onClick={() => onPickPreset(preset)}>
-                    <strong className="preset-name" title={`${preset.id} ${preset.name}`}><EntityLabel kind="pet" value={`${preset.id}${preset.name}`}>{preset.key}</EntityLabel></strong>
-                    <span>{preset.id} {preset.name} | {(preset.skills || []).slice(0, DEFAULT_SKILL_CARD_COUNT).filter(Boolean).length ? preset.skills.slice(0, DEFAULT_SKILL_CARD_COUNT).filter(Boolean).map((name, index) => <Fragment key={`${name}-${index}`}>{index ? " / " : ""}<EntityLabel kind="skill" value={name} /></Fragment>) : "未保存技能"}</span>
+                    <strong className="preset-name" title={`${preset.id} ${preset.name}`}><EntityLabel kind="pet" value={`${preset.id}${preset.name}`} imageLoading="lazy">{preset.key}</EntityLabel></strong>
+                    <span>{preset.id} {preset.name} | {(preset.skills || []).slice(0, DEFAULT_SKILL_CARD_COUNT).filter(Boolean).length ? preset.skills.slice(0, DEFAULT_SKILL_CARD_COUNT).filter(Boolean).map((name, index) => <Fragment key={`${name}-${index}`}>{index ? " / " : ""}<EntityLabel kind="skill" value={name} imageLoading="lazy" /></Fragment>) : "未保存技能"}</span>
                   </button>
-                ))
-              : filteredPets.map((pet) => (
+                )
+              : (
                 <button
                   key={`${mode}-${pet.label}`}
-                  ref={locateCurrentPet && pet.label === initialPet?.label ? initialPetRef : undefined}
                   className="compact-picker-card"
                   onClick={() => (mode === "trait" ? onPickTrait(pet) : onPickPet(pet))}
                 >
                   <strong>
-                    <EntityLabel kind="pet" value={pet.label}>{pet.id} {pet.name}</EntityLabel>
+                    <EntityLabel kind="pet" value={pet.label} imageLoading="lazy">{pet.id} {pet.name}</EntityLabel>
                   </strong>
-                  <span className="picker-card-meta">{pet.elements.map((item) => <PickerIcon key={item} value={item} />)}</span>
+                  <span className="picker-card-meta">{pet.elements.map((item) => <PickerIcon key={item} value={item} imageLoading="lazy" />)}</span>
                   <em>{mode === "trait" ? `${pet.traitName || "-"}：${pet.traitEffect || ""}` : `种族 ${pet.race ?? "-"}，技能 ${pet.skillCount}`}</em>
                 </button>
-              ))}
-        </div>
+              )
+            );
+          }}
+        />
       </section>
     </div>,
     document.body,
@@ -3757,14 +3876,17 @@ function PresetManagerPage({
   const firstGroupName = presets[0]?.name || "attackers";
   const [groupName, setGroupName] = useState(firstGroupName);
   const [targetGroup, setTargetGroup] = useState(firstGroupName);
-  const [newGroupName, setNewGroupName] = useState("");
   const [selectedKey, setSelectedKey] = useState("");
   const [presetName, setPresetName] = useState("");
+  const [newPresetHint, setNewPresetHint] = useState(false);
+  const presetNameInputRef = useRef<HTMLInputElement | null>(null);
   const [editor, setEditor] = useState<UnitState>(blankUnit());
   const [picker, setPicker] = useState<"pet" | null>(null);
   const [skillPickerIndex, setSkillPickerIndex] = useState<number | null>(null);
   const [watchPicker, setWatchPicker] = useState(false);
+  const [watchSettingsOpen, setWatchSettingsOpen] = useState(false);
   const [skillData, setSkillData] = useState<SkillListResult>({ petSkills: [], allSkills: [] });
+  const [skillDataPetName, setSkillDataPetName] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [codeOpen, setCodeOpen] = useState(false);
@@ -3779,6 +3901,15 @@ function PresetManagerPage({
 
   const currentGroup = presets.find((group) => group.name === groupName) || presets[0];
   const selectedPreset = currentGroup?.items.find((item) => item.key === selectedKey) || null;
+  const initialGroupSelectedRef = useRef(false);
+
+  useEffect(() => {
+    if (initialGroupSelectedRef.current) return;
+    initialGroupSelectedRef.current = true;
+    const firstPreset = currentGroup?.items[0];
+    if (firstPreset) selectPreset(firstPreset);
+    else newPreset();
+  }, [currentGroup]);
 
   useEffect(() => {
     if (!presets.some((group) => group.name === groupName)) {
@@ -3791,7 +3922,15 @@ function PresetManagerPage({
 
   useEffect(() => {
     if (skillPickerIndex === null) return;
-    void cachedListSkills(editor.name).then(setSkillData).catch(() => setSkillData({ petSkills: [], allSkills: [] }));
+    let cancelled = false;
+    void cachedListSkills(editor.name).then((data) => {
+      if (cancelled) return;
+      setSkillData(data);
+      setSkillDataPetName(editor.name);
+    }).catch(() => {
+      if (!cancelled) { setSkillData({ petSkills: [], allSkills: [] }); setSkillDataPetName(editor.name); }
+    });
+    return () => { cancelled = true; };
   }, [editor.name, skillPickerIndex]);
 
   // 每个预设分组保存独立的醒目技能列表。
@@ -3801,7 +3940,7 @@ function PresetManagerPage({
 
   useEffect(() => {
     if (!watchPicker) return;
-    void cachedListSkills("").then(setSkillData).catch(() => setSkillData({ petSkills: [], allSkills: [] }));
+    void cachedListSkills("").then((data) => { setSkillData(data); setSkillDataPetName(""); }).catch(() => setSkillData({ petSkills: [], allSkills: [] }));
   }, [watchPicker]);
 
   async function saveWatchSkills(next: string[]) {
@@ -3822,6 +3961,7 @@ function PresetManagerPage({
   }
 
   function selectPreset(preset: PresetItem) {
+    setNewPresetHint(false);
     setSelectedKey(preset.key);
     setPresetName(preset.key);
     setEditor(unitFromPreset(preset));
@@ -3830,6 +3970,7 @@ function PresetManagerPage({
   }
 
   function newPreset() {
+    setNewPresetHint(false);
     setSelectedKey("");
     setPresetName("");
     setEditor(blankUnit());
@@ -3837,18 +3978,24 @@ function PresetManagerPage({
     setError("");
   }
 
+  function selectGroup(name: string) {
+    setGroupName(name);
+    const firstPreset = presets.find((group) => group.name === name)?.items[0];
+    if (firstPreset) selectPreset(firstPreset);
+    else newPreset();
+  }
+
   function setSkillAt(index: number, skillName: string) {
     const next = skillCardSlots(editor.skills, Math.max(DEFAULT_SKILL_CARD_COUNT, editor.skills.length));
     next[index] = skillName;
-    patchEditor({ skills: next.filter(Boolean), current_skill: skillName });
+    patchEditor({ skills: next, current_skill: skillName });
   }
 
   function clearSkillAt(index: number) {
     const next = skillCardSlots(editor.skills, Math.max(DEFAULT_SKILL_CARD_COUNT, editor.skills.length));
     const removed = next[index];
     next[index] = "";
-    const skills = next.filter(Boolean);
-    patchEditor({ skills, current_skill: editor.current_skill === removed ? skills[0] || "" : editor.current_skill });
+    patchEditor({ skills: next, current_skill: editor.current_skill === removed ? next.find(Boolean) || "" : editor.current_skill });
   }
 
   async function runPresetAction(payload: Record<string, unknown>, successMessage: string) {
@@ -3868,13 +4015,31 @@ function PresetManagerPage({
   }
 
   async function createGroup() {
-    const name = newGroupName.trim();
+    const name = codeGroupName.trim();
     if (!name) {
-      setError("分组名不能为空");
+      setCodeError("分组名不能为空");
       return;
     }
-    await runPresetAction({ action: "create_group", groupName: name }, `已创建分组：${name}`);
-    setNewGroupName("");
+    setCodeBusy(true);
+    setCodeError("");
+    setCodeMessage("");
+    setCodeReport([]);
+    setError("");
+    try {
+      const data = await invoke<PresetManagerResult>("manage_preset", { payload: { action: "create_group", groupName: name } });
+      onPresetsChanged(data.presets);
+      if (data.groupName) {
+        setGroupName(data.groupName);
+        setTargetGroup(data.groupName);
+      }
+      setSelectedKey(data.presetName || "");
+      setMessage(`已创建分组：${name}`);
+      setCodeMessage(`已创建分组：${name}`);
+    } catch (err) {
+      setCodeError(asError(err));
+    } finally {
+      setCodeBusy(false);
+    }
   }
 
   async function savePreset() {
@@ -3886,6 +4051,7 @@ function PresetManagerPage({
       onPresetsChanged(data.presets);
       setSelectedKey(data.presetName);
       setPresetName(data.presetName);
+      setNewPresetHint(false);
       setMessage(`已保存：${data.presetName}`);
     } catch (err) {
       setError(asError(err));
@@ -3935,7 +4101,7 @@ function PresetManagerPage({
     }
   }
 
-  function openTeamCode() {
+  function openCreateGroup() {
     setCodeOpen(true);
     setCodeMessage("");
     setCodeError("");
@@ -3972,6 +4138,7 @@ function PresetManagerPage({
       setSelectedKey("");
       setPresetName("");
       setEditor(blankUnit());
+      setNewPresetHint(false);
       setMessage(`已导入到分组：${data.groupName}`);
       setCodeMessage(`已导入到分组：${data.groupName}`);
       setCodeReport(data.report || []);
@@ -3988,48 +4155,63 @@ function PresetManagerPage({
     <section className="preset-manager-page">
       <aside className="preset-library-panel">
         <header className="preset-manager-header">
-          <h2 className="preset-library-title">精灵预设</h2>
-          <div className="header-actions">
-            <button className="compact-button preset-new-button" onClick={newPreset}>新建预设</button>
-            <button className="compact-button preset-new-button" onClick={openTeamCode}>阵容码</button>
-          </div>
-        </header>
-        <div className="preset-group-row">
-          <FieldLabel className="preset-group-label">分组</FieldLabel>
-          <select className="preset-group-control" value={currentGroup?.name || ""} onChange={(event) => { setGroupName(event.target.value); setSelectedKey(""); }}>
+          <h2 className="preset-library-title">分组</h2>
+          <select aria-label="分组" className="preset-group-control" value={currentGroup?.name || ""} onChange={(event) => selectGroup(event.target.value)}>
             {presets.map((group) => (
               <option key={group.name} value={group.name}>{group.name}</option>
             ))}
           </select>
-          <button className="compact-button preset-delete-group-button" disabled={!currentGroup} onClick={() => { setError(""); setDeleteGroupConfirm(currentGroup || null); }}>删除分组</button>
-        </div>
+        </header>
         <div className="preset-create-row">
-          <input className="preset-new-group-input" value={newGroupName} onChange={(event) => setNewGroupName(event.target.value)} placeholder="新分组名" />
-          <button className="preset-create-button" onClick={() => void createGroup()}>创建分组</button>
+          <button className="compact-button preset-new-button" onClick={() => {
+            newPreset();
+            setNewPresetHint(true);
+            presetNameInputRef.current?.focus();
+          }}>新建预设</button>
+          <button className="preset-create-button" onClick={openCreateGroup}>创建分组</button>
+          <button className="compact-button preset-watch-button" disabled={!currentGroup} onClick={() => setWatchSettingsOpen(true)}>醒目技能</button>
+          <button className="compact-button preset-delete-group-button" disabled={!currentGroup} onClick={() => { setError(""); setDeleteGroupConfirm(currentGroup || null); }}>删除当前分组</button>
         </div>
         <div className="preset-list">
           {(currentGroup?.items || []).map((preset) => (
             <button key={preset.key} className={preset.key === selectedKey ? "preset-list-item preset-list-control active" : "preset-list-item preset-list-control"} onClick={() => selectPreset(preset)}>
-              <strong><EntityLabel kind="pet" value={`${preset.id}${preset.name}`}>{preset.key}</EntityLabel></strong>
-              <span>{preset.id} {preset.name}</span>
-              <em>{(preset.skills || []).filter(Boolean).length ? preset.skills.filter(Boolean).map((name, index) => <Fragment key={`${name}-${index}`}>{index ? " / " : ""}<EntityLabel kind="skill" value={name} /></Fragment>) : "未保存技能"}</em>
+              <strong className="preset-card-name" title={preset.key}>{preset.key}</strong>
+              <span className="preset-card-body">
+                <span className="preset-card-pet">
+                  <EntityLabel kind="pet" value={`${preset.id}${preset.name}`} iconOnly>{preset.name}</EntityLabel>
+                </span>
+                <span className="preset-card-skills">
+                  {skillCardSlots(preset.skills || [], DEFAULT_SKILL_CARD_COUNT).map((name, index) => (
+                    <span className="preset-card-skill" key={index} title={name || `空技能${index + 1}`}>
+                      {name ? <EntityLabel kind="skill" value={name} /> : `空技能${index + 1}`}
+                    </span>
+                  ))}
+                </span>
+              </span>
             </button>
           ))}
         </div>
       </aside>
       <section className="preset-editor-panel">
-        <header className="preset-manager-header">
-          <h2 className="preset-settings-title">保存设置</h2>
+        <header className="preset-manager-header preset-editor-header">
+          <h2 className="preset-settings-title">精灵预设</h2>
+          <input ref={presetNameInputRef} aria-label="预设名" className={`preset-name-input${newPresetHint ? " is-new-preset" : ""}`} value={presetName} onChange={(event) => { setPresetName(event.target.value); setNewPresetHint(false); }} placeholder={newPresetHint ? "新键预设" : "留空则使用精灵名"} />
           <div className="header-actions">
             <button className="compact-button preset-save-button" onClick={() => void savePreset()}>保存预设</button>
             <button className="compact-button preset-delete-button" disabled={!selectedPreset} onClick={() => void deletePreset()}>删除</button>
           </div>
         </header>
+        <section className="preset-editor-section preset-transfer-section">
+          <FieldLabel className="preset-transfer-label"><span className="ui-field-title preset-section-title">目标分组</span></FieldLabel>
+          <select className="preset-transfer-select" value={targetGroup} onChange={(event) => setTargetGroup(event.target.value)}>
+            {presets.map((group) => (
+              <option key={group.name} value={group.name}>{group.name}</option>
+            ))}
+          </select>
+          <button className="preset-copy-button" disabled={!selectedPreset} onClick={() => void copyPreset()}>复制</button>
+          <button className="preset-move-button" disabled={!selectedPreset} onClick={() => void movePreset()}>移动</button>
+        </section>
         <section className="preset-editor-section preset-main-section">
-          <FieldLabel className="preset-name-label">
-            <span className="ui-field-title preset-section-title">预设名</span>
-            <input className="preset-name-input" value={presetName} onChange={(event) => setPresetName(event.target.value)} placeholder="留空则使用精灵名" />
-          </FieldLabel>
           <FieldLabel className="preset-pet-label">
             <span className="ui-field-title preset-section-title">精灵</span>
             <div className="preset-pet-row">
@@ -4061,44 +4243,12 @@ function PresetManagerPage({
           </div>
           <TeamSkillCardGrid
             cards={skillCards}
+            replaceOnChoose
             currentSkill={editor.current_skill}
             onPick={(current_skill) => patchEditor({ current_skill })}
             onChoose={setSkillPickerIndex}
             onClear={clearSkillAt}
           />
-        </section>
-        <section className="preset-editor-section">
-          <div className="panel-title">
-            <h2 className="preset-skills-title">醒目技能</h2>
-            <button className="compact-button" onClick={() => setWatchPicker(true)}>选择技能</button>
-          </div>
-          {watchSkills.length ? (
-            <div className="watch-skill-chips">
-              {watchSkills.map((name) => (
-                <button
-                  type="button"
-                  className="watch-skill-chip"
-                  key={name}
-                  title="点击移除"
-                  onClick={() => void saveWatchSkills(watchSkills.filter((item) => item !== name))}
-                ><EntityLabel kind="skill" value={name} /> ×</button>
-              ))}
-            </div>
-          ) : <p className="muted preset-watch-hint">当前分组未配置醒目技能。</p>}
-        </section>
-        <section className="preset-editor-section preset-transfer-section">
-          <div className="preset-transfer-target">
-            <FieldLabel className="preset-transfer-label"><span className="ui-field-title preset-section-title">目标分组</span></FieldLabel>
-            <select className="preset-transfer-select" value={targetGroup} onChange={(event) => setTargetGroup(event.target.value)}>
-              {presets.map((group) => (
-                <option key={group.name} value={group.name}>{group.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="preset-transfer-actions">
-            <button className="preset-copy-button" disabled={!selectedPreset} onClick={() => void copyPreset()}>复制</button>
-            <button className="preset-move-button" disabled={!selectedPreset} onClick={() => void movePreset()}>移动</button>
-          </div>
         </section>
         {message ? <p className="save-message">{message}</p> : null}
         {error ? <p className="error-text preset-message">错误：{error}</p> : null}
@@ -4131,11 +4281,17 @@ function PresetManagerPage({
       ) : null}
       {skillPickerIndex !== null ? (
         <PickerModal
+          key={`${editor.name}-${skillPickerIndex}`}
           mode="skill"
+          initialSkillName={editor.skills[skillPickerIndex] || ""}
+          onClearSkill={() => {
+            clearSkillAt(skillPickerIndex);
+            setSkillPickerIndex(null);
+          }}
           pets={[]}
           elements={elements}
-          petSkills={skillData.petSkills}
-          allSkills={skillData.allSkills}
+          petSkills={skillDataPetName === editor.name ? skillData.petSkills : []}
+          allSkills={skillDataPetName === editor.name ? skillData.allSkills : []}
           traits={[]}
           configs={configs}
           onConfigsChanged={onConfigsChanged}
@@ -4147,6 +4303,25 @@ function PresetManagerPage({
           }}
           onPickTrait={() => undefined}
         />
+      ) : null}
+      {watchSettingsOpen ? createPortal(
+        <div data-overlay-control className="modal-backdrop" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setWatchSettingsOpen(false);
+        }}>
+          <section className="team-code-modal preset-watch-modal" role="dialog" aria-modal="true" aria-labelledby="preset-watch-title">
+            <header>
+              <h2 id="preset-watch-title">醒目技能 · {currentGroup?.name}</h2>
+              <button className="compact-button" onClick={() => setWatchSettingsOpen(false)}>关闭</button>
+            </header>
+            <button className="compact-button" onClick={() => setWatchPicker(true)}>选择技能</button>
+            {watchSkills.length ? <div className="watch-skill-chips">
+              {watchSkills.map((name) => <button type="button" className="watch-skill-chip" key={name} title="点击移除" onClick={() => void saveWatchSkills(watchSkills.filter((item) => item !== name))}>
+                <EntityLabel kind="skill" value={name} /> ×
+              </button>)}
+            </div> : <p className="muted preset-watch-hint">当前分组未配置醒目技能。</p>}
+            {error ? <p className="error-text preset-message">错误：{error}</p> : null}
+          </section>
+        </div>, document.body,
       ) : null}
       {watchPicker ? (
         <PickerModal
@@ -4191,28 +4366,29 @@ function PresetManagerPage({
             if (event.target === event.currentTarget) setCodeOpen(false);
           }}
         >
-          <section className="team-code-modal" onMouseDown={(event) => event.stopPropagation()}>
+          <section className="team-code-modal preset-create-group-modal" role="dialog" aria-modal="true" aria-labelledby="preset-create-group-title" onMouseDown={(event) => event.stopPropagation()}>
             <header>
-              <h2>导入阵容码</h2>
+              <h2 id="preset-create-group-title">创建分组</h2>
               <button className="compact-button" onClick={() => setCodeOpen(false)}>关闭</button>
             </header>
-            <textarea
-              className="team-code-textarea"
-              value={codeText}
-              onChange={(event) => setCodeText(event.target.value)}
-              placeholder="粘贴游戏里复制的完整内容（包含 # 音速犬：首领血脉、{灼伤、热身} 这类说明行和阵容码那一行）"
-            />
-            <div className="team-code-actions">
-              <input
-                className="team-code-group-input"
-                value={codeGroupName}
-                onChange={(event) => setCodeGroupName(event.target.value)}
-                placeholder="新分组名"
+            <label className="preset-create-group-field">
+              <span>分组名</span>
+              <input className="preset-new-group-input" value={codeGroupName} onChange={(event) => setCodeGroupName(event.target.value)} placeholder="新分组名" />
+            </label>
+            <label className="preset-create-group-field">
+              <span>阵容码（可选）</span>
+              <textarea
+                className="team-code-textarea"
+                value={codeText}
+                onChange={(event) => setCodeText(event.target.value)}
+                placeholder="粘贴游戏里复制的完整内容（包含 # 音速犬：首领血脉、{灼伤、热身} 这类说明行和阵容码那一行）"
               />
+            </label>
+            <div className="team-code-actions">
+              <button className="compact-button" disabled={codeBusy} onClick={() => void (codeText.trim() ? importTeamCode("create") : createGroup())}>{codeBusy ? "处理中…" : "创建分组"}</button>
               <button className="compact-button" disabled={codeBusy} onClick={() => void importTeamCode("overwrite")}>覆盖当前分组</button>
-              <button className="compact-button" disabled={codeBusy} onClick={() => void importTeamCode("create")}>新建分组</button>
             </div>
-            <p className="team-code-hint">覆盖当前分组：替换“{groupName}”里现有的全部预设；新建分组：用输入的名字新建分组（同名会覆盖）。导入后到队伍面板用“导入分组”即可填满队伍。</p>
+            <p className="team-code-hint">只填写分组名可创建空分组；填写阵容码则导入到新分组（同名会覆盖）。覆盖当前分组：用阵容码替换“{groupName}”里现有的全部预设。</p>
             {codeMessage ? <p className="save-message">{codeMessage}</p> : null}
             {codeError ? <p className="error-text preset-message">错误：{codeError}</p> : null}
             {codeReport.length ? (
@@ -4270,7 +4446,7 @@ function TeamSkillCards({
   const panelRef = useRef<HTMLElement | null>(null);
   const suppressCardClickRef = useRef(false);
   const [skillInfo, setSkillInfo] = useState<SkillTriggerInfo | null>(null);
-  const currentSkill = value.current_skill || value.skills[0] || "";
+  const currentSkill = value.current_skill || value.skills.find(Boolean) || "";
   const controlSkill = onlyIndex === undefined ? currentSkill : cards[0]?.name || "";
 
   function startFloatingDrag(event: ReactPointerEvent<HTMLElement>) {
@@ -4337,7 +4513,7 @@ function TeamSkillCards({
     const next = skillCardSlots(value.skills, Math.max(cardCount, value.skills.length));
     next[onlyIndex === undefined ? index : onlyIndex] = skillName;
     onChange({
-      skills: next.filter(Boolean),
+      skills: next,
       current_skill: skillName,
     });
   }
@@ -4347,10 +4523,10 @@ function TeamSkillCards({
     const actualIndex = onlyIndex === undefined ? index : onlyIndex;
     const removed = next[actualIndex];
     next[actualIndex] = "";
-    const skills = next.filter(Boolean);
+    const skills = next;
     onChange({
       skills,
-      current_skill: value.current_skill === removed ? skills[0] || "" : value.current_skill,
+      current_skill: value.current_skill === removed ? skills.find(Boolean) || "" : value.current_skill,
         skill_trigger_stacks: Object.fromEntries(
           Object.entries(value.skill_trigger_stacks).filter(([skillName]) => skillName !== removed),
         ),
@@ -4726,6 +4902,7 @@ function TeamSkillCardGrid({
   onApply,
   pluginMode,
   quickResult,
+  replaceOnChoose = false,
 }: {
   cards: Array<SkillItem | null>;
   emptySkillOffset?: number;
@@ -4737,6 +4914,7 @@ function TeamSkillCardGrid({
   onApply?: (skill: string) => void;
   pluginMode?: boolean;
   quickResult?: QuickSkillResult | null;
+  replaceOnChoose?: boolean;
 }) {
   const cardSkillNames = [...new Set(cards.flatMap((skill) => (skill ? [skill.name] : [])))];
   const cardSkillNamesKey = cardSkillNames.join("\u0000");
@@ -4784,8 +4962,8 @@ function TeamSkillCardGrid({
           <strong>{skill && !pluginMode ? <EntityLabel kind="skill" value={skill.name} /> : skill?.name || `空技能${emptySkillOffset + index + 1}`}</strong>
           {quickResult && quickResult.skillName === skill?.name && quickResult.displayPower !== null && quickResult.displayPower !== undefined ? <span className="quick-skill-power">{quickResult.displayPower}</span> : null}
           {!pluginMode ? <div className="skill-card-actions">
-            <button className="slot-action" onClick={(event) => { event.stopPropagation(); skill ? onClear(index) : onChoose(index); }}>
-              {skill ? "取消" : "选择"}
+            <button className="slot-action" onClick={(event) => { event.stopPropagation(); skill && !replaceOnChoose ? onClear(index) : onChoose(index); }}>
+              {skill && !replaceOnChoose ? "取消" : "选择"}
             </button>
           </div> : null}
         </div>
@@ -5339,7 +5517,7 @@ function Roster({
     <section className={`roster ${className}`.trim()} data-panel-state={state} data-overlay-control data-plugin-resizable={pluginMode || undefined}>
       {pluginMode ? <PluginResizeEdges /> : null}
       <header className="roster-header">
-        <h2>{title}</h2>
+        {!pluginMode ? <h2>{title}</h2> : null}
         <select
           className="roster-import-select"
           value={selectedGroup}
@@ -5374,7 +5552,7 @@ function Roster({
                   }
                 }}
               >
-                <strong title={slot.display_name || slot.name || "空槽位"}><EntityLabel kind="pet" value={slot.name} iconOnly={pluginMode} className={pluginMode ? "roster-pet-image" : ""}>{petNameOnly(slot.display_name || slot.name) || "空槽位"}</EntityLabel></strong>
+                <strong title={slot.display_name || slot.name || (pluginMode ? "空" : "空槽位")}><EntityLabel kind="pet" value={slot.name} iconOnly={pluginMode} className={pluginMode ? "roster-pet-image" : ""}>{petNameOnly(slot.display_name || slot.name) || (pluginMode ? "空" : "空槽位")}</EntityLabel></strong>
                 <button
                   className="slot-action"
                   onClick={(event) => {

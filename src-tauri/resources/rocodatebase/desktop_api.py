@@ -19,16 +19,6 @@ if hasattr(sys.stderr, "reconfigure"):
 API_STDOUT = sys.stdout
 ONNX_OCR_ENGINE: Any | None = None
 IMAGE_CLASSIFIER: Any | None = None
-REPLAY_SKILL_OVERRIDES: dict[str, dict[str, str]] = {
-    "愿力冲击": {"type": "物攻"},
-    "聚能": {"type": "变化"},
-    "跺地": {"type": "物攻"},
-}
-REPLAY_SKILL_ALIASES = {
-    # The OCR model occasionally substitutes the first glyph of this skill.
-    "踩地": "跺地",
-}
-
 BASE_DIR = Path(__file__).resolve().parent
 CLASSIFIER_DIR = BASE_DIR.parent / "image-classifier"
 # The sprite classifier is image-classifier/legacy_558.onnx; it takes the game's
@@ -915,8 +905,8 @@ def save_preset(payload: dict[str, Any]) -> dict[str, Any]:
     presets.setdefault(group_name, {})
     pet_id, pet_name = _resolve_pet_identity(state.get("name", ""))
     preset_key = (payload.get("presetKey") or "").strip()
-    requested_name = (payload.get("presetName") or "").strip() or _build_default_preset_name(pet_id, pet_name)
-    preset_name = preset_key if preset_key in presets[group_name] else requested_name
+    requested_name = (payload.get("presetName") or "").strip()
+    preset_name = requested_name or (preset_key if preset_key in presets[group_name] else _build_default_preset_name(pet_id, pet_name))
     if not overwrite and preset_name in presets[group_name]:
         raise FileExistsError(preset_name)
     data = {
@@ -925,7 +915,7 @@ def save_preset(payload: dict[str, Any]) -> dict[str, Any]:
         "iv": state.get("iv"),
         "personality_bouns": state.get("personality_bouns"),
         "personality_down": state.get("personality_down"),
-        "skills": [skill for skill in (state.get("skills") or []) if skill],
+        "skills": [skill or "" for skill in (state.get("skills") or [])],
         "bloodline": (state.get("bloodline") or "").strip() or None,
         "trait_override_query": state.get("trait_override_query"),
         "trait_triggered": bool(state.get("trait_triggered", False)),
@@ -935,7 +925,14 @@ def save_preset(payload: dict[str, Any]) -> dict[str, Any]:
         "mega": bool(state.get("mega", False)),
         "mega_form": state.get("mega_form") or None,
     }
-    presets[group_name][preset_name] = data
+    if preset_key != preset_name and preset_key in presets[group_name]:
+        presets[group_name] = {
+            preset_name if key == preset_key else key: data if key == preset_key else value
+            for key, value in presets[group_name].items()
+            if key != preset_name or key == preset_key
+        }
+    else:
+        presets[group_name][preset_name] = data
     _save_presets(presets)
     return {"presets": list_presets()["groups"], "presetName": preset_name, "preset": data}
 
@@ -1331,39 +1328,18 @@ def is_dash_only_numeric_image(image: Any) -> bool:
 
 def recognize_image_text(payload: dict[str, Any]) -> dict[str, str]:
     image_data_url = payload.get("imageDataUrl") or ""
-    mode = payload.get("mode") or "text"
+    mode = payload.get("mode") or "number"
     if not isinstance(image_data_url, str) or "," not in image_data_url:
         raise ValueError("OCR image must be a data URL")
-    if mode not in {"power", "enemy_health", "self_health", "number", "health", "text"}:
+    if mode not in {"power", "enemy_health", "self_health", "number", "health"}:
         raise ValueError(f"Unsupported OCR mode: {mode}")
 
     from PIL import Image
-    import numpy as np
     _, encoded = image_data_url.split(",", 1)
     image = Image.open(io.BytesIO(base64.b64decode(encoded))).convert("RGB")
     numeric_modes = {"power", "enemy_health", "self_health", "number", "health"}
     dash_only = mode in numeric_modes and is_dash_only_numeric_image(image)
-    ocr = _ocr_engine()
-    recognize_number = getattr(ocr, "recognize_number_crop", None)
-    if mode in numeric_modes:
-        # A numeric crop is recognized as one image when the dedicated whole-crop
-        # model is installed; the detector would crop away "%" and "/" glyphs.
-        text = recognize_number(image) if recognize_number is not None else None
-        if text is None:
-            if mode == "power":
-                text = ocr.recognize_power_center(image)
-            else:
-                # Fallback: let the detector locate the text before recognition
-                # instead of treating the entire crop as one glyph.
-                lines = ocr(image, force_horizontal=True)
-                text = "\n".join(line["text"] for line in lines if line.get("text"))
-                if not text:
-                    # Some compact, slanted game badges are rejected by the
-                    # detector even though the recognizer can still read them.
-                    text = ocr.recognize_without_detection(image)
-    else:
-        lines = ocr(image)
-        text = "\n".join(line["text"] for line in lines if line.get("text"))
+    text = _ocr_engine().recognize_number_crop(image)
     raw_text = text.strip() or "-"
     if dash_only and len("".join(raw_text.split()).replace("-", "")) <= 1:
         return {"text": "-", "rawText": raw_text}
@@ -1409,18 +1385,6 @@ def normalize_health_text(text: str) -> str:
 
 class OnnxOcr:
     def __init__(self, models_dir: Path):
-        import onnxruntime as ort
-
-        self.det = ort.InferenceSession(str(models_dir / "det" / "model.onnx"), providers=["CPUExecutionProvider"])
-        self.rec = ort.InferenceSession(str(models_dir / "rec" / "model.onnx"), providers=["CPUExecutionProvider"])
-        self.det_input = self.det.get_inputs()[0].name
-        self.rec_input = self.rec.get_inputs()[0].name
-        self.characters = [line.rstrip("\r\n") for line in (models_dir / "ppocr_keys_v1.txt").read_text(encoding="utf-8").splitlines()]
-        self.characters.append(" ")
-        # Numeric regions can use a dedicated whole-crop model at
-        # ocr-models/number/{model.onnx,charset.txt}. When the directory is
-        # absent the engine falls back to the detector + PP-OCR recognition
-        # path, so the model can be added, replaced or removed at any time.
         self.number_dir = Path(os.environ.get("ROCODATABASE_OCR_NUMBER_DIR") or (models_dir / "number"))
         self.number_session: Any | None = None
         self.number_input = ""
@@ -1450,7 +1414,6 @@ class OnnxOcr:
             session = ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
             characters = [line.rstrip("\r\n") for line in charset_path.read_text(encoding="utf-8").splitlines()]
         except Exception:
-            # A broken model must not break OCR: fall back to PP-OCR.
             self.number_session = None
             self.number_stamp = None
             return False
@@ -1464,13 +1427,13 @@ class OnnxOcr:
         self.number_stamp = stamp
         return True
 
-    def recognize_number_crop(self, image: Any) -> str | None:
-        """Recognize a whole numeric crop; None means no model, caller falls back."""
+    def recognize_number_crop(self, image: Any) -> str:
+        """Recognize one numeric crop with the bundled number model."""
         import cv2
         import numpy as np
 
         if not self._reload_number_model():
-            return None
+            raise RuntimeError("Numeric OCR model is unavailable")
         source = np.asarray(image)
         height, width = source.shape[:2]
         target_width = max(48, min(320, int(round(width / max(height, 1) * 48))))
@@ -1487,126 +1450,6 @@ class OnnxOcr:
                 result.append(self.number_characters[index - 1])
             previous = index
         return "".join(result)
-
-    @staticmethod
-    def _det_input(image: Any) -> tuple[Any, tuple[int, int, int, int]]:
-        import cv2
-        import numpy as np
-
-        height, width = image.shape[:2]
-        scale = min(960 / max(height, width), 1.0)
-        resized_width = max(32, int(round(width * scale / 32) * 32))
-        resized_height = max(32, int(round(height * scale / 32) * 32))
-        resized = cv2.resize(image, (resized_width, resized_height), interpolation=cv2.INTER_LINEAR)
-        tensor = resized.astype(np.float32) / 255.0
-        tensor = (tensor - np.array([0.485, 0.456, 0.406], dtype=np.float32)) / np.array([0.229, 0.224, 0.225], dtype=np.float32)
-        return tensor.transpose(2, 0, 1)[None], (height, width, resized_height, resized_width)
-
-    @staticmethod
-    def _order_box(points: Any) -> Any:
-        import numpy as np
-
-        points = np.asarray(points, dtype=np.float32)
-        center = points.mean(axis=0)
-        angles = np.arctan2(points[:, 1] - center[1], points[:, 0] - center[0])
-        return points[np.argsort(angles)]
-
-    def _detect(self, image: Any) -> list[Any]:
-        import cv2
-        import numpy as np
-
-        tensor, (source_height, source_width, resized_height, resized_width) = self._det_input(image)
-        prediction = self.det.run(None, {self.det_input: tensor})[0][0, 0]
-        mask = (prediction > 0.3).astype(np.uint8)
-        contours, _ = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        scale_x = source_width / prediction.shape[1]
-        scale_y = source_height / prediction.shape[0]
-        boxes = []
-        for contour in contours[:1000]:
-            area = cv2.contourArea(contour)
-            if area < 3:
-                continue
-            score = cv2.mean(prediction, mask=cv2.drawContours(np.zeros_like(mask), [contour], -1, 1, -1))[0]
-            if score < 0.6:
-                continue
-            rectangle = cv2.minAreaRect(contour)
-            points = cv2.boxPoints(rectangle)
-            points[:, 0] *= scale_x
-            points[:, 1] *= scale_y
-            center = points.mean(axis=0)
-            points = center + (points - center) * 1.5
-            points[:, 0] = np.clip(points[:, 0], 0, source_width - 1)
-            points[:, 1] = np.clip(points[:, 1], 0, source_height - 1)
-            points = self._order_box(points)
-            if cv2.contourArea(points.astype(np.float32)) >= 3:
-                boxes.append(points)
-        boxes.sort(key=lambda box: (float(box[:, 1].min()), float(box[:, 0].min())))
-        return boxes
-
-    @staticmethod
-    def _crop(image: Any, box: Any) -> Any:
-        import cv2
-        import numpy as np
-
-        box = np.asarray(box, dtype=np.float32)
-        width = max(int(np.linalg.norm(box[1] - box[0])), int(np.linalg.norm(box[2] - box[3])), 8)
-        height = max(int(np.linalg.norm(box[3] - box[0])), int(np.linalg.norm(box[2] - box[1])), 8)
-        target = np.array([[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]], dtype=np.float32)
-        return cv2.warpPerspective(image, cv2.getPerspectiveTransform(box, target), (width, height), borderMode=cv2.BORDER_REPLICATE)
-
-    @staticmethod
-    def _horizontal_crop(image: Any, box: Any) -> Any:
-        import numpy as np
-
-        box = np.asarray(box, dtype=np.float32)
-        source_height, source_width = image.shape[:2]
-        left = int(np.floor(box[:, 0].min()))
-        top = int(np.floor(box[:, 1].min()))
-        right = int(np.floor(box[:, 0].max())) + 1
-        bottom = int(np.floor(box[:, 1].max())) + 1
-        padding = max(4, int(round((bottom - top) * 0.25)))
-        return image[
-            max(0, top - padding):min(source_height, bottom + padding),
-            max(0, left - padding):min(source_width, right + padding),
-        ]
-
-    def _recognize_crop(self, image: Any) -> str:
-        import cv2
-        import numpy as np
-
-        height, width = image.shape[:2]
-        target_width = max(48, min(320, int(round(width / max(height, 1) * 48))))
-        resized = cv2.resize(image, (target_width, 48), interpolation=cv2.INTER_LINEAR)
-        tensor = resized.astype(np.float32) / 255.0
-        tensor = (tensor - 0.5) / 0.5
-        prediction = self.rec.run(None, {self.rec_input: tensor.transpose(2, 0, 1)[None]})[0][0]
-        indices = prediction.argmax(axis=1)
-        result = []
-        previous = -1
-        for index in indices:
-            index = int(index)
-            if index != 0 and index != previous and index - 1 < len(self.characters):
-                result.append(self.characters[index - 1])
-            previous = index
-        return "".join(result)
-
-    def recognize_without_detection(self, image: Any) -> str:
-        return self._recognize_crop(__import__("numpy").asarray(image))
-
-    def recognize_power_center(self, image: Any) -> str:
-        source = __import__("numpy").asarray(image)
-        height, width = source.shape[:2]
-        return self._recognize_crop(source[
-            round(height * 0.06):round(height * 0.94),
-            round(width * 0.125):round(width * 0.875),
-        ])
-
-    def __call__(self, image: Any, force_horizontal: bool = False) -> list[dict[str, str]]:
-        import numpy as np
-
-        source = np.asarray(image)
-        crop = self._horizontal_crop if force_horizontal else self._crop
-        return [{"text": text} for text in (self._recognize_crop(crop(source, box)) for box in self._detect(source)) if text]
 
 
 def _ocr_engine():
@@ -1625,10 +1468,7 @@ def recognize_images(payload: dict[str, Any]) -> dict[str, list[dict[str, str]]]
         if not isinstance(image, dict):
             raise ValueError("OCR image entry must be an object")
         result = recognize_image_text(image)
-        item = {"text": result["text"], "rawText": result.get("rawText", result["text"])}
-        if image.get("key") in {"enemyNotice", "selfNotice"}:
-            item["event"] = classify_replay_notice(result["text"])
-        items.append(item)
+        items.append({"text": result["text"], "rawText": result.get("rawText", result["text"])})
     return {"items": items}
 
 
@@ -1678,87 +1518,6 @@ def classify_image_samples(payload: dict[str, Any]) -> dict[str, Any]:
     return {"items": results}
 
 
-def _resolve_replay_skill(fragment: str) -> tuple[str, dict[str, Any] | None]:
-    """Resolve partial OCR text without turning ambiguous fragments into attacks."""
-    normalized = re.sub(r"[^\u4e00-\u9fffA-Za-z0-9]", "", fragment)
-    if not normalized:
-        return "", None
-    normalized = REPLAY_SKILL_ALIASES.get(normalized, normalized)
-    override = REPLAY_SKILL_OVERRIDES.get(normalized)
-    if override:
-        return normalized, override
-    from core.skill_finder import skill_dataset
-
-    exact = skill_dataset.find_skill(normalized)
-    if isinstance(exact, dict):
-        return normalized, exact
-
-    # A prefix/suffix often survives when the OCR detector truncates the notice.
-    # A short fragment is accepted only when it identifies one skill or all
-    # matching skills share the same attack type.
-    contained = [
-        name for name in [*skill_dataset.index, *REPLAY_SKILL_OVERRIDES]
-        if len(normalized) >= 2 and normalized in name
-    ]
-    if contained:
-        types = {
-            data.get("type") for name in contained
-            if isinstance((data := REPLAY_SKILL_OVERRIDES.get(name) or skill_dataset.find_skill(name)), dict)
-        }
-        attack_types = types & {"物攻", "魔攻"}
-        if len(contained) == 1 or (len(types) == 1 and len(attack_types) == 1):
-            name = min(contained, key=len)
-            return name, REPLAY_SKILL_OVERRIDES.get(name) or skill_dataset.find_skill(name)
-
-    # Handle one missing or mistaken glyph in a three-or-more-character skill.
-    if len(normalized) >= 3:
-        candidates = [
-            name for name in [*skill_dataset.index, *REPLAY_SKILL_OVERRIDES]
-            if abs(len(name) - len(normalized)) <= 2
-        ]
-        name = max(
-            candidates,
-            key=lambda candidate: difflib.SequenceMatcher(a=normalized, b=candidate).ratio(),
-            default=None,
-        )
-        if name and difflib.SequenceMatcher(a=normalized, b=name).ratio() >= 0.66:
-            return name, REPLAY_SKILL_OVERRIDES.get(name) or skill_dataset.find_skill(name)
-    return normalized, None
-
-
-def classify_replay_notice(text: str) -> dict[str, Any]:
-    notice_text = text or ""
-    compact = re.sub(r"\s+", "", notice_text)
-    if "召唤" in compact:
-        return {"kind": "summon"}
-    if "特性" in compact:
-        return {"kind": "trait"}
-
-    # OCR may omit the trailing "出" or insert a glyph between the two. Keep
-    # the use marker tolerant, then let the skill-library match decide whether
-    # this is actually an attacking skill.
-    matches = list(re.finditer(r"使.{0,2}?出|使出?", compact))
-    after_marker = compact[matches[-1].end():] if matches else compact
-    # A skill is delimited on the left by either a non-Chinese character or
-    # "使出了", and on the right by a non-Chinese character. This prevents the
-    # action marker from being joined into the skill name.
-    delimited_skills = re.findall(r"(?:使出了?|[^\u4e00-\u9fff])([\u4e00-\u9fff]{2,})(?=[^\u4e00-\u9fff]|$)", notice_text)
-    fragment = delimited_skills[-1] if delimited_skills else after_marker
-    fragment = re.sub(r"^了?(?:[★☆]\d+)?", "", fragment)
-    fragment = re.split(r"[！!。,.，]", fragment, maxsplit=1)[0].strip()
-    try:
-        skill, skill_data = _resolve_replay_skill(fragment)
-    except Exception:
-        skill, skill_data = fragment, None
-    if not matches and skill_data is None:
-        return {"kind": "none"}
-    return {
-        "kind": "skill",
-        "skill": skill,
-        "attack": bool(isinstance(skill_data, dict) and skill_data.get("type") in {"物攻", "魔攻"}),
-    }
-
-
 def ocr_worker() -> int:
     for line in sys.stdin:
         try:
@@ -1797,7 +1556,6 @@ def main() -> int:
             "manage-preset",
             "import-team-code",
             "save-picker-config",
-            "recognize-image-text",
             "classify-image-samples",
             "ocr-worker",
         ],
@@ -1850,8 +1608,6 @@ def main() -> int:
                 payload = manage_preset(payload_arg)
             elif args.command == "import-team-code":
                 payload = import_team_code(payload_arg)
-            elif args.command == "recognize-image-text":
-                payload = recognize_image_text(payload_arg)
             elif args.command == "classify-image-samples":
                 payload = classify_image_samples(payload_arg)
             else:
