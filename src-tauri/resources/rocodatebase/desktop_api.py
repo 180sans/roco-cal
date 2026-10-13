@@ -629,16 +629,34 @@ def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
                 })
         if not candidates:
             return None
-        killed = [candidate for candidate in candidates if candidate["killed"]]
-        pool = killed or candidates
-        if killed:
-            chosen = min(pool, key=lambda candidate: (
-                candidate["stacks"],
-                candidate["damage"] - target_hp,
-                bool(candidate["item"].get("is_triggered")),
-            ))
-        else:
-            chosen = max(pool, key=lambda candidate: candidate["damage"])
+        def choose_candidate(values):
+            killed = [candidate for candidate in values if candidate["killed"]]
+            pool = killed or values
+            if killed:
+                return min(pool, key=lambda candidate: (
+                    candidate["stacks"],
+                    candidate["damage"] - target_hp,
+                    bool(candidate["item"].get("is_triggered")),
+                ))
+            return max(pool, key=lambda candidate: candidate["damage"])
+
+        chosen = choose_candidate(candidates)
+        cell = cell_for_candidate(skill_name, skill_data, chosen)
+        if selected_skill:
+            # 主动选技能时逐个保留基础/触发分支，不能跨分支只选出一个结果。
+            cases: dict[tuple[bool, str], list[dict[str, Any]]] = {}
+            for candidate in candidates:
+                item = candidate["item"]
+                triggered = bool(item.get("is_triggered"))
+                case_label = item.get("case_label") or ("触发情况" if triggered else "非触发情况")
+                cases.setdefault((triggered, case_label), []).append(candidate)
+            cell["variants"] = [
+                {**cell_for_candidate(skill_name, skill_data, choose_candidate(values)), "caseLabel": case_label}
+                for (_, case_label), values in cases.items()
+            ]
+        return cell
+
+    def cell_for_candidate(skill_name: str, skill_data: dict[str, Any], chosen: dict[str, Any]):
         item = chosen["item"]
         stack_text = str(chosen["stacks"]) if chosen["stacks"] > 0 else ""
         trigger_text = "*" if item.get("is_triggered") else ""
@@ -805,7 +823,6 @@ def calculate_required_power(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def apply_skill_buffs(payload: dict[str, Any]) -> dict[str, Any]:
-    from core.damresult import resolve_effective_skill_combos
     from core.skill_finder import resolve_buff_options, skill_dataset
 
     skill_name = (payload.get("skill_name") or payload.get("skillName") or "").strip()
@@ -814,44 +831,11 @@ def apply_skill_buffs(payload: dict[str, Any]) -> dict[str, Any]:
     skill_data = skill_dataset.find_skill(skill_name)
     if skill_data is None:
         raise ValueError(f"未找到技能: {skill_name}")
-    attacker_state = payload.get("attacker") if isinstance(payload.get("attacker"), dict) else None
-    defender_state = payload.get("defender") if isinstance(payload.get("defender"), dict) else None
-    weather = payload.get("weather") or "none"
-    if attacker_state and defender_state:
-        attacker_args = _attacker_args({**attacker_state, "current_skill": skill_name})
-        defender_args = _defender_args(defender_state)
-        combo_count = resolve_effective_skill_combos(
-            skill_name,
-            multiple=attacker_args["multiple"],
-            usage_mode_choice=attacker_args["usage_mode_choice"],
-            combo_plus=attacker_args["combo_plus"],
-            combo_mul=attacker_args["combo_mul"],
-            attacker_name=attacker_args["attacker_name"],
-            attacker_devolution=attacker_args["attacker_devolution"],
-            attacker_mega=attacker_args["attacker_mega"],
-            attacker_trait_runtime=attacker_args["attacker_trait_runtime"],
-            attacker_mark_state=attacker_args["attacker_mark_state"],
-            defender_name=defender_args["defender_name"],
-            defender_devolution=defender_args["defender_devolution"],
-            defender_mega=defender_args["defender_mega"],
-            defender_trait_runtime=defender_args["defender_trait_runtime"],
-            weather=weather,
-        )[0]
-    else:
-        combo_count = 1
-
-    # Buff effects resolve once per hit. Combo multipliers are persistent
-    # multiplier deltas, so they apply once per skill use.
-    options = []
-    for option in resolve_buff_options(skill_data):
-        effects = [
-            {**effect, "value": effect["value"] if effect["field"] == "combo_mul" else effect["value"] * combo_count}
-            for effect in option["effects"]
-        ]
-        options.append({**option, "effects": effects})
+    # 应用只读取技能定义的状态效果，不依赖双方精灵或战斗计算。
+    options = resolve_buff_options(skill_data)
     return {
         "skill_name": skill_name,
-        "combo_count": combo_count,
+        "combo_count": 1,
         "options": options,
         "effects": options[0]["effects"] if options else [],
     }

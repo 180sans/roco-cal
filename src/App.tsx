@@ -488,6 +488,8 @@ type QuickSkillResult = { skillName: string; displayPower?: number | null; resul
 type EnemyAttackSkillCell = {
   skillName: string;
   displayName: string;
+  caseLabel?: string;
+  variants?: EnemyAttackSkillCell[];
   skillPower?: number | null;
   damage?: number | null;
   element?: string;
@@ -1484,6 +1486,7 @@ function PickerModal({
   onPickSkill,
   onPickTrait,
   initialPetName = "",
+  useSavedPetFilters = false,
   onClearPet,
   initialSkillName = "",
   onClearSkill,
@@ -1504,6 +1507,7 @@ function PickerModal({
   onPickSkill: (skill: SkillItem) => void;
   onPickTrait: (pet: Pet) => void;
   initialPetName?: string;
+  useSavedPetFilters?: boolean;
   onClearPet?: () => void;
   initialSkillName?: string;
   onClearSkill?: () => void;
@@ -1516,7 +1520,7 @@ function PickerModal({
   const [query, setQuery] = useState("");
   const [element, setElement] = useState(locateCurrentSkill ? "" : (config.element as string) || "");
   const [petElements, setPetElements] = useState<string[]>(() => {
-    if (locateCurrentPet) return [];
+    if (locateCurrentPet && !useSavedPetFilters) return [];
     const savedElements = Array.isArray(config.selected_elements)
       ? config.selected_elements.filter((value): value is string => typeof value === "string" && Boolean(value))
       : [];
@@ -1524,12 +1528,12 @@ function PickerModal({
   });
   const [skillType, setSkillType] = useState(locateCurrentSkill ? "" : (config.skill_type as string) || "");
   const [sortDesc, setSortDesc] = useState(Boolean(config.sort_desc));
-  const [finalOnly, setFinalOnly] = useState(locateCurrentPet ? false : Boolean(config.final_only));
+  const [finalOnly, setFinalOnly] = useState(locateCurrentPet && !useSavedPetFilters ? false : Boolean(config.final_only));
   const configuredPetTab = config.active_tab === "preset" || config.active_tab === "library" ? config.active_tab : null;
   const groupConfigKey = `preset_group_${preferredGroup}`;
   const configuredGroupName = typeof config[groupConfigKey] === "string" ? (config[groupConfigKey] as string) : "";
   const [petTab, setPetTab] = useState<"preset" | "library">(
-    locateCurrentPet ? "library" : onPickPreset && presets.length ? configuredPetTab || "preset" : "library",
+    locateCurrentPet && !useSavedPetFilters ? "library" : onPickPreset && presets.length ? configuredPetTab || "preset" : "library",
   );
   const [groupName, setGroupName] = useState(configuredGroupName || preferredGroup);
   const [skillTab, setSkillTab] = useState<"pet" | "library">(locateCurrentSkill ? "pet" : (config.active_tab as "pet" | "library") || "pet");
@@ -1825,6 +1829,7 @@ function TeamActionPanel({
   buffOptions,
   selectedBuffOption,
   onSelectBuffOption,
+  visibility,
 }: {
   pluginMode: boolean;
   layout?: PluginOverlayLayout;
@@ -1841,6 +1846,7 @@ function TeamActionPanel({
   buffOptions: BuffOption[];
   selectedBuffOption: number;
   onSelectBuffOption: (index: number) => void;
+  visibility?: PluginVisibility;
 }) {
   const [normalPosition, setNormalPosition] = useState(() => ({
     x: Math.max(8, Math.round(window.innerWidth / 2 - 150)),
@@ -1901,18 +1907,18 @@ function TeamActionPanel({
     <section ref={panelRef} className={pluginMode ? "team-action-floating" : "team-action-floating normal-team-action"} data-panel-state="armed" data-overlay-control data-plugin-resizable={pluginMode || undefined} data-plugin-overlay-id={pluginMode ? "action" : undefined} style={{ left: position.x, top: position.y, width: pluginMode && layout ? layout.width : undefined, height: pluginMode && layout ? layout.height : undefined, ...(pluginMode ? pluginContentStyle(layout) : {}) }} onPointerDown={startDrag}>
       {pluginMode ? <PluginResizeEdges /> : null}
       <div className="team-action-buttons">
-        <button className="calc-button" onClick={onCalculate}>计算</button>
+        {(!pluginMode || visibility?.["action-calculate"] !== false) ? <button className="calc-button" onClick={onCalculate}>计算</button> : null}
         <button className="calc-button" onClick={onResetBattle}>对局重置</button>
-        <select
+        {(!pluginMode || visibility?.["action-options"] !== false) ? <select
           className="buff-option-select"
           value={buffOptions.length ? selectedBuffOption : ""}
           disabled={!buffOptions.length}
           onChange={(event) => onSelectBuffOption(Number(event.target.value))}
         >
           {buffOptions.length ? buffOptions.map((option, index) => <option key={`${option.label}-${index}`} value={index}>{option.label}</option>) : <option value="">无可应用 Buff</option>}
-        </select>
-        <button className="buff-button" onClick={onApplyBuff} disabled={!buffOptions.length}>应用</button>
-        {pluginMode ? <button className="buff-button" onClick={onReverseBuff} disabled={!buffOptions.length}>反向</button> : null}
+        </select> : null}
+        {(!pluginMode || visibility?.["action-apply"] !== false) ? <button className="buff-button" onClick={onApplyBuff} disabled={!buffOptions.length}>应用</button> : null}
+        {pluginMode && visibility?.["action-reverse"] !== false ? <button className="buff-button" onClick={onReverseBuff} disabled={!buffOptions.length}>反向</button> : null}
       </div>
     </section>
   );
@@ -1937,6 +1943,20 @@ type PluginOverlayLayouts = Record<string, PluginOverlayLayout>;
 type DetectionReadoutLayouts = Record<"health" | "powers", { x: number; y: number }>;
 type DetectionReadoutCoordinateMode = "viewport-offset" | "page";
 type DetectionGroup = "battleStart" | "battleLive";
+type CalibrationResult = { status: "pending" | "loading" | "success" | "failure"; text: string };
+const PLUGIN_VISIBILITY_GROUPS = [
+  { title: "显示框", items: [["weather", "天气框"], ["left-buff", "我方 buff 框"], ["right-buff", "敌方 buff 框"], ["skills", "我方全部技能框"], ["watch", "醒目技能"], ["powers", "技能识别框"], ["health", "血量识别框"], ["speed", "速度框（含速度 buff）"]] },
+  ...(["left", "right"] as const).map((side) => ({
+    title: `${side === "left" ? "我方" : "敌方"}其他框`,
+    items: [[`${side}-other`, "整个其他框"], [`${side}-willpower`, "愿力"], [`${side}-dedication`, "奉献"], [`${side}-marks`, "印记"], [`${side}-thunderstorm`, "雷暴"]],
+  })),
+  { title: "计算和对局重置框", items: [["action-calculate", "计算"], ["action-options", "Buff 选项"], ["action-apply", "应用"], ["action-reverse", "反向"]] },
+];
+type PluginVisibility = Record<string, boolean>;
+function savedPluginVisibility(configs: PickerConfigs): PluginVisibility {
+  const saved = configs.team_layout?.plugin_visibility as Record<string, unknown> | undefined;
+  return Object.fromEntries(PLUGIN_VISIBILITY_GROUPS.flatMap((group) => group.items.map(([key]) => [key, saved?.[key] !== false])));
+}
 type DetectionRegion = { x: number; y: number; width: number; height: number };
 type DetectionRegions = Record<string, DetectionRegion>;
 type CaptureClientArea = { x: number; y: number; width: number; height: number };
@@ -2217,6 +2237,9 @@ function TeamBattlePage({
   const defaultOverlayLayoutsRef = useRef<PluginOverlayLayouts>({});
   const [detectionRegions, setDetectionRegions] = useState<DetectionRegions>(() => savedDetectionRegions(configs));
   const [detectionGroup, setDetectionGroup] = useState<DetectionGroup | null>(null);
+  const [calibrationResults, setCalibrationResults] = useState<Record<string, CalibrationResult>>({});
+  const calibrationGroupRef = useRef<DetectionGroup | null>(null);
+  const calibrationSessionRef = useRef(0);
   const [detectionMessage, setDetectionMessage] = useState("");
   const [detectionToast, setDetectionToast] = useState("");
   const [ocrTestMode, setOcrTestMode] = useState(configs.team_layout?.ocr_test_mode === true);
@@ -2276,13 +2299,13 @@ function TeamBattlePage({
   const [displayMode, setDisplayMode] = useState<"normal" | "plugin">(
     configs.team_layout?.display_mode === "normal" ? "normal" : "plugin",
   );
+  const pluginVisibility = savedPluginVisibility(configs);
+  const calibrationActive = displayMode === "plugin" && detectionGroup !== null;
+  calibrationGroupRef.current = calibrationActive ? detectionGroup : null;
   const [openPopover, setOpenPopover] = useState<{ left: string | null; right: string | null }>({ left: null, right: null });
   // 运行态工具条默认收起，靠顶部把手召回（解绑窗口 / 天气 / 保存布局等无热键）。
   const [toolbarOpen, setToolbarOpen] = useState(false);
   const activeBuffUnit = leftAttacks ? leftSlots[leftIndex] : rightSlots[rightIndex];
-  const activeBuffOpponent = leftAttacks ? rightSlots[rightIndex] : leftSlots[leftIndex];
-  const activeBuffOtherBonuses = leftAttacks ? leftOtherBonuses : rightOtherBonuses;
-  const activeBuffOpponentBonuses = leftAttacks ? rightOtherBonuses : leftOtherBonuses;
   const activeBuffSkillName = activeBuffUnit?.current_skill || activeBuffUnit?.skills?.[0] || "";
 
   useEffect(() => {
@@ -2559,6 +2582,82 @@ function TeamBattlePage({
     await invoke("save_ocr_debug_images", { category, images });
   }
 
+  async function testCalibration(kind: DetectionGroup | "powers") {
+    if (!targetAttached) { setDetectionToast("请先绑定目标窗口"); return; }
+    if (recognitionBusyRef.current) return;
+    recognitionBusyRef.current = true;
+    const session = calibrationSessionRef.current;
+    const keys: readonly string[] = kind === "battleStart" ? BATTLE_START_IMAGE_KEYS : kind === "battleLive" ? [...BATTLE_LIVE_IMAGE_KEYS, ...BATTLE_LIVE_HEALTH_KEYS] : ["skill1", "skill2", "skill3", "skill4"];
+    const completed: Record<string, CalibrationResult> = {};
+    const publish = () => {
+      if (session === calibrationSessionRef.current) setCalibrationResults((current) => ({ ...current, ...completed }));
+    };
+    const setItem = (key: string, text: string, success: boolean) => {
+      completed[key] = { status: success ? "success" : "failure", text };
+      publish();
+    };
+    setCalibrationResults((current) => ({ ...current, ...Object.fromEntries(keys.map((key) => [key, { status: "loading", text: "识别中…" }])) }));
+    try {
+      const capture = await targetCanvas();
+      const tasks: Array<{ keys: readonly string[]; run: () => Promise<void> }> = [];
+      if (kind !== "powers") {
+        const imageKeys = kind === "battleStart" ? BATTLE_START_IMAGE_KEYS : BATTLE_LIVE_IMAGE_KEYS;
+        tasks.push({ keys: imageKeys, run: async () => {
+          const images = imageKeys.map((key) => ({ key, imageDataUrl: cropDetection(capture, key) }));
+          const result = await invoke<{ items: Array<{ label: string }> }>("classify_image_samples", { payload: { images } });
+          imageKeys.forEach((key, index) => {
+            const label = result.items[index]?.label?.trim();
+            setItem(key, label || "识别失败：没有结果", Boolean(label));
+          });
+        } });
+      }
+      if (kind === "battleLive") {
+        BATTLE_LIVE_HEALTH_KEYS.forEach((key) => tasks.push({ keys: [key], run: async () => {
+          const mode = key === "selfHealth" ? "self_health" : "enemy_health";
+          const response = await recognizeNumericImages([{ key, imageDataUrl: cropDetection(capture, key), mode }]);
+          const raw = response.items[0]?.text?.trim() || "";
+          const health = key === "selfHealth" ? raw.match(/^\d+\/\d+$/)?.[0] : raw.match(/(?:100|[1-9]?\d)\s*%?/)?.[0]?.replace(/\s/g, "");
+          setItem(key, health || raw || "识别失败：没有结果", Boolean(health));
+        } }));
+      }
+      if (kind === "powers") tasks.push({ keys, run: async () => {
+        const response = await recognizeNumericImages(keys.map((key) => ({ key, imageDataUrl: cropDetection(capture, key), mode: "power" })));
+        keys.forEach((key, index) => {
+          const power = response.items[index]?.text?.trim();
+          setItem(key, power || "识别失败：没有结果", Boolean(power && /^\d+$/.test(power)));
+        });
+      } });
+      const outcomes = await Promise.allSettled(tasks.map((task) => task.run()));
+      outcomes.forEach((outcome, index) => {
+        if (outcome.status === "rejected") tasks[index].keys.forEach((key) => setItem(key, `识别失败：${asError(outcome.reason)}`, false));
+      });
+    } catch (error) {
+      keys.forEach((key) => setItem(key, `识别失败：${asError(error)}`, false));
+    } finally {
+      if (session === calibrationSessionRef.current) {
+        const successCount = Object.values(completed).filter((item) => item.status === "success").length;
+        const message = `测试完成：成功 ${successCount}/${keys.length}，失败 ${keys.length - successCount}`;
+        setDetectionMessage(message);
+        setDetectionToast(message);
+      }
+      recognitionBusyRef.current = false;
+    }
+  }
+
+  function toggleCalibration(group: DetectionGroup) {
+    if (!calibrationGroupRef.current && recognitionBusyRef.current) {
+      setDetectionToast("正在识别，请等待完成后进入校对");
+      return;
+    }
+    const next = detectionGroup === group ? null : group;
+    calibrationSessionRef.current += 1;
+    calibrationGroupRef.current = next;
+    setDetectionGroup(next);
+    setDetectionToast("");
+    setDetectionMessage("");
+    setCalibrationResults(next ? Object.fromEntries((next === "battleStart" ? BATTLE_START_IMAGE_KEYS : [...BATTLE_LIVE_IMAGE_KEYS, ...BATTLE_LIVE_HEALTH_KEYS, ...(["skill1", "skill2", "skill3", "skill4"] as const)]).map((key) => [key, { status: "pending", text: "等待测试" }])) : {});
+  }
+
   async function changeOcrTestMode(enabled: boolean) {
     const previous = ocrTestMode;
     setOcrTestMode(enabled);
@@ -2585,6 +2684,11 @@ function TeamBattlePage({
   }
 
   async function recognizeDetection(group: DetectionGroup) {
+    if (calibrationGroupRef.current) {
+      if (calibrationGroupRef.current === group) await testCalibration(group);
+      else setDetectionToast(`请使用当前校对框的快捷键：${calibrationGroupRef.current === "battleStart" ? "Ctrl+B" : "Ctrl+U / Ctrl+P"}`);
+      return;
+    }
     const notifyDetection = (message: string) => { setDetectionMessage(message); setDetectionToast(message); };
     if (!targetAttached) { notifyDetection("请先绑定目标窗口"); return; }
     if (recognitionBusyRef.current) return;
@@ -2635,6 +2739,11 @@ function TeamBattlePage({
   }
 
   async function recognizeSkillPowers() {
+    if (calibrationGroupRef.current) {
+      if (calibrationGroupRef.current === "battleLive") await testCalibration("powers");
+      else setDetectionToast("战斗开始框请使用 Ctrl+B 测试");
+      return;
+    }
     const notifyDetection = (message: string) => { setDetectionMessage(message); setDetectionToast(message); };
     if (!targetAttached) { notifyDetection("请先绑定目标窗口"); return; }
     if (recognitionBusyRef.current) return;
@@ -2910,6 +3019,9 @@ function TeamBattlePage({
   }, [displayMode, regionPositions, overlayLayouts]);
 
   async function changeDisplayMode(nextMode: "normal" | "plugin") {
+    calibrationSessionRef.current += 1;
+    calibrationGroupRef.current = null;
+    setDetectionGroup(null);
     setDisplayMode(nextMode);
     onDisplayModeChange(nextMode);
     mixedModeTokenRef.current += 1;
@@ -2997,6 +3109,8 @@ function TeamBattlePage({
       mixedModeTokenRef.current += 1;
       setMixedMode(false);
       setDetectionGroup(null);
+      calibrationSessionRef.current += 1;
+      calibrationGroupRef.current = null;
       await invoke("update_overlay_click_through", { enabled: false }).catch(() => undefined);
       const response = await invoke<{ attached: boolean; hwnd: string }>("attach_overlay_target", { hwnd: targetHwnd });
       setTargetAttached(response.attached);
@@ -3027,6 +3141,8 @@ function TeamBattlePage({
     mixedModeTokenRef.current += 1;
     setMixedMode(false);
     setDetectionGroup(null);
+    calibrationSessionRef.current += 1;
+    calibrationGroupRef.current = null;
     await invoke("update_overlay_click_through", { enabled: false }).catch(() => undefined);
   }
 
@@ -3311,9 +3427,6 @@ function TeamBattlePage({
   function currentBuffPayload(skillName = activeBuffSkillName) {
     return {
       skill_name: skillName,
-      attacker: { ...activeBuffUnit, current_skill: skillName, other_bonuses: activeBuffOtherBonuses },
-      defender: { ...activeBuffOpponent, other_bonuses: activeBuffOpponentBonuses },
-      weather,
     };
   }
 
@@ -3334,19 +3447,7 @@ function TeamBattlePage({
         if (!cancelled) setBuffOptions([]);
       });
     return () => { cancelled = true; };
-  }, [
-    activeBuffSkillName,
-    activeBuffUnit.combo_plus,
-    activeBuffUnit.combo_mul,
-    activeBuffUnit.skill_trigger_stacks,
-    activeBuffOpponent,
-    activeBuffOtherBonuses,
-    activeBuffOpponentBonuses,
-    weather,
-    leftAttacks,
-    leftIndex,
-    rightIndex,
-  ]);
+  }, [activeBuffSkillName]);
 
   function setSlot(side: "left" | "right", index: number, state: UnitState) {
     const setter = side === "left" ? setLeftSlots : setRightSlots;
@@ -3639,7 +3740,8 @@ function TeamBattlePage({
 
   return (
     <section
-      className={`battle-page ${displayMode === "plugin" ? "plugin-mode immersive-mode" : "normal-mode"}${pluginUnattached ? " plugin-unattached" : ""}${mixedMode ? " mixed-active" : ""}${mixedMode && toolbarOpen ? " toolbar-open" : ""}`}
+      className={`battle-page ${displayMode === "plugin" ? "plugin-mode immersive-mode" : "normal-mode"}${calibrationActive ? " calibration-active" : ""}${pluginUnattached ? " plugin-unattached" : ""}${mixedMode ? " mixed-active" : ""}${mixedMode && toolbarOpen ? " toolbar-open" : ""}`}
+      data-plugin-hidden={Object.keys(pluginVisibility).filter((key) => !pluginVisibility[key]).join(" ")}
       style={displayMode === "plugin" ? pluginDensityStyle(configs, pluginDensity) : undefined}
     >
       {displayMode === "plugin" && mixedMode ? (
@@ -3693,8 +3795,8 @@ function TeamBattlePage({
                 {PLUGIN_DENSITY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </label>
-            <button className={detectionGroup === "battleStart" ? "active" : ""} onClick={() => setDetectionGroup((current) => current === "battleStart" ? null : "battleStart")}>战斗开始框</button>
-            <button className={detectionGroup === "battleLive" ? "active" : ""} onClick={() => setDetectionGroup((current) => current === "battleLive" ? null : "battleLive")}>战斗内框</button>
+            <button className={detectionGroup === "battleStart" ? "active" : ""} onClick={() => toggleCalibration("battleStart")}>战斗开始框</button>
+            <button className={detectionGroup === "battleLive" ? "active" : ""} onClick={() => toggleCalibration("battleLive")}>战斗内框</button>
             <button onClick={() => void recognizeDetection("battleStart")} disabled={!targetAttached}>开始识别 Ctrl+B</button>
             <button onClick={() => void recognizeDetection("battleLive")} disabled={!targetAttached}>战斗识别 Ctrl+U</button>
             <button onClick={() => void recognizeSkillPowers()} disabled={!targetAttached}>威力识别 Ctrl+P</button>
@@ -3714,6 +3816,14 @@ function TeamBattlePage({
           <section ref={(element) => { detectionReadoutRefs.current.powers = element; }} className="battle-power-readout draggable-readout" data-overlay-control style={detectionReadoutStyle("powers")} onPointerDown={(event) => startReadoutDrag(event, "powers")}>{detectedSkillPowers.map((power, index) => <span key={index}>技能{index + 1} {power}</span>)}</section>
         </div> : null}
         {displayMode === "plugin" && detectionToast ? <div className="detection-toast" role="status">{detectionToast}</div> : null}
+        {calibrationActive ? <section className="calibration-results" data-overlay-control aria-live="polite">
+          <header><strong>{detectionGroup === "battleStart" ? "战斗开始校对" : "战斗内校对"}</strong><button onClick={() => toggleCalibration(detectionGroup!)}>退出校对</button></header>
+          <p>{detectionGroup === "battleStart" ? "Ctrl+B 测试精灵框" : "Ctrl+U 测试精灵和血量 · Ctrl+P 测试技能威力"}</p>
+          <p>成功 {Object.values(calibrationResults).filter((item) => item.status === "success").length}/{Object.keys(calibrationResults).length} · 失败 {Object.values(calibrationResults).filter((item) => item.status === "failure").length}</p>
+          <div className="calibration-result-grid">
+            {Object.entries(calibrationResults).map(([key, item]) => <div key={key} className={`calibration-result ${item.status}`}><strong>{detectionLabel(key)}</strong><span>{item.status === "failure" ? `失败：${item.text}` : item.text}</span></div>)}
+          </div>
+        </section> : null}
         {displayMode === "plugin" ? <div className={`detection-calibration ${detectionGroup || "hidden"}`} data-overlay-control>
           {[...BATTLE_START_IMAGE_KEYS, ...BATTLE_LIVE_IMAGE_KEYS, ...BATTLE_LIVE_NUMBER_KEYS].map((key) => {
             const region = detectionRegions[key];
@@ -3786,7 +3896,7 @@ function TeamBattlePage({
             </select>
           </label>
         </section> : null}
-        <TeamActionPanel pluginMode={displayMode === "plugin"} layout={displayMode === "plugin" ? overlayLayout("action") : undefined} onLayoutChange={(partial) => updateOverlayLayout("action", partial)} leftAttacks={leftAttacks} onToggleDirection={() => setLeftAttacks((value) => !value)} onCalculate={() => void calculate()} onApplyBuff={() => void applyBuff()} onReverseBuff={() => void applyBuff(undefined, true)} onResetBattle={resetBattle} targetHp={targetHp} onTargetHpChange={setTargetHp} onCalculateRequiredPower={() => void calculateRequiredPower()} buffOptions={buffOptions} selectedBuffOption={selectedBuffOption} onSelectBuffOption={setSelectedBuffOption} />
+        <TeamActionPanel pluginMode={displayMode === "plugin"} visibility={pluginVisibility} layout={displayMode === "plugin" ? overlayLayout("action") : undefined} onLayoutChange={(partial) => updateOverlayLayout("action", partial)} leftAttacks={leftAttacks} onToggleDirection={() => setLeftAttacks((value) => !value)} onCalculate={() => void calculate()} onApplyBuff={() => void applyBuff()} onReverseBuff={() => void applyBuff(undefined, true)} onResetBattle={resetBattle} targetHp={targetHp} onTargetHpChange={setTargetHp} onCalculateRequiredPower={() => void calculateRequiredPower()} buffOptions={buffOptions} selectedBuffOption={selectedBuffOption} onSelectBuffOption={setSelectedBuffOption} />
         {bonusTool ? (
           <BattleBonusToolPanel
             key={`${bonusSide}-${bonusTool}`}
@@ -3829,6 +3939,7 @@ function TeamBattlePage({
           mode="pet"
           preferredGroup={petPicker.side === "left" ? "attackers" : "defenders"}
           initialPetName={(petPicker.side === "left" ? leftSlots : rightSlots)[petPicker.index].name}
+          useSavedPetFilters={displayMode === "plugin"}
           presets={presets}
           pets={pets}
           elements={elements}
@@ -4646,7 +4757,7 @@ function EnemyWatchSkillsPanel({ layout, onLayoutChange, watchSkills, enemyName,
   const matched = watchSkills.filter((name) => petSkillNames.includes(name));
 
   return (
-    <FloatingTeamPanel className="watch-skill-panel" layout={layout} onLayoutChange={onLayoutChange}>
+    <FloatingTeamPanel className="watch-skill-panel" overlayId="right-watch" layout={layout} onLayoutChange={onLayoutChange}>
       <div className="watch-skill-title">醒目技能</div>
       {matched.length ? (
         <div className="watch-skill-list">
@@ -4881,7 +4992,7 @@ function BattleBonusToolPanel({
   }
 
   return (
-    <section ref={panelRef} className={`bonus-tool-floating ${tool}`} data-overlay-control style={{ left: position.x, top: position.y }}>
+    <section ref={panelRef} className={`bonus-tool-floating ${side}-${tool} ${tool}`} data-overlay-control style={{ left: position.x, top: position.y }}>
       <header onPointerDown={startDrag}>
         <strong>{title}</strong>
         <button className="icon-button" title="关闭" aria-label="关闭" onClick={onClose}>×</button>
@@ -5319,7 +5430,7 @@ function TeamIvEditor({
   );
 }
 
-function FloatingTeamPanel({ className, layout, onLayoutChange, panelState: state, children }: { className: string; layout: PluginOverlayLayout; onLayoutChange: (partial: Partial<PluginOverlayLayout>) => void; panelState?: PanelState; children: ReactNode }) {
+function FloatingTeamPanel({ className, overlayId, layout, onLayoutChange, panelState: state, children }: { className: string; overlayId?: string; layout: PluginOverlayLayout; onLayoutChange: (partial: Partial<PluginOverlayLayout>) => void; panelState?: PanelState; children: ReactNode }) {
   const panelRef = useRef<HTMLElement | null>(null);
   const isSpeedLine = className.split(/\s+/).includes("speed-line");
   const speedLineContentWidth = useRef(Math.max(1, layout.width - 18));
@@ -5359,7 +5470,7 @@ function FloatingTeamPanel({ className, layout, onLayoutChange, panelState: stat
     return () => observer.disconnect();
   }, []);
 
-  return <section ref={panelRef} className={`floating-team-panel ${className}`} data-panel-state={isSpeedLine ? undefined : state} data-overlay-control data-plugin-resizable style={{ left: layout.x, top: layout.y, width: layout.width, height: layout.height, ...pluginContentStyle(layout), ...(isSpeedLine ? { "--speed-line-content-width": `${speedLineContentWidth.current}px` } : {}) }} onPointerDown={startDrag} onPointerDownCapture={(event) => {
+  return <section ref={panelRef} className={`floating-team-panel ${className}`} data-panel-state={isSpeedLine ? undefined : state} data-overlay-control data-plugin-resizable data-plugin-overlay-id={overlayId} style={{ left: layout.x, top: layout.y, width: layout.width, height: layout.height, ...pluginContentStyle(layout), ...(isSpeedLine ? { "--speed-line-content-width": `${speedLineContentWidth.current}px` } : {}) }} onPointerDown={startDrag} onPointerDownCapture={(event) => {
     const button = traitSummaryAtPoint(event.target as HTMLElement, event.clientX, event.clientY);
     if (!button) return;
     event.stopPropagation();
@@ -5602,9 +5713,12 @@ function ResultView({
     setVisible(Boolean(results.length));
   }, [results]);
 
-  function startDrag(event: any) {
+  function startDrag(event: ReactPointerEvent<HTMLElement>) {
     const target = event.target as HTMLElement;
     if (target.closest("button")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = { pointerX: event.clientX, pointerY: event.clientY, x: position.x, y: position.y };
     const move = (moveEvent: PointerEvent) => {
       const start = dragRef.current;
@@ -5618,9 +5732,11 @@ function ResultView({
       dragRef.current = null;
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
   }
 
   if (error) return <section className="result-panel error-text">错误：{error}</section>;
@@ -5633,7 +5749,7 @@ function ResultView({
   const showLegacyResultCards = false;
   const showLegacyResultDetail = false;
   return (
-    <section className="result-floating" style={{ left: position.x, top: position.y }}>
+    <section className="result-floating" data-overlay-control style={{ left: position.x, top: position.y }}>
       <header className="result-floating-header" onPointerDown={startDrag}>
         <div>
           <h2>对战结果</h2>
@@ -5904,15 +6020,17 @@ function EnemyAttackSkillPanel({ value, onPickSkill, onClose }: { value: EnemyAt
                     key={`${cell.skillName}-${index}`}
                     style={{ backgroundColor: ELEMENT_RESULT_COLORS[cell.element || "普通"] || ELEMENT_RESULT_COLORS["普通"] }}
                   >
-                    <strong><EntityLabel kind="skill" value={cell.skillName}>{cell.displayName}</EntityLabel></strong>
-                    {cell.hitSegments?.some((segment) => segment.combo > 1) ? <>
-                      <span>连击 {cell.hitSegments.map((segment) => segment.combo).join(" + ")}</span>
-                      <span>威力 {hitExpression(cell, "power")}</span>
-                      <span>伤害 {hitExpression(cell, "damage")}</span>
-                    </> : <>
-                      <span>威力 {cell.skillPower ?? "-"}</span>
-                      <span>伤害 {cell.damage ?? "-"}</span>
-                    </>}
+                    {(cell.variants || [cell]).map((variant, variantIndex) => <Fragment key={variantIndex}>
+                      <strong><EntityLabel kind="skill" value={variant.skillName}>{variant.displayName}</EntityLabel>{variant.caseLabel ? ` · ${variant.caseLabel}` : ""}</strong>
+                      {variant.hitSegments?.some((segment) => segment.combo > 1) ? <>
+                        <span>连击 {variant.hitSegments.map((segment) => segment.combo).join(" + ")}</span>
+                        <span>威力 {hitExpression(variant, "power")}</span>
+                        <span>伤害 {hitExpression(variant, "damage")}</span>
+                      </> : <>
+                        <span>威力 {variant.skillPower ?? "-"}</span>
+                        <span>伤害 {variant.damage ?? "-"}</span>
+                      </>}
+                    </Fragment>)}
                   </div>
                 ) : <div className="enemy-attack-cell is-empty" key={`empty-${index}`}>-</div>)}
               </Fragment>)}
@@ -5962,8 +6080,9 @@ function InterfaceSettingsPage({
   burstEffects: BurstEffectItem[];
 }) {
   const [values, setValues] = useState(() => uiTokenValues(configs));
+  const [pluginVisibility, setPluginVisibility] = useState(() => savedPluginVisibility(configs));
   const [message, setMessage] = useState("");
-  const [configIndex, setConfigIndex] = useState<"team" | "preset" | "burst">("team");
+  const [configIndex, setConfigIndex] = useState<"team" | "preset" | "burst" | "plugin">("team");
   const [sectionTitle, setSectionTitle] = useState(() => UI_TOKEN_SECTIONS[0]?.title || "");
   const visibleSections = useMemo(
     () => UI_TOKEN_SECTIONS.filter((section) => configIndex === "preset" ? section.title.startsWith("精灵保存：") : configIndex === "team" ? !section.title.startsWith("精灵保存：") : false),
@@ -5972,10 +6091,19 @@ function InterfaceSettingsPage({
   const activeSection = visibleSections.find((section) => section.title === sectionTitle) || visibleSections[0];
   useEffect(() => {
     setValues(uiTokenValues(configs));
+    setPluginVisibility(savedPluginVisibility(configs));
   }, [configs]);
 
   async function save() {
     try {
+      if (configIndex === "plugin") {
+        const data = await invoke<{ configs: PickerConfigs }>("save_picker_config", {
+          payload: { section: "team_layout", values: { plugin_visibility: pluginVisibility } },
+        });
+        onConfigsChanged(data.configs);
+        setMessage("插件模式显示配置已保存");
+        return;
+      }
       const data = await invoke<{ configs: PickerConfigs }>("save_picker_config", {
         payload: { section: "ui_tokens", values },
       });
@@ -5999,7 +6127,7 @@ function InterfaceSettingsPage({
     onPreviewValues(nextValues);
   }
 
-  function switchConfigIndex(nextIndex: "team" | "preset" | "burst") {
+  function switchConfigIndex(nextIndex: "team" | "preset" | "burst" | "plugin") {
     const nextSections = UI_TOKEN_SECTIONS.filter((section) => nextIndex === "preset" ? section.title.startsWith("精灵保存：") : nextIndex === "team" ? !section.title.startsWith("精灵保存：") : false);
     setConfigIndex(nextIndex);
     setSectionTitle(nextSections[0]?.title || "");
@@ -6015,8 +6143,9 @@ function InterfaceSettingsPage({
         <button className={configIndex === "team" ? "active" : ""} onClick={() => switchConfigIndex("team")}>队伍面板</button>
         <button className={configIndex === "preset" ? "active" : ""} onClick={() => switchConfigIndex("preset")}>精灵保存</button>
         <button className={configIndex === "burst" ? "active" : ""} onClick={() => switchConfigIndex("burst")}>雷暴面板</button>
+        <button className={configIndex === "plugin" ? "active" : ""} onClick={() => switchConfigIndex("plugin")}>插件模式</button>
       </nav>
-      {configIndex !== "burst" ? <nav className="settings-section-index" aria-label="配置分区">
+      {configIndex !== "burst" && configIndex !== "plugin" ? <nav className="settings-section-index" aria-label="配置分区">
         <span className="settings-section-index-label">分区</span>
         <div className="settings-section-index-list">
           {visibleSections.map((section) => (
@@ -6030,7 +6159,20 @@ function InterfaceSettingsPage({
           ))}
         </div>
       </nav> : null}
-      {configIndex === "burst" ? (
+      {configIndex === "plugin" ? <div className="plugin-visibility-settings">
+        <p>勾选需要显示的框，点击“保存配置”生效。</p>
+        <section className="settings-token-section">
+          <h3>固定显示</h3>
+          {["我方队伍框", "敌方队伍框", "我方萌化框", "敌方萌化框", "我方特性框", "敌方特性框", "计算和对局重置框", "对局重置"].map((label) => <label className="plugin-visibility-option" key={label}><input type="checkbox" checked disabled /><span>{label}（不能关闭）</span></label>)}
+        </section>
+        {PLUGIN_VISIBILITY_GROUPS.map((group) => <section className="settings-token-section" key={group.title}>
+          <h3>{group.title}</h3>
+          {group.items.map(([key, label]) => <label className="plugin-visibility-option" key={key}>
+            <input type="checkbox" checked={pluginVisibility[key]} onChange={(event) => { setPluginVisibility((current) => ({ ...current, [key]: event.target.checked })); setMessage(""); }} />
+            <span>{label}</span>
+          </label>)}
+        </section>)}
+      </div> : configIndex === "burst" ? (
         <BurstPanelPage effects={burstEffects} configs={configs} onConfigsChanged={onConfigsChanged} />
       ) : <div className="settings-sections">
         {activeSection ? (

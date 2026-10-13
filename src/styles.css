@@ -168,6 +168,13 @@ select {
   z-index: 30;
 }
 
+/* 绑定后，保存和配置页面为顶部导航保留空间，避免内容被遮挡。 */
+.app-shell.overlay-attached.preset-shell > .app-header,
+.app-shell.overlay-attached:has(> .battle-view:not([hidden]) > .settings-page) > .app-header {
+  position: sticky;
+  margin-bottom: 8px;
+}
+
 .overlay-attached .app-header .tabs {
   display: flex;
   flex-wrap: wrap;
@@ -1510,6 +1517,77 @@ body:has(.preset-shell) {
 .detection-roi.number { border-color: #1677b8; background: rgba(22, 119, 184, 0.08); color: #075887; }
 .detection-roi.hidden { pointer-events: none; visibility: hidden; }
 .detection-roi span { pointer-events: none; white-space: nowrap; text-shadow: 0 1px #fff; }
+
+/* 外描边不改变识别区域的实际边界和截图范围。 */
+.battle-page.plugin-mode .detection-roi {
+  outline: 1px solid #ff2020;
+  outline-offset: 1px;
+}
+
+.battle-page.plugin-mode.calibration-active .team-layout > :not(.detection-calibration, .calibration-results, .detection-toast),
+.battle-page.plugin-mode.calibration-active .team-layout > :not(.detection-calibration, .calibration-results, .detection-toast) * {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* 隐藏面板时保留几何尺寸，恢复显示继续使用已保存的布局。 */
+.battle-page.plugin-mode[data-plugin-hidden~="weather"] :is(.team-weather, .team-weather *),
+.battle-page.plugin-mode[data-plugin-hidden~="left-buff"] :is(.team-left-buff, .team-left-buff *),
+.battle-page.plugin-mode[data-plugin-hidden~="right-buff"] :is(.team-right-buff, .team-right-buff *),
+.battle-page.plugin-mode[data-plugin-hidden~="skills"] :is(.skill-card-floating, .skill-card-floating *),
+.battle-page.plugin-mode[data-plugin-hidden~="watch"] :is(.watch-skill-panel, .watch-skill-panel *),
+.battle-page.plugin-mode[data-plugin-hidden~="health"] :is(.battle-health-readout, .battle-health-readout *),
+.battle-page.plugin-mode[data-plugin-hidden~="powers"] :is(.battle-power-readout, .battle-power-readout *),
+.battle-page.plugin-mode[data-plugin-hidden~="speed"] :is(.speed-line, .speed-line *),
+.battle-page.plugin-mode[data-plugin-hidden~="left-other"] :is(.team-left-bonus-toolbar, .team-left-bonus-toolbar *, .bonus-tool-floating[class*="left-"], .bonus-tool-floating[class*="left-"] *),
+.battle-page.plugin-mode[data-plugin-hidden~="right-other"] :is(.team-right-bonus-toolbar, .team-right-bonus-toolbar *, .bonus-tool-floating[class*="right-"], .bonus-tool-floating[class*="right-"] *),
+.battle-page.plugin-mode[data-plugin-hidden~="left-dedication"] :is(.bonus-tool-floating.left-dedication, .bonus-tool-floating.left-dedication *),
+.battle-page.plugin-mode[data-plugin-hidden~="right-dedication"] :is(.bonus-tool-floating.right-dedication, .bonus-tool-floating.right-dedication *),
+.battle-page.plugin-mode[data-plugin-hidden~="left-marks"] :is(.bonus-tool-floating.left-marks, .bonus-tool-floating.left-marks *),
+.battle-page.plugin-mode[data-plugin-hidden~="right-marks"] :is(.bonus-tool-floating.right-marks, .bonus-tool-floating.right-marks *),
+.battle-page.plugin-mode[data-plugin-hidden~="left-thunderstorm"] :is(.bonus-tool-floating.left-thunderstorm, .bonus-tool-floating.left-thunderstorm *),
+.battle-page.plugin-mode[data-plugin-hidden~="right-thunderstorm"] :is(.bonus-tool-floating.right-thunderstorm, .bonus-tool-floating.right-thunderstorm *) {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.battle-page.plugin-mode[data-plugin-hidden~="left-willpower"] .team-left-bonus-toolbar .willpower,
+.battle-page.plugin-mode[data-plugin-hidden~="right-willpower"] .team-right-bonus-toolbar .willpower,
+.battle-page.plugin-mode[data-plugin-hidden~="left-dedication"] .team-left-bonus-toolbar .dedication,
+.battle-page.plugin-mode[data-plugin-hidden~="right-dedication"] .team-right-bonus-toolbar .dedication,
+.battle-page.plugin-mode[data-plugin-hidden~="left-marks"] .team-left-bonus-toolbar .marks,
+.battle-page.plugin-mode[data-plugin-hidden~="right-marks"] .team-right-bonus-toolbar .marks,
+.battle-page.plugin-mode[data-plugin-hidden~="left-thunderstorm"] .team-left-bonus-toolbar .thunderstorm,
+.battle-page.plugin-mode[data-plugin-hidden~="right-thunderstorm"] .team-right-bonus-toolbar .thunderstorm {
+  display: none !important;
+}
+
+.calibration-results {
+  background: rgba(18, 24, 31, 0.96);
+  border: 1px solid #ff4040;
+  border-radius: 6px;
+  color: #fff;
+  left: 50%;
+  max-height: 70vh;
+  overflow: auto;
+  padding: 12px;
+  position: fixed;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(440px, 85vw);
+  z-index: 1100;
+}
+
+.battle-page.plugin-mode.plugin-unattached .calibration-results { position: absolute; }
+.calibration-results header { align-items: center; display: flex; gap: 12px; justify-content: space-between; }
+.calibration-results p { font-size: 12px; margin: 8px 0; }
+.calibration-result-grid { display: grid; gap: 6px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.calibration-result { border: 1px solid #687483; border-radius: 4px; display: grid; font-size: 12px; gap: 4px; overflow-wrap: anywhere; padding: 7px; }
+.calibration-result.success { border-color: #4cc28a; }
+.calibration-result.failure { border-color: #ff5050; color: #ffacac; }
+.plugin-visibility-settings { display: grid; gap: 12px; }
+.plugin-visibility-option { align-items: center; display: inline-flex; gap: 6px; margin: 6px 16px 6px 0; }
+.plugin-visibility-option input[type="checkbox"] { height: 16px; min-width: 16px; width: 16px; }
 .detection-toast {
   position: absolute;
   left: 50%;
@@ -2088,7 +2166,17 @@ body:has(.preset-shell) {
   height: auto !important;
 }
 
-/* 数值框沿用 buff 面板的同款控件与宽度，箭头样式保持一致。 */
+/* 速度 buff 控件优先接收点击，避免拖动条和缩放边缘覆盖箭头。 */
+.battle-page.plugin-mode .speed-buffs > .plugin-drag-zone {
+  pointer-events: none;
+}
+
+.battle-page.plugin-mode .speed-buffs > .speed-line-buffs {
+  position: relative;
+  z-index: 1001;
+}
+
+/* 数值框沿用 buff 面板宽度，仅扩大速度 buff 箭头的点击区域。 */
 .speed-buff-row .number-input-control {
   width: var(--buff-width);
 }
@@ -2096,6 +2184,20 @@ body:has(.preset-shell) {
 .speed-buff-row .num-input {
   font-size: var(--buff-number-font-size);
   height: var(--buff-height);
+  min-height: 24px;
+  padding-right: 23px;
+}
+
+.speed-buff-row .number-stepper {
+  bottom: 0;
+  right: 0;
+  top: 0;
+  width: 20px;
+}
+
+.speed-buff-row .number-stepper button {
+  cursor: pointer;
+  min-height: 12px;
 }
 
 .speed-buff-reset {
@@ -4478,6 +4580,7 @@ body:has(.plugin-mode) .app-header .weather-panel {
   padding-bottom: 6px;
   position: sticky;
   top: 0;
+  touch-action: none;
   user-select: none;
   z-index: 2;
 }
@@ -5261,6 +5364,7 @@ body:has(.plugin-mode) .app-header .weather-panel {
   .team-layout > .team-weather,
   .team-action-floating,
   .bonus-tool-floating,
+  .result-floating,
   .result-panel,
   .required-power-panel,
   .floating-team-panel:not(.speed-line),
@@ -5283,6 +5387,7 @@ body:has(.plugin-mode) .app-header .weather-panel {
   .team-layout > .team-weather,
   .team-action-floating,
   .bonus-tool-floating,
+  .result-floating,
   .result-panel,
   .required-power-panel,
   .floating-team-panel:not(.speed-line),
@@ -5290,6 +5395,29 @@ body:has(.plugin-mode) .app-header .weather-panel {
   .skill-card-floating
 ) :is(h2, h3, p, div, strong, summary, label, span, .field-label, .ui-field-title) {
   color: var(--ov-text) !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .result-floating .result-floating-header {
+  background: var(--ov-panel);
+}
+
+.battle-page.immersive-mode.plugin-mode .result-floating .result-matrix {
+  background: transparent;
+  border-color: var(--ov-field-border);
+}
+
+.battle-page.immersive-mode.plugin-mode .result-floating :is(.result-matrix-corner, .result-matrix-header, .result-matrix-row-label, .result-matrix-cell, .result-detail) {
+  background: var(--ov-field) !important;
+  border-color: var(--ov-field-border) !important;
+  color: var(--ov-field-text) !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .result-floating :is(.result-matrix-row-label, .result-matrix-cell) {
+  border-radius: 0;
+}
+
+.battle-page.immersive-mode.plugin-mode .result-floating :is(.result-matrix-row-label, .result-matrix-cell).selected {
+  background: var(--ov-accent-bg) !important;
 }
 
 /* 速度线沿用插件模式其他外层控件的配色，不套浅色控件主题。 */
@@ -5467,6 +5595,15 @@ body:has(.plugin-mode) .app-header .weather-panel {
   background: var(--ov-field) !important;
   border: 1px solid var(--ov-field-border) !important;
   color: var(--ov-field-text) !important;
+}
+
+.overlay-attached-picker.skill-picker-backdrop .picker-modal select {
+  color-scheme: dark;
+}
+
+.overlay-attached-picker.skill-picker-backdrop .picker-modal option {
+  background: #16202c;
+  color: var(--ov-field-text);
 }
 
 .overlay-attached-picker.skill-picker-backdrop .picker-modal .compact-picker-card :is(strong, span, em) {
