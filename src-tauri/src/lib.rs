@@ -1675,6 +1675,11 @@ async fn calculate_quick_skills(app: tauri::AppHandle, payload: Value) -> Result
 }
 
 #[tauri::command]
+async fn trait_power_candidates(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
+    run_python_payload_async(app, "trait-power-candidates", payload).await
+}
+
+#[tauri::command]
 async fn calculate_enemy_attack_skills(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
     run_python_payload_async(app, "calculate-enemy-attack-skills", payload).await
 }
@@ -1992,6 +1997,7 @@ pub fn run() {
                     const BATTLE_START_SCAN_HOTKEY_ID: i32 = 0x5245;
                     const BATTLE_LIVE_SCAN_HOTKEY_ID: i32 = 0x5246;
                     const BATTLE_POWER_SCAN_HOTKEY_ID: i32 = 0x5247;
+                    const TRAIT_ALIGN_HOTKEY_ID: i32 = 0x5254;
                     const VK_F8: u32 = 0x77;
                     const VK_J: u32 = 0x4A;
                     const VK_K: u32 = 0x4B;
@@ -1999,6 +2005,7 @@ pub fn run() {
                     const VK_B: u32 = 0x42;
                     const VK_U: u32 = 0x55;
                     const VK_P: u32 = 0x50;
+                    const VK_T: u32 = 0x54;
                     const WM_HOTKEY: u32 = 0x0312;
                     const MOD_CONTROL: u32 = 0x0002;
                     let overlay_hotkey_registered = unsafe {
@@ -2031,6 +2038,7 @@ pub fn run() {
                     let battle_start_scan_registered = unsafe { RegisterHotKey(std::ptr::null_mut(), BATTLE_START_SCAN_HOTKEY_ID, MOD_CONTROL, VK_B) } != 0;
                     let battle_live_scan_registered = unsafe { RegisterHotKey(std::ptr::null_mut(), BATTLE_LIVE_SCAN_HOTKEY_ID, MOD_CONTROL, VK_U) } != 0;
                     let battle_power_scan_registered = unsafe { RegisterHotKey(std::ptr::null_mut(), BATTLE_POWER_SCAN_HOTKEY_ID, MOD_CONTROL, VK_P) } != 0;
+                    let trait_align_registered = unsafe { RegisterHotKey(std::ptr::null_mut(), TRAIT_ALIGN_HOTKEY_ID, MOD_CONTROL, VK_T) } != 0;
                     let mut message = WinMessage {
                         hwnd: std::ptr::null_mut(),
                         message: 0,
@@ -2079,6 +2087,8 @@ pub fn run() {
                             let _ = hotkey_app.emit("overlay-battle-live-scan", ());
                         } else if battle_power_scan_registered && message.w_param == BATTLE_POWER_SCAN_HOTKEY_ID as usize {
                             let _ = hotkey_app.emit("overlay-battle-power-scan", ());
+                        } else if trait_align_registered && message.w_param == TRAIT_ALIGN_HOTKEY_ID as usize {
+                            let _ = hotkey_app.emit("overlay-trait-align", ());
                         }
                     }
                     if overlay_hotkey_registered {
@@ -2101,6 +2111,7 @@ pub fn run() {
                     if battle_start_scan_registered { unsafe { UnregisterHotKey(std::ptr::null_mut(), BATTLE_START_SCAN_HOTKEY_ID) }; }
                     if battle_live_scan_registered { unsafe { UnregisterHotKey(std::ptr::null_mut(), BATTLE_LIVE_SCAN_HOTKEY_ID) }; }
                     if battle_power_scan_registered { unsafe { UnregisterHotKey(std::ptr::null_mut(), BATTLE_POWER_SCAN_HOTKEY_ID) }; }
+                    if trait_align_registered { unsafe { UnregisterHotKey(std::ptr::null_mut(), TRAIT_ALIGN_HOTKEY_ID) }; }
                 });
             }
 
@@ -2119,6 +2130,7 @@ pub fn run() {
             list_burst_effects,
             calculate_battle,
             calculate_quick_skills,
+            trait_power_candidates,
             calculate_enemy_attack_skills,
             calculate_willpower,
             calculate_required_power,

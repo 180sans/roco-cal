@@ -4,6 +4,7 @@ import { cursorPosition, getCurrentWindow, LogicalSize } from "@tauri-apps/api/w
 import { createPortal, flushSync } from "react-dom";
 import { Fragment, type CSSProperties, type PointerEvent as ReactPointerEvent, type PointerEventHandler as ReactPointerEventHandler, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { prepareNumericImage, type NumericOcrMode } from "./numericOcr";
+import { matchTraitStacks, type TraitPowerCandidates } from "./traitAlignment";
 
 const STATS = ["hp", "atk", "mag", "def", "res", "spd"] as const;
 const STAT_LABEL: Record<(typeof STATS)[number], string> = {
@@ -2295,6 +2296,7 @@ function TeamBattlePage({
   const calculateQuickSkillsRef = useRef<() => void>(() => undefined);
   const calculateEnemyAttackSkillsRef = useRef<() => void>(() => undefined);
   const hideQuickSkillResultsRef = useRef<() => void>(() => undefined);
+  const alignTraitStacksRef = useRef<() => void>(() => undefined);
   const [targetAttached, setTargetAttached] = useState(false);
   const [mixedMode, setMixedMode] = useState(false);
   const mixedModeTokenRef = useRef(0);
@@ -2302,6 +2304,8 @@ function TeamBattlePage({
     configs.team_layout?.display_mode === "normal" ? "normal" : "plugin",
   );
   const pluginVisibility = savedPluginVisibility(configs);
+  const traitAlignmentSnapshotRef = useRef("");
+  traitAlignmentSnapshotRef.current = JSON.stringify([leftIndex, rightIndex, leftSlots[leftIndex], rightSlots[rightIndex], leftOtherBonuses, rightOtherBonuses, weather, displayMode, targetAttached, targetHwnd, detectionRegions, detectionGroup]);
   const calibrationActive = displayMode === "plugin" && detectionGroup !== null;
   calibrationGroupRef.current = calibrationActive ? detectionGroup : null;
   const [openPopover, setOpenPopover] = useState<{ left: string | null; right: string | null }>({ left: null, right: null });
@@ -2762,6 +2766,48 @@ function TeamBattlePage({
       notifyDetection(calibrated ? "技能威力 OCR 识别完成，已自动修正叠层" : "技能威力 OCR 识别完成，未匹配到唯一叠层修正");
     } catch (error) { notifyDetection(`技能威力识别失败：${asError(error)}`); }
     finally {
+      recognitionBusyRef.current = false;
+      setRecognitionStatus(null);
+    }
+  }
+
+  async function alignTraitStacks() {
+    if (displayMode !== "plugin") return;
+    const notify = (message: string) => { setDetectionMessage(message); setDetectionToast(message); };
+    if (calibrationGroupRef.current) { notify("请先退出识别框校对，再使用 Ctrl+T 特性对齐"); return; }
+    if (!targetAttached) { notify("请先绑定目标窗口"); return; }
+    if (recognitionBusyRef.current) { notify("正在识别，请等待完成后再进行特性对齐"); return; }
+    const snapshot = traitAlignmentSnapshotRef.current;
+    const checkSnapshot = () => {
+      if (snapshot !== traitAlignmentSnapshotRef.current) throw new Error("对齐期间精灵、加成或识别配置已变化，请重新按 Ctrl+T");
+    };
+    recognitionBusyRef.current = true;
+    setError("");
+    setRecognitionStatus({ label: "特性对齐", detail: "正在检查特性层数是否影响显示威力", progress: "准备中" });
+    try {
+      // OCR 框对应我方技能，与伤害计算方向无关；Ctrl+T 只修正我方特性层数。
+      const data = await invoke<TraitPowerCandidates>("trait_power_candidates", { payload: {
+        attacker: { ...leftSlots[leftIndex], other_bonuses: leftOtherBonuses },
+        defender: { ...rightSlots[rightIndex], other_bonuses: rightOtherBonuses },
+        weather,
+      } });
+      checkSnapshot();
+      setRecognitionStatus({ label: "特性对齐", detail: "正在识别我方技能威力", progress: "OCR 识别中" });
+      const capture = await targetCanvas();
+      const response = await recognizeNumericImages(
+        (["skill1", "skill2", "skill3", "skill4"] as const).map((key) => ({ key, imageDataUrl: cropDetection(capture, key), mode: "power" })),
+      );
+      checkSnapshot();
+      const powers = Array.from({ length: 4 }, (_, index) => response.items[index]?.text?.trim() || "识别失败");
+      setDetectedSkillPowers(powers);
+      const stacks = matchTraitStacks(data, powers);
+      patchSlot("left", leftIndex, { trait_stacks: stacks });
+      notify(`特性对齐完成：${data.traitName}已修正为 ${stacks} 层`);
+    } catch (error) {
+      const message = `特性对齐失败：${asError(error)}`;
+      setError(message);
+      notify(message);
+    } finally {
       recognitionBusyRef.current = false;
       setRecognitionStatus(null);
     }
@@ -3576,6 +3622,7 @@ function TeamBattlePage({
 
   calculateQuickSkillsRef.current = () => void calculateQuickSkills();
   calculateEnemyAttackSkillsRef.current = () => void calculateEnemyAttackSkills();
+  alignTraitStacksRef.current = () => void alignTraitStacks();
   hideQuickSkillResultsRef.current = () => {
     setQuickSkillResults(null);
     setEnemyAttackResults(null);
@@ -3601,6 +3648,21 @@ function TeamBattlePage({
     let unlisten: (() => void) | undefined;
     let disposed = false;
     void listen("overlay-enemy-attack-calculate", () => calculateEnemyAttackSkillsRef.current())
+      .then((dispose) => {
+        if (disposed) dispose();
+        else unlisten = dispose;
+      })
+      .catch((err) => setError(asError(err)));
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let disposed = false;
+    void listen("overlay-trait-align", () => alignTraitStacksRef.current())
       .then((dispose) => {
         if (disposed) dispose();
         else unlisten = dispose;

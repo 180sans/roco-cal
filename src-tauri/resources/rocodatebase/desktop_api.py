@@ -545,6 +545,61 @@ def calculate_quick_skills(payload: dict[str, Any]) -> dict[str, Any]:
     return {"items": items}
 
 
+def trait_power_candidates(payload: dict[str, Any]) -> dict[str, Any]:
+    """Prepare layer-dependent displayed powers before starting trait-alignment OCR."""
+    from core.damresult import battle_damage
+    from core.skill_finder import skill_dataset
+
+    attacker = payload.get("attacker") or {}
+    defender = payload.get("defender") or {}
+    runtime = _unit_trait_runtime({**attacker, "trait_stacks": 1})
+    if not runtime.get("stackable"):
+        raise ValueError("当前特性没有可修正的叠层，无法进行特性对齐")
+
+    # 保留技能槽索引，不能跳过状态技能后把 OCR 威力对应到其他技能上。
+    skill_names = (attacker.get("skills") or [])[:4]
+    attack_skills = []
+    non_stacking_skills = []
+    for index, name in enumerate(skill_names):
+        skill = skill_dataset.find_skill(name) if name else None
+        if isinstance(skill, dict) and skill.get("type") in {"物攻", "魔攻"}:
+            attack_skills.append((index, name))
+            triggered = skill.get("triggered")
+            options = [triggered] if isinstance(triggered, dict) else triggered if isinstance(triggered, list) else []
+            if not any(isinstance(option, dict) and (option.get("multiple") or option.get("skill_power_by_count")) for option in options):
+                non_stacking_skills.append(index)
+    if not attack_skills:
+        raise ValueError("我方当前技能中没有可用于特性对齐的攻击技能")
+
+    defender_args = _defender_args(defender)
+    candidates = []
+    # 与特性层数输入框一致，只穷举层数；技能叠层、buff、触发选择均保持原值。
+    for stacks in range(100):
+        powers = [[] for _ in range(4)]
+        for index, name in attack_skills:
+            results = battle_damage(
+                **_attacker_args({**attacker, "current_skill": name, "trait_stacks": stacks}),
+                **defender_args,
+                weather=payload.get("weather") or "none",
+            )
+            powers[index] = sorted({
+                int(item["effective_power"])
+                for item in results
+                if isinstance(item.get("effective_power"), (int, float))
+            })
+        candidates.append({"stacks": stacks, "powers": powers})
+
+    # 比较实际计算结果，覆盖技能属性转换、对方防御增减、逐次威力等间接影响。
+    # 单纯增加连击/伤害、速度等不会改变显示威力，不能拿来反推特性层数。
+    affected = [index for index, _ in attack_skills if any(
+        candidate["powers"][index] != candidates[0]["powers"][index]
+        for candidate in candidates[1:]
+    )]
+    if not affected:
+        raise ValueError("当前特性叠层不影响所携技能的显示威力，无法进行特性对齐")
+    return {"traitName": runtime.get("name") or "当前特性", "candidates": candidates, "affectedSkills": affected, "nonStackingSkills": non_stacking_skills}
+
+
 def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
     """Calculate enemy skills, optionally selecting stacks for known player HP."""
     from itertools import product
@@ -1539,6 +1594,7 @@ def main() -> int:
             "list-burst-effects",
             "calculate-battle",
             "calculate-quick-skills",
+            "trait-power-candidates",
             "calculate-enemy-attack-skills",
             "calculate-willpower",
             "calculate-required-power",
@@ -1584,6 +1640,8 @@ def main() -> int:
                 payload = calculate_battle(payload_arg)
             elif args.command == "calculate-quick-skills":
                 payload = calculate_quick_skills(payload_arg)
+            elif args.command == "trait-power-candidates":
+                payload = trait_power_candidates(payload_arg)
             elif args.command == "calculate-enemy-attack-skills":
                 payload = calculate_enemy_attack_skills(payload_arg)
             elif args.command == "calculate-willpower":
