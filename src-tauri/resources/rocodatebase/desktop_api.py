@@ -722,15 +722,23 @@ def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
         profiles[attack_type].append({"skillName": skill_name, "cells": cells, "low": min(values), "high": max(values)})
 
     def select_profiles(values: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        if len(values) <= 4:
-            return sorted(values, key=lambda value: ((value["low"] + value["high"]) / 2, value["skillName"]))
-        ordered = sorted(values, key=lambda value: ((value["low"] + value["high"]) / 2, value["skillName"]))
-        chosen = []
-        for position in [0, 1 / 3, 2 / 3, 1]:
-            index = round(position * (len(ordered) - 1))
-            if ordered[index] not in chosen:
-                chosen.append(ordered[index])
-        return chosen
+        def damage_score(value: dict[str, Any]) -> float:
+            return (value["low"] + value["high"]) / 2
+
+        ordered = sorted(values, key=lambda value: (damage_score(value), value["skillName"]))
+        if len(ordered) <= 4:
+            return ordered
+
+        # 在实际伤害区间内取四档，不能按技能数量等分：低伤害技能密集时会漏掉克制档。
+        minimum = damage_score(ordered[0])
+        span = damage_score(ordered[-1]) - minimum
+        targets = [minimum + span / 3, minimum + span * 2 / 3]
+        # 一起选择两个中间档，保留首尾，保证四列不同且按伤害递增。
+        middle = min(
+            ((first, second) for first in range(1, len(ordered) - 2) for second in range(first + 1, len(ordered) - 1)),
+            key=lambda indices: sum(abs(damage_score(ordered[index]) - target) for index, target in zip(indices, targets)),
+        )
+        return [ordered[0], ordered[middle[0]], ordered[middle[1]], ordered[-1]]
 
     groups = []
     for attack_type in ("物攻", "魔攻"):

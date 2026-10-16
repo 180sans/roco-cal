@@ -1648,6 +1648,14 @@ body:has(.preset-shell) {
   visibility: visible;
 }
 
+/* 弹窗连同宿主层一起高于 OCR 记录框，避免子浮层被宿主的层叠上下文限制。 */
+.battle-page.plugin-mode :is(.enemy-attack-panel, .bonus-tool-floating, .result-floating, .required-power-panel),
+.battle-page.plugin-mode .team-layout > .roster:has(.slot-iv-popover),
+.battle-page.plugin-mode .floating-team-panel:has(.trait-expanded-content),
+.battle-page.plugin-mode .team-buff-panel[open] {
+  z-index: 1600;
+}
+
 .battle-health-readout {
   position: absolute;
   right: 8px;
@@ -3256,10 +3264,17 @@ body:has(.plugin-mode) .app-header .weather-panel {
 
 .enemy-attack-panel-header {
   align-items: center;
+  cursor: grab;
   display: flex;
   gap: 18px;
   justify-content: space-between;
   margin-bottom: 12px;
+  touch-action: none;
+  user-select: none;
+}
+
+.enemy-attack-panel-header:active {
+  cursor: grabbing;
 }
 
 .enemy-attack-panel-header > div {
@@ -3292,7 +3307,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
   gap: 4px;
 }
 
-.enemy-attack-grid-heading,
 .enemy-attack-state {
   align-items: center;
   background: rgba(255, 255, 255, 0.08);
@@ -3303,6 +3317,33 @@ body:has(.plugin-mode) .app-header .weather-panel {
   text-align: center;
 }
 
+.enemy-attack-grid-heading:not(.enemy-attack-state) {
+  align-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  color: #17212b;
+  display: grid;
+  gap: 2px;
+  padding: 5px 7px;
+}
+
+.enemy-attack-skill-heading {
+  align-items: baseline;
+  display: flex;
+  gap: 2px 6px;
+}
+
+.enemy-attack-skill-heading strong {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  white-space: nowrap;
+}
+
+.enemy-attack-skill-heading > span {
+  flex-shrink: 0;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
 .enemy-attack-state {
   color: #d7e7ef;
   font-size: 12px;
@@ -3310,11 +3351,12 @@ body:has(.plugin-mode) .app-header .weather-panel {
 }
 
 .enemy-attack-cell {
+  align-content: center;
   border: 1px solid rgba(255, 255, 255, 0.24);
   color: #17212b;
   display: grid;
   gap: 2px;
-  min-height: 62px;
+  min-height: 30px;
   padding: 5px 7px;
 }
 

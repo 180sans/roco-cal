@@ -489,6 +489,7 @@ type EnemyAttackSkillCell = {
   skillName: string;
   displayName: string;
   caseLabel?: string;
+  triggered?: boolean;
   variants?: EnemyAttackSkillCell[];
   skillPower?: number | null;
   damage?: number | null;
@@ -2272,6 +2273,7 @@ function TeamBattlePage({
   const [results, setResults] = useState<BattleResult[]>([]);
   const [quickSkillResults, setQuickSkillResults] = useState<QuickSkillResult[] | null>(null);
   const [enemyAttackResults, setEnemyAttackResults] = useState<EnemyAttackSkillResponse | null>(null);
+  const [enemyAttackInitialResults, setEnemyAttackInitialResults] = useState<EnemyAttackSkillResponse | null>(null);
   const [targetHp, setTargetHp] = useState(0);
   const [requiredPower, setRequiredPower] = useState<RequiredPowerResponse | null>(null);
   const [willpower, setWillpower] = useState<WillpowerResponse | null>(null);
@@ -3095,6 +3097,7 @@ function TeamBattlePage({
     setQuickSkillResults(null);
     setEnemyAttackResults(null);
     enemyAttackPayloadRef.current = null;
+    setEnemyAttackInitialResults(null);
     setEnemySkillPicker(false);
     setWillpower(null);
     setRequiredPower(null);
@@ -3545,6 +3548,7 @@ function TeamBattlePage({
         payload: { ...payload, skill_name: skillName },
       });
       enemyAttackPayloadRef.current = payload;
+      if (!skillName) setEnemyAttackInitialResults(data);
       setEnemyAttackResults(data);
       setQuickSkillResults(null);
       setResults([]);
@@ -3812,7 +3816,7 @@ function TeamBattlePage({
           <small>{recognitionStatus.progress}</small>
         </section> : null}
         {displayMode === "plugin" ? <div ref={detectionReadoutLayerRef} className="plugin-readout-layer" data-overlay-control>
-          <section ref={(element) => { detectionReadoutRefs.current.health = element; }} className="battle-health-readout draggable-readout" data-overlay-control style={detectionReadoutStyle("health")} onPointerDown={(event) => startReadoutDrag(event, "health")}><span>敌方 HP {detectedHealth.enemy}</span><span>我方 HP {detectedHealth.self}</span></section>
+          <section ref={(element) => { detectionReadoutRefs.current.health = element; }} className="battle-health-readout draggable-readout" data-overlay-control style={detectionReadoutStyle("health")} onPointerDown={(event) => startReadoutDrag(event, "health")}><span>我方 HP {detectedHealth.self}</span><span>敌方 HP {detectedHealth.enemy}</span></section>
           <section ref={(element) => { detectionReadoutRefs.current.powers = element; }} className="battle-power-readout draggable-readout" data-overlay-control style={detectionReadoutStyle("powers")} onPointerDown={(event) => startReadoutDrag(event, "powers")}>{detectedSkillPowers.map((power, index) => <span key={index}>技能{index + 1} {power}</span>)}</section>
         </div> : null}
         {displayMode === "plugin" && detectionToast ? <div className="detection-toast" role="status">{detectionToast}</div> : null}
@@ -3924,7 +3928,7 @@ function TeamBattlePage({
           onSelectWillpowerElement={selectWillpowerElement}
         />
         {requiredPower ? <RequiredPowerView value={requiredPower} context={battleContext} /> : null}
-        {enemyAttackResults ? <EnemyAttackSkillPanel value={enemyAttackResults} onPickSkill={() => void openEnemySkillPicker()} onClose={() => { setEnemyAttackResults(null); setEnemySkillPicker(false); }} /> : null}
+        {enemyAttackResults ? <EnemyAttackSkillPanel value={enemyAttackResults} onBack={enemyAttackInitialResults && enemyAttackResults !== enemyAttackInitialResults ? () => setEnemyAttackResults(enemyAttackInitialResults) : undefined} onPickSkill={() => void openEnemySkillPicker()} onClose={() => { setEnemyAttackResults(null); setEnemySkillPicker(false); }} /> : null}
       </div>
       {enemySkillPicker ? (
         <PickerModal
@@ -5986,7 +5990,37 @@ const ELEMENT_RESULT_COLORS: Record<string, string> = {
   "龙": "rgb(232, 74, 96)",
 };
 
-function EnemyAttackSkillPanel({ value, onPickSkill, onClose }: { value: EnemyAttackSkillResponse; onPickSkill: () => void; onClose: () => void }) {
+function EnemyAttackSkillPanel({ value, onBack, onPickSkill, onClose }: { value: EnemyAttackSkillResponse; onBack?: () => void; onPickSkill: () => void; onClose: () => void }) {
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const panelRef = useRef<HTMLElement | null>(null);
+  const dragRef = useRef<{ pointerId: number; pointerX: number; pointerY: number; x: number; y: number } | null>(null);
+
+  function startDrag(event: ReactPointerEvent<HTMLElement>) {
+    if (event.button !== 0 || (event.target as HTMLElement).closest("button")) return;
+    const rect = panelRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    event.preventDefault();
+    dragRef.current = { pointerId: event.pointerId, pointerX: event.clientX, pointerY: event.clientY, x: rect.left, y: rect.top };
+    setPosition({ x: rect.left, y: rect.top });
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function moveDrag(event: ReactPointerEvent<HTMLElement>) {
+    const start = dragRef.current;
+    const panel = panelRef.current;
+    if (!start || start.pointerId !== event.pointerId || !panel) return;
+    setPosition({
+      x: Math.min(Math.max(8, start.x + event.clientX - start.pointerX), Math.max(8, window.innerWidth - panel.offsetWidth - 8)),
+      y: Math.min(Math.max(8, start.y + event.clientY - start.pointerY), Math.max(8, window.innerHeight - panel.offsetHeight - 8)),
+    });
+  }
+
+  function stopDrag(event: ReactPointerEvent<HTMLElement>) {
+    if (dragRef.current?.pointerId !== event.pointerId) return;
+    dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+
   function hitExpression(cell: EnemyAttackSkillCell, field: "power" | "damage") {
     const segments = cell.hitSegments || [];
     const total = field === "power" ? cell.totalSkillPower : cell.damage;
@@ -5995,48 +6029,75 @@ function EnemyAttackSkillPanel({ value, onPickSkill, onClose }: { value: EnemyAt
     if (field === "damage" && cell.extraDamage) terms.push(numberText(cell.extraDamage));
     return `${terms.join(" + ")}=${total == null ? "-" : numberText(total)}`;
   }
+
+  function powerText(cell: EnemyAttackSkillCell) {
+    return cell.hitSegments?.some((segment) => segment.combo > 1) ? hitExpression(cell, "power") : String(cell.skillPower ?? "-");
+  }
+
+  function skillHeading(cell: EnemyAttackSkillCell) {
+    return <div className="enemy-attack-skill-heading">
+      <strong><EntityLabel kind="skill" value={cell.skillName}>{cell.displayName}</EntityLabel></strong>
+      <span>威力 {powerText(cell)}</span>
+    </div>;
+  }
+
   return (
-    <section className="enemy-attack-panel" role="dialog" aria-label="敌方攻击技能结果">
-      <header className="enemy-attack-panel-header">
+    <section ref={panelRef} className="enemy-attack-panel" data-overlay-control role="dialog" aria-label="敌方攻击技能结果" style={position ? { left: position.x, top: position.y, transform: "none" } : undefined}>
+      <header className="enemy-attack-panel-header" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={stopDrag} onPointerCancel={stopDrag} onLostPointerCapture={stopDrag}>
+        {onBack ? <button onClick={onBack} aria-label="返回最初结果" title="返回最初结果">←</button> : null}
         <div>
           <strong>敌方攻击我方</strong>
           <span>当前我方 HP：{value.targetHp > 0 ? value.targetHp : "-"}</span>
         </div>
         <button onClick={onPickSkill}>选择技能计算</button>
-        <button onClick={onClose}>关闭</button>
+        <button onClick={onClose} aria-label="关闭" title="关闭">×</button>
       </header>
       <div className="enemy-attack-groups">
-        {value.groups.length ? value.groups.map((group) => (
-          <section className="enemy-attack-group" key={group.attackType}>
-            <h3>{group.attackType}</h3>
-            <div className="enemy-attack-grid" style={{ gridTemplateColumns: `72px repeat(${group.skills.length}, minmax(128px, 1fr))` }}>
-              <div className="enemy-attack-state enemy-attack-grid-heading">攻击状态</div>
-              {group.skills.map((skillName) => <div className="enemy-attack-grid-heading" key={skillName}><EntityLabel kind="skill" value={skillName} /></div>)}
-              {group.rows.map((row) => <Fragment key={row.label}>
-                <div className="enemy-attack-state">{row.label || "无后缀"}</div>
-                {row.skills.map((cell, index) => cell ? (
-                  <div
-                    className="enemy-attack-cell"
-                    key={`${cell.skillName}-${index}`}
-                    style={{ backgroundColor: ELEMENT_RESULT_COLORS[cell.element || "普通"] || ELEMENT_RESULT_COLORS["普通"] }}
-                  >
-                    {(cell.variants || [cell]).map((variant, variantIndex) => <Fragment key={variantIndex}>
-                      <strong><EntityLabel kind="skill" value={variant.skillName}>{variant.displayName}</EntityLabel>{variant.caseLabel ? ` · ${variant.caseLabel}` : ""}</strong>
-                      {variant.hitSegments?.some((segment) => segment.combo > 1) ? <>
-                        <span>连击 {variant.hitSegments.map((segment) => segment.combo).join(" + ")}</span>
-                        <span>威力 {hitExpression(variant, "power")}</span>
-                        <span>伤害 {hitExpression(variant, "damage")}</span>
-                      </> : <>
-                        <span>威力 {variant.skillPower ?? "-"}</span>
-                        <span>伤害 {variant.damage ?? "-"}</span>
-                      </>}
-                    </Fragment>)}
-                  </div>
-                ) : <div className="enemy-attack-cell is-empty" key={`empty-${index}`}>-</div>)}
-              </Fragment>)}
-            </div>
-          </section>
-        )) : <p className="enemy-attack-empty">没有可用的攻击技能</p>}
+        {value.groups.length ? value.groups.map((group) => {
+          // 手动选技的各分支各占一列，沿用原有攻击档位及结果数值。
+          const columns = group.skills.flatMap<{ skillName: string; caseLabel?: string; cells: Array<EnemyAttackSkillCell | null> }>((skillName, skillIndex) => {
+            const cells = group.rows.map((row) => row.skills[skillIndex]);
+            const variants = cells.flatMap((cell) => cell?.variants || []);
+            if (!variants.length) return [{ skillName, cells }];
+            const cases = variants.filter((variant, index) => variants.findIndex((candidate) => candidate.triggered === variant.triggered && candidate.caseLabel === variant.caseLabel) === index)
+              .sort((left, right) => Number(Boolean(right.triggered)) - Number(Boolean(left.triggered)));
+            return cases.map((variant) => ({
+              skillName,
+              caseLabel: variant.caseLabel || (variant.triggered ? "触发情况" : "非触发情况"),
+              cells: cells.map((cell) => cell?.variants?.find((candidate) => candidate.triggered === variant.triggered && candidate.caseLabel === variant.caseLabel) || null),
+            }));
+          });
+          const headings = columns.map((column) => column.cells.find((cell) => cell != null));
+          return (
+            <section className="enemy-attack-group" key={group.attackType}>
+              <h3>{group.attackType}</h3>
+              <div className="enemy-attack-grid" style={{ gridTemplateColumns: `72px repeat(${columns.length}, minmax(128px, 1fr))` }}>
+                <div className="enemy-attack-state enemy-attack-grid-heading">攻击状态</div>
+                {columns.map((column, index) => <div className="enemy-attack-grid-heading" key={`${column.skillName}-${index}`} style={headings[index] ? { backgroundColor: ELEMENT_RESULT_COLORS[headings[index].element || "普通"] || ELEMENT_RESULT_COLORS["普通"] } : undefined}>
+                  {column.caseLabel ? <small>{column.caseLabel}</small> : null}
+                  {headings[index] ? skillHeading(headings[index]) : <strong>{column.skillName}</strong>}
+                </div>)}
+                {group.rows.map((row, rowIndex) => <Fragment key={row.label}>
+                  <div className="enemy-attack-state">{row.label || "无后缀"}</div>
+                  {columns.map((column, index) => {
+                    const cell = column.cells[rowIndex];
+                    const heading = headings[index];
+                    return cell ? (
+                      <div
+                        className="enemy-attack-cell"
+                        key={`${cell.skillName}-${index}`}
+                        style={{ backgroundColor: ELEMENT_RESULT_COLORS[cell.element || "普通"] || ELEMENT_RESULT_COLORS["普通"] }}
+                      >
+                        {heading && (cell.displayName !== heading.displayName || powerText(cell) !== powerText(heading)) ? skillHeading(cell) : null}
+                        <span>伤害 {cell.hitSegments?.some((segment) => segment.combo > 1) ? hitExpression(cell, "damage") : cell.damage ?? "-"}</span>
+                      </div>
+                    ) : <div className="enemy-attack-cell is-empty" key={`empty-${index}`}>-</div>;
+                  })}
+                </Fragment>)}
+              </div>
+            </section>
+          );
+        }) : <p className="enemy-attack-empty">没有可用的攻击技能</p>}
       </div>
     </section>
   );
