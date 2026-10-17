@@ -1,0 +1,199 @@
+{
+  "id": "466",
+  "name": "果实立方人",
+  "other_name": [],
+  "elements": [
+    "机械",
+    "草"
+  ],
+  "种族资质": 600,
+  "hp": 105,
+  "atk": 132,
+  "mag": 50,
+  "def": 120,
+  "res": 98,
+  "spd": 95,
+  "特性": "秋收",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "466果实立方人"
+    ],
+    "prev": [],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "拆卸",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "钢铁洪流",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "主轴",
+      "unlock_condition": "（默认）Lv.20"
+    },
+    {
+      "skill_name": "拖拉机",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "能量守恒",
+      "unlock_condition": "[技能石]能量守恒"
+    },
+    {
+      "skill_name": "相位移动",
+      "unlock_condition": "[技能石]相位移动"
+    },
+    {
+      "skill_name": "杠杆置换",
+      "unlock_condition": "（默认）Lv.5"
+    },
+    {
+      "skill_name": "轴承支撑",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "飞叶",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "藤绞",
+      "unlock_condition": "（默认）Lv.28"
+    },
+    {
+      "skill_name": "顶端优势",
+      "unlock_condition": "（默认）Lv.24"
+    },
+    {
+      "skill_name": "麦芒",
+      "unlock_condition": "（默认）Lv.41"
+    },
+    {
+      "skill_name": "酶浓度调整",
+      "unlock_condition": "（默认）Lv.30"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "孢子",
+      "unlock_condition": "[技能石]孢子"
+    },
+    {
+      "skill_name": "见招拆招",
+      "unlock_condition": "[技能石]见招拆招"
+    },
+    {
+      "skill_name": "垂死反击",
+      "unlock_condition": "[技能石]垂死反击"
+    },
+    {
+      "skill_name": "有效预防",
+      "unlock_condition": "（默认）Lv.8"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "[技能石]防御"
+    },
+    {
+      "skill_name": "血气",
+      "unlock_condition": "[技能石]血气"
+    },
+    {
+      "skill_name": "嗜痛",
+      "unlock_condition": "[技能石]嗜痛"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "[技能石]跺地"
+    },
+    {
+      "skill_name": "淤泥表皮",
+      "unlock_condition": "[技能石]淤泥表皮"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "扬沙",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "幻象",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "星云漩涡",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "折线冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "冷风",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "拍击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "徒长",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "（血脉）萌系血脉"
+    }
+  ]
+}

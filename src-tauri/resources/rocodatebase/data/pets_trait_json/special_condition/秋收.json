@@ -1,0 +1,35 @@
+﻿{
+  "特性": {
+    "名称": "秋收",
+    "效果": "处于草系环境中时，机械系技能威力+50%。",
+        "battle_effect": {
+            "affects_battle": true,
+            "effect_groups": [
+                {
+                     "mode": "grass",
+                     "context": {
+                        "subject": "env",
+                        "timing": "on_field"
+                    },
+                    "stack": {
+                        "enabled": false,
+                        "input": false,
+                        "permanent": false,
+                        "hint": ""
+                    },
+          "effects": [
+            {
+              "kind": "power_multiplier",
+              "filters": {
+                "skill_elements": [
+                  "机械"
+                ]
+              },
+              "value": 0.5
+            }
+          ]
+                }
+            ]
+        }
+    }
+  }
