@@ -8,9 +8,12 @@ src-tauri/target/
 src-tauri/gen/
 .cargo-check-overlay/
 .cargo-check-replay/
+.cargo-check-native/
+scripts/native-check/target/
 
 # Bundled Python runtime (downloaded during the Windows build)
 src-tauri/resources/python/
+src-tauri/resources/inference/
 
 src-tauri/icons/pet/
 src-tauri/icons/skill_type/

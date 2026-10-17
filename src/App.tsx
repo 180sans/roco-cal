@@ -329,6 +329,7 @@ type Pet = {
   isFinal?: boolean;
   evolutionStage?: string;
   nextForms?: string[];
+  prevForms?: string[];
   evolutionChain?: string[];
   skillCount: number;
 };
@@ -409,6 +410,7 @@ const BUFF_STATE_FIELDS = [
   "mag_def_buff",
   "speed_buff",
   "power_multiplier",
+  "light_power_buff",
   "power_bonus",
   "combo_plus",
   "combo_mul",
@@ -420,10 +422,11 @@ type BuffOption = { label: string; effects: BuffEffect[] };
 type ApplySkillBuffsResult = { skill_name: string; combo_count: number; options: BuffOption[]; effects: BuffEffect[] };
 type SkillTriggerInfo = {
   skill_name: string;
+  element: string;
   description: string;
   has_damage: boolean;
   has_buff: boolean;
-  stackable: Array<{ index: number; label: string; max?: number }>;
+  stackable: Array<{ index: number; label: string; max?: number; affects_power: boolean }>;
   usage_mode_options: Array<{ index: number; label: string }>;
 };
 
@@ -459,6 +462,7 @@ type UnitState = {
   mag_def_buff: number;
   speed_buff: number;
   power_multiplier: number;
+  light_power_buff: number;
   power_bonus: number;
   combo_plus: number;
   combo_mul: number;
@@ -510,6 +514,7 @@ type RequiredPowerRow = { attack_type: "物攻" | "魔攻"; attacker_label: stri
 type RequiredPowerResponse = { target_hp: number; rows: RequiredPowerRow[] };
 
 type BattleContext = {
+  defenderFirst?: boolean;
   attackerName: string;
   defenderName: string;
   attackerPetName: string;
@@ -704,6 +709,23 @@ function PickerIcon({ value, kind = "element", imageLoading = "eager" }: { value
   return <ImageLabel key={src || value} src={src} iconOnly hideTextWhileLoading imageLoading={imageLoading} imageClassName={`picker-type-icon${kind === "skill-type" ? " skill-type-icon" : ""}`} title={value}>{value}</ImageLabel>;
 }
 
+const BUTTON_ICONS = import.meta.glob<string>("../src-tauri/icons/{refresh,trigger}.png", { eager: true, query: "?url", import: "default" });
+
+function ActionIconButton({ icon, label, className = "", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { icon: "refresh" | "trigger"; label: string }) {
+  const src = BUTTON_ICONS[`../src-tauri/icons/${icon}.png`];
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const showIcon = Boolean(src && failedSrc !== src);
+  return <button {...props} className={`${showIcon ? `${icon}-button ` : ""}${className}`.trim()} title={label} aria-label={label}>{showIcon ? <img src={src} alt="" draggable={false} onError={() => setFailedSrc(src)} /> : label}</button>;
+}
+
+function RefreshButton({ label = "重置", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { label?: string }) {
+  return <ActionIconButton {...props} icon="refresh" label={label} />;
+}
+
+function TriggerButton({ label = "触发", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { label?: string }) {
+  return <ActionIconButton {...props} icon="trigger" label={label} />;
+}
+
 function petMatchesPickerFilters(pet: Pet, elements: string[], finalOnly: boolean) {
   return elements.every((element) => pet.elements.includes(element)) && (!finalOnly || pet.isFinal);
 }
@@ -773,6 +795,7 @@ function blankUnit(): UnitState {
     mag_def_buff: 0,
     speed_buff: 0,
     power_multiplier: 0,
+    light_power_buff: 0,
     power_bonus: 0,
     combo_plus: 0,
     combo_mul: 1,
@@ -846,6 +869,9 @@ function mergePresetIntoUnit(current: UnitState, preset: PresetItem): UnitState 
   }
   if (preset.personality_down) {
     next.personality_down = preset.personality_down;
+  }
+  if (preset.bloodline) {
+    next.bloodline = preset.bloodline;
   }
 
   const skills = preset.skills || [];
@@ -1127,7 +1153,20 @@ function speedValue(raceValue: number, iv: number, personality: number | null) {
 function speedScenarios(value: UnitState, pets: Pet[], modifiers: SpeedModifiers = { flat: 0, percent: 0 }): SpeedScenario[] {
   // display_name is a user-defined preset label; calculations must use the pet identity.
   const petName = value.mega_form || value.name;
-  const pet = pets.find((item) => item.label === petName || item.name === petName || `${item.id}${item.name}` === petName);
+  const findPet = (name: string) => pets.find((item) => item.label === name || item.name === name || `${item.id}${item.name}` === name);
+  const findEvolution = (name: string) => findPet(name) || findPet(name.replace(/^\d+/, ""));
+  let pet = findPet(petName);
+  // Match battle calculation: resolve the selected form, devolution, then legacy mega.
+  for (let step = 0; pet && step < value.devolution; step += 1) {
+    const previous = pet.prevForms?.[0];
+    const previousPet = previous ? findEvolution(previous) : undefined;
+    if (!previousPet) break;
+    pet = previousPet;
+  }
+  if (pet && value.mega && !value.mega_form) {
+    const next = pet.nextForms?.[0];
+    pet = (next ? findEvolution(next) : undefined) || pet;
+  }
   if (!pet || typeof pet.spd !== "number") return [];
   const configuredIv = value.iv?.spd;
   const speedPersonality = personalityValue(value.personality_bouns, "spd", 1)
@@ -1368,7 +1407,7 @@ function TeamEvolutionControls({
       <div className="slot-evolution-control slot-mega-control">
         <MegaFormSelect value={value} pets={pets} onChange={onChange} />
       </div>
-      <button className="compact-button evolution-reset-button" onClick={() => onChange({ devolution: 0, mega: false, mega_form: null })}>重置</button>
+      <RefreshButton className="compact-button evolution-reset-button" onClick={() => onChange({ devolution: 0, mega: false, mega_form: null })} />
     </div>
   );
 }
@@ -1600,7 +1639,14 @@ function PickerModal({
       const detail = skill.detail || skill;
       return detail.element === element;
     })
-    .filter((skill) => !skillType || skillDetail(skill).type === skillType) : [], [mode, currentSkillSource, normalizedQuery, element, skillType]);
+    .filter((skill) => !skillType || skillDetail(skill).type === skillType)
+    .sort((a, b) => {
+      const rank = (skill: SkillItem) => {
+        const index = elements.indexOf(skillDetail(skill).element || "");
+        return index < 0 ? elements.length : index;
+      };
+      return rank(a) - rank(b);
+    }) : [], [mode, currentSkillSource, normalizedQuery, element, skillType, skillTab, elements]);
 
   async function saveConfig(values: Record<string, unknown>) {
     const data = await invoke<{ configs: PickerConfigs }>("save_picker_config", {
@@ -1621,8 +1667,8 @@ function PickerModal({
         <header>
           <h2>{mode === "pet" ? "选择精灵" : mode === "skill" ? "选择技能" : "选择特性"}</h2>
           <div className="header-actions">
-            {mode === "pet" && onClearPet ? <button onClick={onClearPet}>取消</button> : null}
-            <button onClick={onClose}>关闭</button>
+            {mode === "pet" && onClearPet ? <button onClick={onClearPet}>取消当前精灵</button> : null}
+            <button className="icon-button" onClick={onClose} aria-label="关闭" title="关闭">×</button>
           </div>
         </header>
         <div className={mode === "pet" ? "picker-tools pet-picker-tools" : "picker-tools"}>
@@ -1910,7 +1956,7 @@ function TeamActionPanel({
       {pluginMode ? <PluginResizeEdges /> : null}
       <div className="team-action-buttons">
         {(!pluginMode || visibility?.["action-calculate"] !== false) ? <button className="calc-button" onClick={onCalculate}>计算</button> : null}
-        <button className="calc-button" onClick={onResetBattle}>对局重置</button>
+        <RefreshButton className="calc-button" label="对局重置" onClick={onResetBattle} />
         {(!pluginMode || visibility?.["action-options"] !== false) ? <select
           className="buff-option-select"
           value={buffOptions.length ? selectedBuffOption : ""}
@@ -2579,8 +2625,11 @@ function TeamBattlePage({
       ...image,
       imageDataUrl: await prepareNumericImage(image.imageDataUrl),
     })));
-    await saveOcrDebugImages("numeric", preparedImages);
-    return invoke<{ items: Array<{ text: string }> }>("recognize_images", { images: preparedImages });
+    const [, result] = await Promise.all([
+      saveOcrDebugImages("numeric", preparedImages),
+      invoke<{ items: Array<{ text: string }> }>("recognize_images", { images: preparedImages }),
+    ]);
+    return result;
   }
 
   async function saveOcrDebugImages(category: string, images: Array<{ key?: string; imageDataUrl: string }>) {
@@ -2709,8 +2758,10 @@ function TeamBattlePage({
       if (group === "battleStart") {
         updateStatus("战斗开始识别", "正在识别敌方队伍图像框", `1/${BATTLE_START_IMAGE_KEYS.length} 组`);
         const images = BATTLE_START_IMAGE_KEYS.map((key) => ({ key, imageDataUrl: cropDetection(capture, key) }));
-        await saveOcrDebugImages("battle-start", images);
-        const result = await invoke<{ items: Array<{ label: string }> }>("classify_image_samples", { payload: { images } });
+        const [, result] = await Promise.all([
+          saveOcrDebugImages("battle-start", images),
+          invoke<{ items: Array<{ label: string }> }>("classify_image_samples", { payload: { images } }),
+        ]);
         const count = applyRecognizedPets("right", result.items);
         notifyDetection(`战斗开始识别完成：识别 ${count} 只，已导入敌方队伍`);
       } else {
@@ -2721,7 +2772,13 @@ function TeamBattlePage({
           return { key, imageDataUrl: cropDetection(capture, key), mode } as const;
         });
         const [imageResult, enemyHealthResult, selfHealthResult] = await Promise.all([
-          (async () => { await saveOcrDebugImages("battle-live-pets", images); return invoke<{ items: Array<{ label: string }> }>("classify_image_samples", { payload: { images } }); })(),
+          (async () => {
+            const [, result] = await Promise.all([
+              saveOcrDebugImages("battle-live-pets", images),
+              invoke<{ items: Array<{ label: string }> }>("classify_image_samples", { payload: { images } }),
+            ]);
+            return result;
+          })(),
           recognizeNumericImages([healthImages[0]]),
           recognizeNumericImages([healthImages[1]]),
         ]);
@@ -2819,6 +2876,7 @@ function TeamBattlePage({
     const otherBonuses = leftAttacks ? leftOtherBonuses : rightOtherBonuses;
     const defenderBonuses = leftAttacks ? rightOtherBonuses : leftOtherBonuses;
     const nextStacks = { ...attacker.skill_trigger_stacks };
+    const trials: Array<{ slot: number; skillName: string; observed: number; trigger: number; count: number; payload: Record<string, unknown> }> = [];
     let applied = false;
     for (const [index, rawPower] of powerTexts.entries()) {
       const digits = rawPower.replace(/\D/g, "");
@@ -2827,18 +2885,29 @@ function TeamBattlePage({
       const skillName = skillCardSlots(attacker.skills, teamSkillCardCount)[index];
       if (!Number.isFinite(observed) || !skillName) continue;
       const info = await cachedSkillTriggerInfo(skillName);
-      const candidates: Array<{ trigger: number; count: number }> = [];
       for (const trigger of info.stackable) {
+        if (!trigger.affects_power) continue;
         for (let count = 0; count <= (trigger.max ?? 10); count += 1) {
           const stacks = [...(attacker.skill_trigger_stacks[skillName] || [])];
           stacks[trigger.index] = count;
-          const data = await invoke<{ items: QuickSkillResult[] }>("calculate_quick_skills", { payload: {
+          trials.push({ slot: index, skillName, observed, trigger: trigger.index, count, payload: {
             attacker: { ...attacker, current_skill: skillName, skill_trigger_stacks: { ...attacker.skill_trigger_stacks, [skillName]: stacks }, other_bonuses: otherBonuses },
             defender: { ...defender, other_bonuses: defenderBonuses }, skills: [skillName], weather,
           } });
-          if (data.items[0]?.results.some((result) => Math.round(result.effective_power) === observed)) candidates.push({ trigger: trigger.index, count });
         }
       }
+    }
+    if (!trials.length) return false;
+    const batch = await invoke<{ items: Array<{ items: QuickSkillResult[] }> }>("calculate_quick_skills_batch", { payload: { requests: trials.map((trial) => trial.payload) } });
+    const matches = new Map<number, { skillName: string; candidates: Array<{ trigger: number; count: number }> }>();
+    trials.forEach((trial, index) => {
+      if (batch.items[index]?.items[0]?.results.some((result) => Math.round(result.effective_power) === trial.observed)) {
+        const match = matches.get(trial.slot) || { skillName: trial.skillName, candidates: [] };
+        match.candidates.push({ trigger: trial.trigger, count: trial.count });
+        matches.set(trial.slot, match);
+      }
+    });
+    for (const { skillName, candidates } of matches.values()) {
       if (candidates.length !== 1) continue;
       const match = candidates[0];
       const stacks = [...(nextStacks[skillName] || [])];
@@ -3689,15 +3758,16 @@ function TeamBattlePage({
     };
   }, []);
 
-  async function calculateWillpower() {
+  async function calculateWillpower(attackingSide?: "left" | "right") {
     setError("");
     try {
-      const attacker = leftAttacks ? leftSlots[leftIndex] : rightSlots[rightIndex];
-      const defender = leftAttacks ? rightSlots[rightIndex] : leftSlots[leftIndex];
-      const other_bonuses = leftAttacks ? leftOtherBonuses : rightOtherBonuses;
-      const defender_other_bonuses = leftAttacks ? rightOtherBonuses : leftOtherBonuses;
-      const data = await invoke<WillpowerResponse>("calculate_willpower", { payload: { attacker: { ...attacker, other_bonuses }, defender: { ...defender, other_bonuses: defender_other_bonuses }, weather } });
-      setBattleContext({ ...battleContextFromUnits(attacker, defender), skillName: "愿力" });
+      const attackFromLeft = attackingSide ? attackingSide === "left" : leftAttacks;
+      const attacker = attackFromLeft ? leftSlots[leftIndex] : rightSlots[rightIndex];
+      const defender = attackFromLeft ? rightSlots[rightIndex] : leftSlots[leftIndex];
+      const other_bonuses = attackFromLeft ? leftOtherBonuses : rightOtherBonuses;
+      const defender_other_bonuses = attackFromLeft ? rightOtherBonuses : leftOtherBonuses;
+      const data = await invoke<WillpowerResponse>("calculate_willpower", { payload: { attacker: { ...attacker, other_bonuses }, defender: { ...defender, other_bonuses: defender_other_bonuses }, weather, restrict_to_bloodline: attackFromLeft } });
+      setBattleContext({ ...battleContextFromUnits(attacker, defender), skillName: "愿力", defenderFirst: !attackFromLeft });
       setWillpower(data);
       setRequiredPower(null);
       const initial = data.elements[0];
@@ -3919,7 +3989,7 @@ function TeamBattlePage({
         </> : null}
         <section className="team-bonus-toolbar team-left-bonus-toolbar" data-panel-state={panelState(bonusesArmed(leftOtherBonuses))} data-overlay-control data-plugin-resizable={displayMode === "plugin" || undefined} aria-label="己方其他加成">
           {displayMode === "plugin" ? <PluginResizeEdges /> : null}
-          <button className="bonus-tool-button willpower" onClick={() => void calculateWillpower()}>愿力</button>
+          <button className="bonus-tool-button willpower" onClick={() => void calculateWillpower(displayMode === "plugin" ? "left" : undefined)}>愿力</button>
           {(["dedication", "marks", "thunderstorm"] as const).map((tool) => (
             <button key={tool} className={`bonus-tool-button ${tool}${bonusTool === tool && bonusSide === "left" ? " active" : ""}`} aria-pressed={bonusTool === tool && bonusSide === "left"} onClick={() => openBonusTool("left", tool)}>
               {{ dedication: "奉献", marks: "印记", thunderstorm: "雷暴" }[tool]}
@@ -3928,7 +3998,7 @@ function TeamBattlePage({
         </section>
         <section className="team-bonus-toolbar team-right-bonus-toolbar" data-panel-state={panelState(bonusesArmed(rightOtherBonuses))} data-overlay-control data-plugin-resizable={displayMode === "plugin" || undefined} aria-label="敌方其他加成">
           {displayMode === "plugin" ? <PluginResizeEdges /> : null}
-          <button className="bonus-tool-button willpower" onClick={() => void calculateWillpower()}>愿力</button>
+          <button className="bonus-tool-button willpower" onClick={() => void calculateWillpower(displayMode === "plugin" ? "right" : undefined)}>愿力</button>
           {(["dedication", "marks", "thunderstorm"] as const).map((tool) => (
             <button key={tool} className={`bonus-tool-button ${tool}${bonusTool === tool && bonusSide === "right" ? " active" : ""}`} aria-pressed={bonusTool === tool && bonusSide === "right"} onClick={() => openBonusTool("right", tool)}>
               {{ dedication: "奉献", marks: "印记", thunderstorm: "雷暴" }[tool]}
@@ -4079,6 +4149,7 @@ function PresetManagerPage({
   const currentGroup = presets.find((group) => group.name === groupName) || presets[0];
   const selectedPreset = currentGroup?.items.find((item) => item.key === selectedKey) || null;
   const initialGroupSelectedRef = useRef(false);
+  const petLookup = useMemo(() => buildPetLookup(pets), [pets]);
 
   useEffect(() => {
     if (initialGroupSelectedRef.current) return;
@@ -4133,15 +4204,27 @@ function PresetManagerPage({
     }
   }
 
+  function defaultBloodlineForPet(name: string) {
+    const element = petLookup.get(name)?.elements[0];
+    return element ? `${element.replace(/系$/, "")}系血脉` : "";
+  }
+
   function patchEditor(partial: Partial<UnitState>) {
-    setEditor((value) => ({ ...value, ...partial }));
+    setEditor((value) => ({
+      ...value,
+      ...partial,
+      ...(partial.name !== undefined && partial.name !== value.name && partial.bloodline === undefined
+        ? { bloodline: defaultBloodlineForPet(partial.name) }
+        : {}),
+    }));
   }
 
   function selectPreset(preset: PresetItem) {
     setNewPresetHint(false);
     setSelectedKey(preset.key);
     setPresetName(preset.key);
-    setEditor(unitFromPreset(preset));
+    const unit = unitFromPreset(preset);
+    setEditor({ ...unit, bloodline: unit.bloodline || defaultBloodlineForPet(unit.name) });
     setMessage("");
     setError("");
   }
@@ -4416,7 +4499,7 @@ function PresetManagerPage({
         <section className="preset-editor-section">
           <div className="panel-title">
             <h2 className="preset-skills-title">技能</h2>
-            <button className="compact-button preset-skill-reset-button" onClick={() => patchEditor({ skills: [], current_skill: "" })}>重置</button>
+            <RefreshButton className="compact-button preset-skill-reset-button" onClick={() => patchEditor({ skills: [], current_skill: "" })} />
           </div>
           <TeamSkillCardGrid
             cards={skillCards}
@@ -4633,21 +4716,30 @@ function TeamSkillCards({
     // 技能卡自身也可以拖动：超过阈值才算移动，普通点击仍然是选技能。
     if (dragTarget.closest("[role=button]") && !dragTarget.closest(".team-skill-card")) return;
     event.preventDefault();
+    suppressCardClickRef.current = false;
     const start = { pointerX: event.clientX, pointerY: event.clientY, ...(layout || defaultPluginOverlayLayout(className)) };
+    let moved = false;
     const move = (moveEvent: PointerEvent) => {
-      if (Math.abs(moveEvent.clientX - start.pointerX) > 3 || Math.abs(moveEvent.clientY - start.pointerY) > 3) suppressCardClickRef.current = true;
+      const dx = moveEvent.clientX - start.pointerX;
+      const dy = moveEvent.clientY - start.pointerY;
+      // 未超过拖动阈值时不移动卡片，避免轻微手抖引起重渲染或点击落空。
+      if (!moved && Math.abs(dx) <= 3 && Math.abs(dy) <= 3) return;
+      moved = true;
+      suppressCardClickRef.current = true;
       onLayoutChange?.({
-        x: Math.max(0, snapToGrid(start.x + moveEvent.clientX - start.pointerX)),
-        y: Math.max(0, snapToGrid(start.y + moveEvent.clientY - start.pointerY)),
+        x: Math.max(0, snapToGrid(start.x + dx)),
+        y: Math.max(0, snapToGrid(start.y + dy)),
       });
     };
     const stop = () => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
       window.setTimeout(() => { suppressCardClickRef.current = false; }, 0);
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
   }
 
   useEffect(() => {
@@ -4754,7 +4846,7 @@ function TeamSkillCards({
               </div>
             );
           })}
-          {skillInfo?.stackable.length ? <button className="compact-button skill-reset-button" onClick={() => onChange({ skill_trigger_stacks: { ...value.skill_trigger_stacks, [controlSkill]: [] } })}>重置</button> : null}
+          {skillInfo?.stackable.length ? <RefreshButton className="compact-button skill-reset-button" onClick={() => onChange({ skill_trigger_stacks: { ...value.skill_trigger_stacks, [controlSkill]: [] } })} /> : null}
           {!pluginMode && skillInfo?.has_buff && onApplySkill ? <button className="compact-button" onClick={() => onApplySkill(controlSkill)}>应用</button> : null}
           {skillInfo && skillInfo.usage_mode_options.length > 1 && value.usage_time_plus > 0 ? (
           <div className="skill-stack-control">
@@ -4874,13 +4966,12 @@ function TeamOtherBonusPanel({
           <div>
             <FieldLabel>蓄电印记</FieldLabel>
             <NumberInput value={value.charge_mark_stacks} min={0} max={99} onChange={(charge_mark_stacks) => onChange({ charge_mark_stacks })} />
-            <button
+            <TriggerButton
+              label="迸发触发"
               className={value.charge_mark_triggered ? "compact-button active" : "compact-button"}
               aria-pressed={value.charge_mark_triggered}
               onClick={() => onChange({ charge_mark_triggered: !value.charge_mark_triggered })}
-            >
-              迸发触发
-            </button>
+            />
           </div>
           <div>
             <FieldLabel>攻击印记</FieldLabel>
@@ -4966,7 +5057,7 @@ function BonusToolContent({
     ] as const;
     return (
       <div className="bonus-tool-fields">
-        {markOptions.filter(([id]) => markFields.includes(id)).map(([id, label, key]) => <div key={id}><FieldLabel>{label}</FieldLabel><NumberInput value={value[key]} min={0} max={99} onChange={(stacks) => onChange({ [key]: stacks })} />{id === "charge" ? <button className={value.charge_mark_triggered ? "compact-button active" : "compact-button"} aria-pressed={value.charge_mark_triggered} onClick={() => onChange({ charge_mark_triggered: !value.charge_mark_triggered })}>触发</button> : null}<button className="compact-button" title="移除印记" onClick={() => { onChange({ [key]: 0, ...(id === "charge" ? { charge_mark_triggered: false } : {}) }); onMarkFieldsChange(markFields.filter((field) => field !== id)); }}>移除</button></div>)}
+        {markOptions.filter(([id]) => markFields.includes(id)).map(([id, label, key]) => <div key={id}><FieldLabel>{label}</FieldLabel><NumberInput value={value[key]} min={0} max={99} onChange={(stacks) => onChange({ [key]: stacks })} />{id === "charge" ? <TriggerButton className={value.charge_mark_triggered ? "compact-button active" : "compact-button"} aria-pressed={value.charge_mark_triggered} onClick={() => onChange({ charge_mark_triggered: !value.charge_mark_triggered })} /> : null}<button className="compact-button" title="移除印记" onClick={() => { onChange({ [key]: 0, ...(id === "charge" ? { charge_mark_triggered: false } : {}) }); onMarkFieldsChange(markFields.filter((field) => field !== id)); }}>移除</button></div>)}
         {markFields.length < markOptions.length ? <label className="mark-add-control"><span>新增印记</span><select value="" onChange={(event) => { const next = event.target.value as MarkField; if (next) onMarkFieldsChange([...markFields, next]); }}><option value="">选择印记</option>{markOptions.filter(([id]) => !markFields.includes(id)).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label> : null}
       </div>
     );
@@ -5095,36 +5186,42 @@ function TeamSkillCardGrid({
 }) {
   const cardSkillNames = [...new Set(cards.flatMap((skill) => (skill ? [skill.name] : [])))];
   const cardSkillNamesKey = cardSkillNames.join("\u0000");
-  const [skillDescriptions, setSkillDescriptions] = useState<Record<string, string>>({});
+  const [skillDetails, setSkillDetails] = useState<Record<string, Pick<SkillTriggerInfo, "description" | "element">>>({});
 
   useEffect(() => {
     let cancelled = false;
     if (!cardSkillNames.length) {
-      setSkillDescriptions({});
+      setSkillDetails({});
       return () => { cancelled = true; };
     }
     void Promise.all(cardSkillNames.map(async (name) => {
       const data = await cachedSkillTriggerInfo(name);
-      return [name, data.description || ""] as const;
+      return [name, { description: data.description || "", element: data.element || "" }] as const;
     }))
-      .then((descriptions) => {
-        if (!cancelled) setSkillDescriptions(Object.fromEntries(descriptions));
+      .then((details) => {
+        if (!cancelled) setSkillDetails(Object.fromEntries(details));
       })
       .catch(() => {
-        if (!cancelled) setSkillDescriptions({});
+        if (!cancelled) setSkillDetails({});
       });
     return () => { cancelled = true; };
   }, [cardSkillNamesKey]);
 
   return (
     <div className="skill-card-grid">
-      {cards.map((skill, index) => (
+      {cards.map((skill, index) => {
+        const element = skill ? skillDetail(skill).element || skillDetails[skill.name]?.element : undefined;
+        const color = element ? ELEMENT_RESULT_COLORS[element] : undefined;
+        return (
         <div
           key={skill ? `${skill.name}-${index}` : `empty-${index}`}
           className={`${skill?.name === currentSkill ? "skill-card selected" : "skill-card"} team-skill-card${skill ? "" : " is-empty"}`}
           role="button"
+          aria-pressed={Boolean(skill && skill.name === currentSkill)}
+          data-skill-element={color ? element : undefined}
+          style={color ? { "--skill-element-bg": color, "--skill-element-text": element === "幽" ? "#fff" : "#17212b" } as CSSProperties : undefined}
           tabIndex={0}
-          title={skill ? [skill.name, skillDescriptions[skill.name]].filter(Boolean).join("\n") : "空技能"}
+          title={skill ? [skill.name, skillDetails[skill.name]?.description].filter(Boolean).join("\n") : "空技能"}
           onClick={() => {
             if (skill) onPick(skill.name);
             else onChoose(index);
@@ -5144,7 +5241,8 @@ function TeamSkillCardGrid({
             </button>
           </div> : null}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -5155,6 +5253,7 @@ type BuffFieldKey =
   | "phys_def_buff"
   | "mag_def_buff"
   | "power_multiplier"
+  | "light_power_buff"
   | "power_bonus"
   | "combo_plus"
   | "combo_mul"
@@ -5188,13 +5287,12 @@ const BUFF_GROUPS: Array<{ title: string; fields: BuffField[] }> = [
   { title: "威力", fields: [
     { key: "power_multiplier", label: "威力%", short: "威力", suffix: "%", min: -100, max: 1000, step: 10 },
     { key: "power_bonus", label: "威力+", short: "威力", suffix: "", min: -500, max: 500, step: 10 },
+    { key: "light_power_buff", label: "光威%", short: "光威", suffix: "%", min: 0, max: 1000, step: 10, labelClassName: "buff-light-power-label" },
+    { key: "usage_time_plus", label: "使用+", short: "使用", suffix: "", min: 0, max: 20, labelClassName: "buff-usage-label", inputClassName: "buff-usage-input" },
   ] },
   { title: "连击", fields: [
     { key: "combo_plus", label: "连击+", short: "连击", suffix: "", min: -20, max: 20 },
     { key: "combo_mul", label: "连击倍", short: "连击倍", suffix: "x", min: 1, max: 10, base: 1 },
-  ] },
-  { title: "其他", fields: [
-    { key: "usage_time_plus", label: "使用+", short: "使用", suffix: "", min: 0, max: 20, labelClassName: "buff-usage-label", inputClassName: "buff-usage-input" },
   ] },
 ];
 
@@ -5272,15 +5370,13 @@ function TeamBuffPanel({
           <span>{title}</span>
           </span>
           {activeBuffs.length ? <span className="buff-summary-values">{activeBuffs.map((field) => <span key={field.key}>{field.short}{value[field.key] > 0 ? "+" : ""}{value[field.key]}{field.suffix}</span>)}</span> : null}
-        <button
+        <RefreshButton
           className="compact-button buff-reset-button"
           onClick={(event) => {
             event.preventDefault();
             onChange(BUFF_RESET);
           }}
-        >
-          重置
-        </button>
+        />
       </summary>
       <div ref={popupRef} className="buff-grid team-buff-grid">
         {BUFF_GROUPS.map((group) => (
@@ -5371,22 +5467,18 @@ function TeamTraitEditor({
       <div className="trait-control-grid compact">
         <div className="inline-row trait-status-row">
           {traitRuntime?.triggerable ? (
-            <button
+            <TriggerButton
               aria-pressed={value.trait_triggered}
               className={value.trait_triggered ? "compact-button trait-trigger-button active" : "compact-button trait-trigger-button"}
               onClick={() => onChange({ trait_triggered: !value.trait_triggered })}
-            >
-              触发
-            </button>
+            />
           ) : null}
           {traitRuntime?.stack_input ? (
-            <>
-              <FieldLabel>叠加</FieldLabel>
-              <div className="trait-stack-control">
-                <NumberInput value={value.trait_stacks} min={0} max={99} onChange={(trait_stacks) => onChange({ trait_stacks })} />
-              </div>
-            </>
+            <div className="trait-stack-control">
+              <NumberInput value={value.trait_stacks} min={0} max={99} onChange={(trait_stacks) => onChange({ trait_stacks })} />
+            </div>
           ) : null}
+          {traitRuntime?.stack_input ? <RefreshButton className="compact-button trait-reset-button" onClick={() => onChange({ trait_override_query: null, trait_triggered: false, trait_stacks: 0, trait_choices: {} })} /> : null}
         </div>
         {Object.entries(traitRuntime?.exclusive_choices || {}).map(([groupName, choice]: [string, any]) => (
           <label className="inline-row" key={groupName}>
@@ -5440,15 +5532,13 @@ function TeamIvEditor({
   alwaysOpen?: boolean;
 }) {
   const resetButton = (
-    <button
+    <RefreshButton
       className="compact-button iv-reset-button"
       onClick={(event) => {
         event.preventDefault();
         onChange({ iv: null, personality_bouns: null, personality_down: null });
       }}
-    >
-      重置
-    </button>
+    />
   );
   const editorContent = (
     <>
@@ -5608,7 +5698,7 @@ function SpeedLine({ left, right, pets, weather, layout, buffLayout, onLayoutCha
       <div className="speed-buff-row">
         <NumberInput value={total} min={-999} max={999} step={10} onChange={setTotal} />
         <span className="speed-buff-percent">{`${modifiers.percent >= 0 ? "+" : ""}${Math.round(modifiers.percent * 100)}%`}</span>
-        <button type="button" className="compact-button speed-buff-reset" onClick={() => onChange({ speed_buff: 0 })}>重置</button>
+        <RefreshButton type="button" className="compact-button speed-buff-reset" onClick={() => onChange({ speed_buff: 0 })} />
       </div>
     );
   };
@@ -5730,15 +5820,7 @@ function Roster({
                 }}
               >
                 <strong title={slot.display_name || slot.name || (pluginMode ? "空" : "空槽位")}><EntityLabel kind="pet" value={slot.name} iconOnly={pluginMode} className={pluginMode ? "roster-pet-image" : ""}>{petNameOnly(slot.display_name || slot.name) || (pluginMode ? "空" : "空槽位")}</EntityLabel></strong>
-                <button
-                  className="slot-action"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onChoose(index);
-                  }}
-                >
-                  {slot.name ? "更换" : "选择"}
-                </button>
+                {slot.name ? <RefreshButton className="slot-action" label="更换" onClick={(event) => { event.stopPropagation(); onChoose(index); }} /> : <button className="slot-action" onClick={(event) => { event.stopPropagation(); onChoose(index); }}>选择</button>}
               </div>
               {pluginMode && hoveredIndex === index && slot.name ? <div className="slot-iv-popover" onMouseEnter={() => openPopover(index)} onMouseLeave={schedulePopoverClose} onPointerDown={(event) => event.stopPropagation()}>
                 <TeamIvEditor value={slot} onChange={(partial) => onPatchSlotAt(index, partial)} alwaysOpen />
@@ -5812,10 +5894,11 @@ function ResultView({
   const defenderName = context?.defenderName || "防御方";
   const skillName = context?.skillName || summary.skill_name || "-";
   const isRequiredPower = results.some((result) => result.required_power !== undefined);
+  const defenderFirst = Boolean(willpower && context?.defenderFirst);
   const showLegacyResultCards = false;
   const showLegacyResultDetail = false;
   return (
-    <section className="result-floating" data-overlay-control style={{ left: position.x, top: position.y }}>
+    <section className={`result-floating${willpower ? " has-willpower" : ""}`} data-overlay-control style={{ left: position.x, top: position.y }}>
       <header className="result-floating-header" onPointerDown={startDrag}>
         <div>
           <h2>对战结果</h2>
@@ -5823,13 +5906,13 @@ function ResultView({
             <EntityLabel kind="pet" value={context?.attackerPetName || attackerName}>{attackerName}</EntityLabel> → <EntityLabel kind="pet" value={context?.defenderPetName || defenderName}>{defenderName}</EntityLabel>，<EntityLabel kind="skill" value={skillName} />
           </p>
         </div>
-        <button onClick={() => setVisible(false)}>关闭</button>
+        {willpower ? <button className="icon-button" title="关闭" aria-label="关闭" onClick={() => setVisible(false)}>×</button> : <button onClick={() => setVisible(false)}>关闭</button>}
       </header>
       {willpower ? (
         <div className="willpower-result-tabs" aria-label="愿力系别">
           {willpower.elements.map((item) => (
-            <button key={item.element} className={selectedWillpowerElement === item.element ? "active" : ""} onClick={() => onSelectWillpowerElement(item)}>
-              {item.element}{item.has_stab ? "*" : ""} {item.advantage}x
+            <button key={item.element} className={selectedWillpowerElement === item.element ? "active" : ""} aria-pressed={selectedWillpowerElement === item.element} aria-label={`${item.element}系愿力${item.has_stab ? "，本系加成" : ""}，${item.advantage}倍`} title={`${item.element}系愿力`} onClick={() => onSelectWillpowerElement(item)}>
+              <PickerIcon value={item.element} /><span>{item.has_stab ? "* " : ""}{item.advantage}x</span>
             </button>
           ))}
         </div>
@@ -5855,49 +5938,49 @@ function ResultView({
               </div>
             ) : null}
             <div className="result-matrix-list">
-              {uniqueByOrder(caseResults.map((result) => result.atk_label)).map((atkLabel) => {
-                const atkResults = caseResults.filter((result) => result.atk_label === atkLabel);
-                const defLabels = uniqueByOrder(atkResults.map((result) => result.def_label));
-                const hpLabels = uniqueByOrder(atkResults.flatMap((result) => result.hp_results.map((item) => item.hp_label)));
-                const selectedInMatrix = selected && atkResults.includes(selected) ? selected : null;
+              {uniqueByOrder(caseResults.map((result) => defenderFirst ? result.def_label : result.atk_label)).map((groupLabel) => {
+                const matrixResults = caseResults.filter((result) => (defenderFirst ? result.def_label : result.atk_label) === groupLabel);
+                const rowLabels = uniqueByOrder(matrixResults.map((result) => defenderFirst ? result.atk_label : result.def_label));
+                const hpLabels = uniqueByOrder(matrixResults.flatMap((result) => result.hp_results.map((item) => item.hp_label)));
+                const selectedInMatrix = selected && matrixResults.includes(selected) ? selected : null;
                 const selectedLabels = selectedInMatrix ? resultValueLabels(selectedInMatrix) : null;
                 return (
-                  <Fragment key={`${caseLabel}-${atkLabel}`}>
+                  <Fragment key={`${caseLabel}-${groupLabel}`}>
                     <div
                       className="result-matrix"
                       style={{ gridTemplateColumns: `minmax(58px, 0.8fr) minmax(56px, 0.75fr) repeat(${hpLabels.length}, minmax(48px, 0.65fr))` }}
                     >
-                      <div className="result-matrix-corner">{formatAttackLabel(atkLabel, context)}</div>
+                      <div className="result-matrix-corner">{defenderFirst ? formatDefenseLabel(groupLabel, context) : formatAttackLabel(groupLabel, context)}</div>
                       <div className={hpLabels.length ? "result-matrix-header" : "result-matrix-header result-matrix-edge-right"}>伤害</div>
                       {hpLabels.map((hpLabel, hpIndex) => (
                         <div className={hpIndex === hpLabels.length - 1 ? "result-matrix-header result-matrix-edge-right" : "result-matrix-header"} key={hpLabel}>{formatHpLabel(hpLabel, context)}</div>
                       ))}
-                      {defLabels.map((defLabel) => {
-                        const rowResult = atkResults.find((result) => result.def_label === defLabel);
+                      {rowLabels.map((rowLabel) => {
+                        const rowResult = matrixResults.find((result) => (defenderFirst ? result.atk_label : result.def_label) === rowLabel);
                         const isSelectedRow = Boolean(rowResult && selected === rowResult);
-                        const isLastDefenseRow = defLabel === defLabels[defLabels.length - 1];
+                        const isLastRow = rowLabel === rowLabels[rowLabels.length - 1];
                         return (
-                          <Fragment key={defLabel}>
+                          <Fragment key={rowLabel}>
                             <button
                               className={[
                                 "result-matrix-row-label",
                                 isSelectedRow ? "selected" : "",
                                 !hpLabels.length ? "result-matrix-edge-right" : "",
-                                isLastDefenseRow ? "result-matrix-edge-bottom" : "",
+                                isLastRow ? "result-matrix-edge-bottom" : "",
                               ].filter(Boolean).join(" ")}
                               disabled={!rowResult}
                               onClick={() => {
                                 if (rowResult) setSelected(selected === rowResult ? null : rowResult);
                               }}
                             >
-                              {formatDefenseLabel(defLabel, context)}
+                              {defenderFirst ? formatAttackLabel(rowLabel, context) : formatDefenseLabel(rowLabel, context)}
                             </button>
                             <button
                               className={[
                                 "result-matrix-cell",
                                 isSelectedRow ? "selected" : "",
                                 !hpLabels.length ? "result-matrix-edge-right" : "",
-                                isLastDefenseRow ? "result-matrix-edge-bottom" : "",
+                                isLastRow ? "result-matrix-edge-bottom" : "",
                               ].filter(Boolean).join(" ")}
                               disabled={!rowResult}
                               onClick={() => {
@@ -5914,9 +5997,9 @@ function ResultView({
                                     "result-matrix-cell",
                                     isSelectedRow ? "selected" : "",
                                     hpIndex === hpLabels.length - 1 ? "result-matrix-edge-right" : "",
-                                    isLastDefenseRow ? "result-matrix-edge-bottom" : "",
+                                    isLastRow ? "result-matrix-edge-bottom" : "",
                                   ].filter(Boolean).join(" ")}
-                                  key={`${defLabel}-${hpLabel}`}
+                                  key={`${rowLabel}-${hpLabel}`}
                                   disabled={!rowResult || !hpResult}
                                   onClick={() => {
                                     if (rowResult) setSelected(selected === rowResult ? null : rowResult);

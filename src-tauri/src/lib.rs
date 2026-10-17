@@ -1,16 +1,19 @@
+mod desktop_data;
+mod inference;
+
 use serde::Deserialize;
 use serde_json::Value;
 #[cfg(windows)]
 use std::ffi::{c_void, OsString};
-use std::io::{BufRead, BufReader, Write};
+use std::io::Write;
 #[cfg(windows)]
 use std::os::windows::ffi::OsStringExt;
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
-use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
+use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex, OnceLock};
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::Ordering;
 use std::time::Duration;
 #[cfg(windows)]
 use std::time::Instant;
@@ -53,14 +56,6 @@ struct PythonEnvelope {
     error: Option<String>,
 }
 
-struct OcrWorkerProcess {
-    child: Child,
-    stdin: ChildStdin,
-    stdout: BufReader<ChildStdout>,
-}
-
-const OCR_WORKER_COUNT: usize = 2;
-
 #[derive(Clone, Copy, PartialEq, Eq)]
 struct OverlayTargetBinding {
     overlay_hwnd: usize,
@@ -97,20 +92,10 @@ struct OverlayHotkeyContext {
 #[cfg(windows)]
 static OVERLAY_HOTKEY_CONTEXT: OnceLock<Mutex<Option<OverlayHotkeyContext>>> = OnceLock::new();
 
-#[derive(Clone)]
-struct OcrWorker {
-    processes: [Arc<Mutex<Option<OcrWorkerProcess>>>; OCR_WORKER_COUNT],
-    next_process: Arc<AtomicUsize>,
-}
-
-impl Default for OcrWorker {
-    fn default() -> Self {
-        Self {
-            processes: std::array::from_fn(|_| Arc::new(Mutex::new(None))),
-            next_process: Arc::new(AtomicUsize::new(0)),
-        }
-    }
-}
+#[derive(Clone, Default)]
+struct NativeData(Arc<Mutex<Option<desktop_data::DesktopData>>>);
+#[derive(Clone, Default)]
+struct NativeInference(Arc<OnceLock<inference::Inference>>);
 
 #[cfg(windows)]
 #[repr(C)]
@@ -469,97 +454,25 @@ async fn run_python_payload_async(
     .map_err(|error| format!("Python task failed: {error}"))?
 }
 
-fn start_ocr_worker(app: &tauri::AppHandle) -> Result<OcrWorkerProcess, String> {
-    let root = resource_root(app)?;
-    let script = root.join("desktop_api.py");
-    let python = embedded_python(app)?;
-    let user_data_dir = app_data_dir(app);
-    std::fs::create_dir_all(&user_data_dir)
-        .map_err(|error| format!("Cannot create app data dir: {error}"))?;
-    let mut command = Command::new(&python);
-    command
-        .arg("-B")
-        .arg(&script)
-        .arg("ocr-worker")
-        .env("PYTHONUTF8", "1")
-        .env("PYTHONIOENCODING", "utf-8")
-        .env("ROCODATABASE_USER_DATA_DIR", &user_data_dir)
-        .current_dir(&root)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null());
-    #[cfg(windows)]
-    command.creation_flags(CREATE_NO_WINDOW);
-    let mut child = command
-        .spawn()
-        .map_err(|error| format!("Cannot start ONNX OCR worker: {error}"))?;
-    let stdin = child
-        .stdin
-        .take()
-        .ok_or_else(|| "Cannot open ONNX OCR worker input pipe".to_string())?;
-    let stdout = child
-        .stdout
-        .take()
-        .ok_or_else(|| "Cannot open ONNX OCR worker output pipe".to_string())?;
-    Ok(OcrWorkerProcess {
-        child,
-        stdin,
-        stdout: BufReader::new(stdout),
-    })
+async fn run_native_data(app: tauri::AppHandle, command: &str, payload: Value) -> Result<Value, String> {
+    let data = app.state::<NativeData>().inner().clone();
+    let command = command.to_owned();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut guard = data.0.lock().map_err(|e| e.to_string())?;
+        if guard.is_none() {
+            *guard = Some(desktop_data::DesktopData::new(resource_root(&app)?, app_data_dir(&app)));
+        }
+        guard.as_mut().unwrap().dispatch(&command, &payload)
+    }).await.map_err(|e| format!("Native data task failed: {e}"))?
 }
 
-fn run_ocr_worker(
-    app: &tauri::AppHandle,
-    worker: &OcrWorker,
-    payload: Value,
-) -> Result<Value, String> {
-    // Alternate numeric OCR requests across two persistent processes so enemy
-    // and self health can be recognized concurrently.
-    let process_index = worker.next_process.fetch_add(1, Ordering::Relaxed) % OCR_WORKER_COUNT;
-    let mut guard = worker.processes[process_index]
-        .lock()
-        .map_err(|_| "ONNX OCR worker lock is poisoned".to_string())?;
-    let needs_restart = guard
-        .as_mut()
-        .map(|process| process.child.try_wait().ok().flatten().is_some())
-        .unwrap_or(true);
-    if needs_restart {
-        *guard = Some(start_ocr_worker(app)?);
-    }
-    let process = guard
-        .as_mut()
-        .ok_or_else(|| "ONNX OCR worker is unavailable".to_string())?;
-    let request = serde_json::to_string(&payload)
-        .map_err(|error| format!("Cannot serialize ONNX OCR request: {error}"))?;
-    process
-        .stdin
-        .write_all(request.as_bytes())
-        .and_then(|_| process.stdin.write_all(b"\n"))
-        .and_then(|_| process.stdin.flush())
-        .map_err(|error| format!("Cannot send request to ONNX OCR worker: {error}"))?;
-    let mut response = String::new();
-    let bytes = process
-        .stdout
-        .read_line(&mut response)
-        .map_err(|error| format!("Cannot read ONNX OCR worker response: {error}"))?;
-    if bytes == 0 {
-        *guard = None;
-        return Err("ONNX OCR worker exited before responding".to_string());
-    }
-    let envelope: PythonEnvelope = serde_json::from_str(response.trim()).map_err(|error| {
-        format!(
-            "ONNX OCR worker returned invalid JSON: {error}; response={}",
-            response.trim()
-        )
-    })?;
-    if !envelope.ok {
-        return Err(envelope
-            .error
-            .unwrap_or_else(|| "ONNX OCR worker failed".to_string()));
-    }
-    envelope
-        .data
-        .ok_or_else(|| "ONNX OCR worker response is missing data".to_string())
+async fn run_native_inference(app: tauri::AppHandle, payload: Value, classify: bool) -> Result<Value, String> {
+    let state = app.state::<NativeInference>().inner().clone();
+    let resources = resource_root(&app)?.parent().ok_or("Invalid resources directory")?.to_path_buf();
+    tauri::async_runtime::spawn_blocking(move || {
+        let engine = state.0.get_or_init(|| inference::Inference::new(resources));
+        if classify { engine.classify(&payload) } else { engine.recognize(&payload) }
+    }).await.map_err(|e| format!("Native inference task failed: {e}"))?
 }
 
 fn webview_data_dir(app: &tauri::AppHandle) -> PathBuf {
@@ -1616,17 +1529,17 @@ fn capture_overlay_target(target_state: tauri::State<'_, OverlayTargetState>) ->
 }
 #[tauri::command]
 async fn database_summary(app: tauri::AppHandle) -> Result<Value, String> {
-    run_python_async(app, vec!["summary".to_string()]).await
+    run_native_data(app, "summary", serde_json::json!({})).await
 }
 
 #[tauri::command]
 async fn search_pets(app: tauri::AppHandle, query: String) -> Result<Value, String> {
-    run_python_payload_async(app, "list-pets", serde_json::json!({ "query": query })).await
+    run_native_data(app, "list-pets", serde_json::json!({ "query": query })).await
 }
 
 #[tauri::command]
 async fn list_presets(app: tauri::AppHandle) -> Result<Value, String> {
-    run_python_async(app, vec!["presets".to_string()]).await
+    run_native_data(app, "presets", serde_json::json!({})).await
 }
 
 #[tauri::command]
@@ -1636,17 +1549,17 @@ async fn core_probe(app: tauri::AppHandle) -> Result<Value, String> {
 
 #[tauri::command]
 async fn app_state(app: tauri::AppHandle) -> Result<Value, String> {
-    run_python_async(app, vec!["app-state".to_string()]).await
+    run_native_data(app, "app-state", serde_json::json!({})).await
 }
 
 #[tauri::command]
 async fn list_pets(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload_async(app, "list-pets", payload).await
+    run_native_data(app, "list-pets", payload).await
 }
 
 #[tauri::command]
 async fn list_skills(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload_async(app, "list-skills", payload).await
+    run_native_data(app, "list-skills", payload).await
 }
 
 #[tauri::command]
@@ -1656,12 +1569,12 @@ async fn trait_info(app: tauri::AppHandle, payload: Value) -> Result<Value, Stri
 
 #[tauri::command]
 async fn list_traits(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload_async(app, "list-traits", payload).await
+    run_native_data(app, "list-traits", payload).await
 }
 
 #[tauri::command]
 async fn list_burst_effects(app: tauri::AppHandle) -> Result<Value, String> {
-    run_python_async(app, vec!["list-burst-effects".to_string()]).await
+    run_native_data(app, "list-burst-effects", serde_json::json!({})).await
 }
 
 #[tauri::command]
@@ -1672,6 +1585,11 @@ async fn calculate_battle(app: tauri::AppHandle, payload: Value) -> Result<Value
 #[tauri::command]
 async fn calculate_quick_skills(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
     run_python_payload_async(app, "calculate-quick-skills", payload).await
+}
+
+#[tauri::command]
+async fn calculate_quick_skills_batch(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
+    run_python_payload_async(app, "calculate-quick-skills-batch", payload).await
 }
 
 #[tauri::command]
@@ -1696,51 +1614,42 @@ async fn calculate_required_power(app: tauri::AppHandle, payload: Value) -> Resu
 
 #[tauri::command]
 async fn apply_skill_buffs(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload_async(app, "apply-skill-buffs", payload).await
+    run_native_data(app, "apply-skill-buffs", payload).await
 }
 
 #[tauri::command]
 async fn skill_trigger_info(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload_async(app, "skill-trigger-info", payload).await
+    run_native_data(app, "skill-trigger-info", payload).await
 }
 
 #[tauri::command]
 async fn save_preset(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload_async(app, "save-preset", payload).await
+    run_native_data(app, "save-preset", payload).await
 }
 
 #[tauri::command]
 async fn manage_preset(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload_async(app, "manage-preset", payload).await
+    run_native_data(app, "manage-preset", payload).await
 }
 
 #[tauri::command]
 async fn import_team_code(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload_async(app, "import-team-code", payload).await
+    run_native_data(app, "import-team-code", payload).await
 }
 
 #[tauri::command]
 async fn save_picker_config(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload_async(app, "save-picker-config", payload).await
+    run_native_data(app, "save-picker-config", payload).await
 }
 
 #[tauri::command]
 async fn classify_image_samples(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
-    run_python_payload_async(app, "classify-image-samples", payload).await
+    run_native_inference(app, payload, true).await
 }
 
 #[tauri::command]
-async fn recognize_images(
-    app: tauri::AppHandle,
-    worker: tauri::State<'_, OcrWorker>,
-    images: Value,
-) -> Result<Value, String> {
-    let worker = worker.inner().clone();
-    tauri::async_runtime::spawn_blocking(move || {
-        run_ocr_worker(&app, &worker, serde_json::json!({ "images": images }))
-    })
-    .await
-    .map_err(|error| format!("ONNX OCR task failed: {error}"))?
+async fn recognize_images(app: tauri::AppHandle, images: Value) -> Result<Value, String> {
+    run_native_inference(app, images, false).await
 }
 
 #[tauri::command]
@@ -1815,41 +1724,65 @@ fn decode_base64(input: &str) -> Result<Vec<u8>, String> {
     Ok(output)
 }
 
+fn create_main_window(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    eprintln!("[startup] Preparing application data and WebView2 directories");
+    let user_data_dir = app_data_dir(app.handle());
+    let webview_dir = webview_data_dir(app.handle());
+    std::fs::create_dir_all(&user_data_dir)?;
+    std::fs::create_dir_all(&webview_dir)?;
+
+    let window_config = app
+        .config()
+        .app
+        .windows
+        .first()
+        .ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::NotFound, "missing main window config")
+        })?
+        .clone();
+
+    // Before App::run, App still owns the runtime and creates the native window
+    // synchronously. The AppHandle path discards native creation errors.
+    let window_builder = tauri::WebviewWindowBuilder::from_config(app, &window_config)?
+        .data_directory(webview_dir);
+    let window_builder = if let Some((width, height)) = configured_window_size(app.handle()) {
+        window_builder.inner_size(width, height)
+    } else {
+        window_builder
+    };
+    eprintln!("[startup] Creating main window and initializing WebView2");
+    let window = window_builder.build().map_err(|error| {
+        eprintln!("[startup] Main window initialization failed: {error} ({error:?})");
+        error
+    })?;
+    #[cfg(windows)]
+    {
+        let hwnd = window.hwnd()?;
+        if unsafe { IsWindow(hwnd.0) } == 0 {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "main window creation returned an invalid HWND",
+            ).into());
+        }
+        eprintln!("[startup] Native main window created: HWND={:#x}", hwnd.0 as usize);
+    }
+    // A launcher can pass a minimized startup state to the first native window.
+    window.unminimize()?;
+    window.show()?;
+    eprintln!("[startup] Main window initialized; restore and show requested");
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .manage(OcrWorker::default())
+        .manage(NativeData::default())
+        .manage(NativeInference::default())
         .manage(OverlayTargetState::default())
         .manage(OverlayInteractionState::default())
         .manage(OverlayVisibilityState::default())
         .setup(|app| {
-            let user_data_dir = app_data_dir(app.handle());
-            let webview_dir = webview_data_dir(app.handle());
-            std::fs::create_dir_all(&user_data_dir)?;
-            std::fs::create_dir_all(&webview_dir)?;
-
-            let window_config = app
-                .config()
-                .app
-                .windows
-                .first()
-                .ok_or_else(|| {
-                    std::io::Error::new(std::io::ErrorKind::NotFound, "missing main window config")
-                })?
-                .clone();
-
-            let window_builder =
-                tauri::WebviewWindowBuilder::from_config(app.handle(), &window_config)?
-                    .data_directory(webview_dir);
-            let window_builder = if let Some((width, height)) = configured_window_size(app.handle())
-            {
-                window_builder.inner_size(width, height)
-            } else {
-                window_builder
-            };
-            window_builder.build()?;
-
             #[cfg(windows)]
             {
                 let overlay_target_state = app.state::<OverlayTargetState>().inner().clone();
@@ -2130,6 +2063,7 @@ pub fn run() {
             list_burst_effects,
             calculate_battle,
             calculate_quick_skills,
+            calculate_quick_skills_batch,
             trait_power_candidates,
             calculate_enemy_attack_skills,
             calculate_willpower,
@@ -2150,6 +2084,10 @@ pub fn run() {
             begin_overlay_mixed_mode,
             force_overlay_edit_mode_command
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+    create_main_window(&app).unwrap_or_else(|error| {
+        panic!("[startup] Cannot initialize main window: {error} ({error:?})");
+    });
+    app.run(|_, _| {});
 }

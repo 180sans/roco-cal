@@ -879,6 +879,7 @@ def battle_damage(
     def_lv=60,
     hp=None,
     skill_data_override=None,
+    light_power_multiplier=0,
 ):
     """
     对战伤害封装函数
@@ -1112,6 +1113,8 @@ def battle_damage(
         damage_reductions.extend(defender_trait_modifiers["damage_reductions"])
 
         power_multipliers = normalize_modifier_list(power_multiplier)
+        if skill_element == "光" and light_power_multiplier:
+            power_multipliers.append(light_power_multiplier)
         power_multipliers.extend(normalize_modifier_list(skill_power_multiplier))
         power_multipliers.extend(attacker_trait_modifiers["power_multipliers"])
         power_multipliers.extend(defender_trait_modifiers["power_multipliers"])

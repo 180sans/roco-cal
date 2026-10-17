@@ -1,0 +1,18 @@
+[package]
+name = "native-migration-check"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+serde_json = { version = "1", features = ["preserve_order"] }
+image = { version = "0.25", default-features = false, features = ["png", "bmp", "jpeg"] }
+ort = { version = "=2.0.0-rc.9", default-features = false, features = ["load-dynamic"] }
+ort-sys = { version = "=2.0.0-rc.9", default-features = false }
+regex = "1"
+libloading = "0.8"
+base64 = "0.22"
+
+[[bin]]
+name = "native-migration-check"
+path = "main.rs"

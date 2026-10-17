@@ -42,6 +42,7 @@ BUFF_FIELDS = {
     "mag_def_buff",
     "speed_buff",
     "power_multiplier",
+    "light_power_buff",
     "power_bonus",
     "combo_plus",
     "combo_mul",
@@ -164,6 +165,7 @@ def _buff_option_label(effects: list[dict[str, Any]]) -> str:
         "mag_def_buff": ("魔防", "%"),
         "speed_buff": ("速度", ""),
         "power_multiplier": ("威力", "%"),
+        "light_power_buff": ("光系威力", "%"),
         "power_bonus": ("威力", ""),
         "combo_plus": ("连击", ""),
     }

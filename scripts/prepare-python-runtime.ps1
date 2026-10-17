@@ -1,171 +1,86 @@
 [CmdletBinding()]
-param(
-    [string]$PythonVersion = "3.11.9"
-)
-
+param([string]$PythonVersion = "3.11.9")
 $ErrorActionPreference = "Stop"
-
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $resourcesDir = Join-Path $projectRoot "src-tauri\resources"
 $runtimeDir = Join-Path $resourcesDir "python"
 $stagingDir = Join-Path $resourcesDir "python-staging"
 $backupDir = Join-Path $resourcesDir "python-backup"
-$packages = @(
-    "numpy==1.26.4",
-    "onnxruntime==1.20.1",
-    "Pillow==11.1.0",
-    "opencv-python-headless==4.11.0.86"
-)
-$runtimeSignature = (@(
-    "runtime-layout=3",
-    "python=$PythonVersion"
-) + $packages) -join "`n"
+$runtimeSignature = "runtime-layout=4`npython=$PythonVersion`ncore-only=true"
+
+foreach ($path in @($runtimeDir, $stagingDir, $backupDir)) {
+    if ((Split-Path -Parent ([IO.Path]::GetFullPath($path))) -ne [IO.Path]::GetFullPath($resourcesDir)) {
+        throw "Runtime path is outside the project's resource directory: $path"
+    }
+}
+
+# Preserve the native inference runtime before removing Python inference libraries.
+& (Join-Path $PSScriptRoot "prepare-inference-runtime.ps1")
 
 function Test-PreparedRuntime {
     param([string]$Path)
-
     $pythonExe = Join-Path $Path "python.exe"
-    $markerFile = Join-Path $Path ".runtime-signature"
-    if (-not (Test-Path -LiteralPath $pythonExe) -or -not (Test-Path -LiteralPath $markerFile)) {
-        return $false
-    }
-
-    $savedSignature = (Get-Content -LiteralPath $markerFile -Raw -Encoding UTF8).Trim()
-    if ($savedSignature -ne $runtimeSignature) {
-        return $false
-    }
-
-    & $pythonExe -c "import cv2, numpy, onnxruntime; from PIL import Image"
+    $marker = Join-Path $Path ".runtime-signature"
+    if (-not (Test-Path -LiteralPath $pythonExe) -or -not (Test-Path -LiteralPath $marker)) { return $false }
+    if ((Get-Content -LiteralPath $marker -Raw -Encoding UTF8).Trim() -ne $runtimeSignature) { return $false }
+    & $pythonExe -B -c "import json, math, argparse, pathlib, difflib, sys; assert sys.version.split()[0] == '$PythonVersion'"
     return $LASTEXITCODE -eq 0
 }
-
-if (Test-PreparedRuntime -Path $runtimeDir) {
-    Write-Host "Embedded Python OCR runtime is already prepared: $(Join-Path $runtimeDir 'python.exe')"
+function Remove-WorkspaceDirectory {
+    param([string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return }
+    $resolved = (Resolve-Path -LiteralPath $Path).Path
+    $root = (Resolve-Path -LiteralPath $resourcesDir).Path
+    if ((Split-Path -Parent $resolved) -ne $root -or (Split-Path -Leaf $resolved) -notin @("python-staging", "python-backup")) {
+        throw "Refusing to remove unexpected directory: $resolved"
+    }
+    Remove-Item -LiteralPath $resolved -Recurse -Force
+}
+if (Test-PreparedRuntime $runtimeDir) {
+    Write-Host "Embedded Python core runtime is already prepared."
     return
 }
-
-foreach ($temporaryDir in @($stagingDir, $backupDir)) {
-    if (Test-Path -LiteralPath $temporaryDir) {
-        Remove-Item -LiteralPath $temporaryDir -Recurse -Force
-    }
+if ((Test-Path -LiteralPath $backupDir) -and -not (Test-Path -LiteralPath $runtimeDir)) {
+    throw "An interrupted runtime replacement was found. Restore python-backup before continuing."
 }
-
-$architecture = "amd64"
-$archiveName = "python-$PythonVersion-embed-$architecture.zip"
-$downloadUrl = "https://www.python.org/ftp/python/$PythonVersion/$archiveName"
-$temporaryArchive = Join-Path $env:TEMP $archiveName
-$getPip = Join-Path $env:TEMP "get-pip.py"
-
+Remove-WorkspaceDirectory $stagingDir
+Remove-WorkspaceDirectory $backupDir
+$archive = Join-Path ([IO.Path]::GetTempPath()) ("roco-python-" + [guid]::NewGuid().ToString("N") + ".zip")
 try {
-    Write-Host "Preparing a clean embedded Python $PythonVersion ($architecture) runtime..."
-    Invoke-WebRequest -Uri $downloadUrl -OutFile $temporaryArchive
-    Expand-Archive -LiteralPath $temporaryArchive -DestinationPath $stagingDir -Force
-
-    $stagingPython = Join-Path $stagingDir "python.exe"
-    if (-not (Test-Path -LiteralPath $stagingPython)) {
-        throw "Embedded Python extraction failed: $stagingPython was not created."
+    $existingPython = Join-Path $runtimeDir "python.exe"
+    $reuse = $false
+    if (Test-Path -LiteralPath $existingPython) {
+        $detectedVersion = & $existingPython -B -c "import sys; print(sys.version.split()[0])"
+        $reuse = $LASTEXITCODE -eq 0 -and "$detectedVersion".Trim() -eq $PythonVersion
     }
-
-    $pthFile = Join-Path $stagingDir "python311._pth"
-    @(
-        "python311.zip",
-        ".",
-        "Lib\site-packages"
-    ) | Set-Content -LiteralPath $pthFile -Encoding ascii
-
-    Invoke-WebRequest -Uri "https://bootstrap.pypa.io/get-pip.py" -OutFile $getPip
-    & $stagingPython $getPip --no-warn-script-location
-    if ($LASTEXITCODE -ne 0) {
-        throw "pip bootstrap failed."
-    }
-
-    $packagesDir = Join-Path $stagingDir "Lib\site-packages"
-    & $stagingPython -m pip install --no-warn-script-location --no-deps --target $packagesDir @packages
-    if ($LASTEXITCODE -ne 0) {
-        throw "Embedded Python dependency installation failed."
-    }
-
-    $modelsDir = Join-Path $resourcesDir "ocr-models"
-    $classifierModel = Join-Path $resourcesDir "image-classifier\legacy_558.onnx"
-    $smokeTest = @'
-import sys
-from pathlib import Path
-import cv2
-import numpy
-import onnxruntime as ort
-from PIL import Image
-
-models = Path(sys.argv[1])
-for model in (models / "number" / "model.onnx", Path(sys.argv[2])):
-    ort.InferenceSession(str(model), providers=["CPUExecutionProvider"])
-if not (models / "number" / "charset.txt").read_text(encoding="utf-8").splitlines():
-    raise ValueError("Numeric OCR charset is empty")
-print(f"Runtime verified: Python {sys.version_info.major}.{sys.version_info.minor}, OpenCV {cv2.__version__}, NumPy {numpy.__version__}, ONNX Runtime {ort.__version__}, Pillow {Image.__version__}")
-'@
-    $smokeTestPath = Join-Path $stagingDir "_runtime_smoke_test.py"
-    Set-Content -LiteralPath $smokeTestPath -Value $smokeTest -Encoding UTF8
-    & $stagingPython $smokeTestPath $modelsDir $classifierModel
-    if ($LASTEXITCODE -ne 0) {
-        throw "Embedded Python OCR runtime validation failed."
-    }
-
-    # Remove build tooling and optional library features that the desktop API
-    # never imports. Paths are explicit so cleanup cannot escape site-packages.
-    $unusedRuntimePaths = @(
-        (Join-Path $packagesDir "pip"),
-        (Join-Path $packagesDir "setuptools"),
-        (Join-Path $packagesDir "wheel"),
-        (Join-Path $packagesDir "pkg_resources"),
-        (Join-Path $packagesDir "_distutils_hack"),
-        (Join-Path $packagesDir "bin"),
-        (Join-Path $packagesDir "cv2\data"),
-        (Join-Path $packagesDir "cv2\opencv_videoio_ffmpeg4110_64.dll"),
-        (Join-Path $packagesDir "onnxruntime\backend"),
-        (Join-Path $packagesDir "onnxruntime\datasets"),
-        (Join-Path $packagesDir "onnxruntime\quantization"),
-        (Join-Path $packagesDir "onnxruntime\tools"),
-        (Join-Path $packagesDir "onnxruntime\transformers")
-    )
-    foreach ($unusedPath in $unusedRuntimePaths) {
-        if (Test-Path -LiteralPath $unusedPath) {
-            Remove-Item -LiteralPath $unusedPath -Recurse -Force
+    if ($reuse) {
+        New-Item -ItemType Directory -Path $stagingDir | Out-Null
+        # The embedded distribution keeps its standard library and extensions
+        # at the root; third-party packages are confined to Lib/site-packages.
+        Get-ChildItem -LiteralPath $runtimeDir -File | Where-Object { $_.Name -ne ".runtime-signature" } | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $stagingDir $_.Name)
         }
+    } else {
+        Invoke-WebRequest -Uri "https://www.python.org/ftp/python/$PythonVersion/python-$PythonVersion-embed-amd64.zip" -OutFile $archive
+        Expand-Archive -LiteralPath $archive -DestinationPath $stagingDir
     }
-
-    & $stagingPython $smokeTestPath $modelsDir $classifierModel
-    if ($LASTEXITCODE -ne 0) {
-        throw "Embedded Python OCR runtime validation failed after trimming."
-    }
-    Remove-Item -LiteralPath $smokeTestPath -Force
-
+    $versionParts = $PythonVersion.Split('.')
+    $pythonTag = "$($versionParts[0])$($versionParts[1])"
+    @("python$pythonTag.zip", ".") | Set-Content -LiteralPath (Join-Path $stagingDir "python$pythonTag._pth") -Encoding ascii
+    $stagedPython = Join-Path $stagingDir "python.exe"
+    & $stagedPython -B -c "import json, math, argparse, pathlib, difflib, sys; sys.path.insert(0, sys.argv[1]); import desktop_api; from core import skill_finder, trait_runtime, will_power, calshuxing, ele_advantage; assert not any(k in sys.modules for k in ['numpy','cv2','PIL','onnxruntime'])" (Join-Path $resourcesDir "rocodatebase")
+    if ($LASTEXITCODE -ne 0) { throw "Embedded Python core runtime validation failed." }
     Set-Content -LiteralPath (Join-Path $stagingDir ".runtime-signature") -Value $runtimeSignature -Encoding UTF8
-
-    if (Test-Path -LiteralPath $runtimeDir) {
-        Move-Item -LiteralPath $runtimeDir -Destination $backupDir
-    }
-    try {
-        Move-Item -LiteralPath $stagingDir -Destination $runtimeDir
-    }
+    if (Test-Path -LiteralPath $runtimeDir) { Move-Item -LiteralPath $runtimeDir -Destination $backupDir }
+    try { Move-Item -LiteralPath $stagingDir -Destination $runtimeDir }
     catch {
-        if (Test-Path -LiteralPath $backupDir) {
-            Move-Item -LiteralPath $backupDir -Destination $runtimeDir
-        }
+        if (Test-Path -LiteralPath $backupDir) { Move-Item -LiteralPath $backupDir -Destination $runtimeDir }
         throw
     }
-    if (Test-Path -LiteralPath $backupDir) {
-        Remove-Item -LiteralPath $backupDir -Recurse -Force
-    }
+    Remove-WorkspaceDirectory $backupDir
+} finally {
+    if (Test-Path -LiteralPath $archive) { Remove-Item -LiteralPath $archive -Force }
+    Remove-WorkspaceDirectory $stagingDir
 }
-finally {
-    foreach ($temporaryFile in @($temporaryArchive, $getPip)) {
-        if (Test-Path -LiteralPath $temporaryFile) {
-            Remove-Item -LiteralPath $temporaryFile -Force
-        }
-    }
-    if (Test-Path -LiteralPath $stagingDir) {
-        Remove-Item -LiteralPath $stagingDir -Recurse -Force
-    }
-}
-
-$runtimeSize = (Get-ChildItem -LiteralPath $runtimeDir -File -Recurse | Measure-Object Length -Sum).Sum
-Write-Host ("Embedded Python OCR runtime prepared: {0:N1} MB" -f ($runtimeSize / 1MB))
+$bytes = (Get-ChildItem -LiteralPath $runtimeDir -File -Recurse | Measure-Object Length -Sum).Sum
+Write-Host ("Embedded Python core runtime prepared: {0:N1} MiB" -f ($bytes / 1MB))

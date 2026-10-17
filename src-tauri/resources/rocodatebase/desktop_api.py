@@ -96,6 +96,7 @@ def _pet_summary(pet: dict[str, Any]) -> dict[str, Any]:
         "traitEffect": trait_effect or "",
         "evolutionStage": evolution.get("stage", "") if isinstance(evolution, dict) else "",
         "nextForms": evolution.get("next", []) if isinstance(evolution, dict) else [],
+        "prevForms": evolution.get("prev", []) if isinstance(evolution, dict) else [],
         "evolutionChain": evolution.get("chain", []) if isinstance(evolution, dict) else [],
         "skillCount": len(skills) if isinstance(skills, list) else 0,
     }
@@ -247,6 +248,7 @@ def _attacker_args(state: dict[str, Any]) -> dict[str, Any]:
         "power_multiplier": (
             ([(power_multiplier / 100)] if power_multiplier else [])
         ) or None,
+        "light_power_multiplier": (state.get("light_power_buff", 0) or 0) / 100,
         "power_bonus": (state.get("power_bonus", 0) or 0) + (dedication_power_stacks * 20 if has_dedication_bonus else 0) + burst_power_bonus,
         "combo_plus": (state.get("combo_plus", 0) or 0) + (dedication_combo_stacks if has_dedication_bonus else 0),
         "combo_mul": state.get("combo_mul", 1) or 1,
@@ -545,6 +547,14 @@ def calculate_quick_skills(payload: dict[str, Any]) -> dict[str, Any]:
     return {"items": items}
 
 
+def calculate_quick_skills_batch(payload: dict[str, Any]) -> dict[str, Any]:
+    """Reuse one interpreter for stack trials; preserve each calculation verbatim."""
+    requests = payload.get("requests")
+    if not isinstance(requests, list):
+        raise ValueError("Quick skill requests must be a list")
+    return {"items": [calculate_quick_skills(request) for request in requests]}
+
+
 def trait_power_candidates(payload: dict[str, Any]) -> dict[str, Any]:
     """Prepare layer-dependent displayed powers before starting trait-alignment OCR."""
     from core.damresult import battle_damage
@@ -821,6 +831,12 @@ def calculate_willpower(payload: dict[str, Any]) -> dict[str, Any]:
     attacker = payload.get("attacker") or {}
     defender = payload.get("defender") or {}
     weather = payload.get("weather") or "none"
+    allowed_elements = WILLPOWER_ELEMENTS
+    bloodline = (attacker.get("bloodline") or "").strip()
+    if payload.get("restrict_to_bloodline") and bloodline:
+        allowed_elements = tuple(element for element in WILLPOWER_ELEMENTS if bloodline == f"{element}系血脉")
+        if not allowed_elements:
+            raise ValueError(f"{bloodline}无法使用愿力")
     attacker_data = pets_dataset.find(attacker.get("name"), devolution=attacker.get("devolution", 0), mega=attacker.get("mega", False))
     defender_data = pets_dataset.find(defender.get("name"), devolution=defender.get("devolution", 0), mega=defender.get("mega", False))
     attacker_args = _attacker_args(attacker)
@@ -846,12 +862,12 @@ def calculate_willpower(payload: dict[str, Any]) -> dict[str, Any]:
     mag = final_attack_value("mag", "mag_atk_buff")
     attack_type = "atk" if atk > mag else "mag"
     cases = willpower_skill_cases(attack_type)
-    cache: dict[tuple[float, bool], list[dict[str, Any]]] = {}
+    cache: dict[tuple[float, bool, bool], list[dict[str, Any]]] = {}
     elements = []
-    for element in WILLPOWER_ELEMENTS:
+    for element in allowed_elements:
         advantage = TypeChart.calc([element], defender_data["elements"])
         has_stab = element in attacker_data["elements"]
-        key = (advantage, has_stab)
+        key = (advantage, has_stab, element == "光" and bool(attacker.get("light_power_buff")))
         if key not in cache:
             skill_data = {"name": "愿力", "effect": "攻击", "resolved_cases": [{**case, "element": element} for case in cases]}
             cache[key] = battle_damage(**attacker_args, **_defender_args(defender), weather=weather, skill_data_override=skill_data)
@@ -917,11 +933,36 @@ def skill_trigger_info(payload: dict[str, Any]) -> dict[str, Any]:
         "combo_plus": "连击",
         "combo_mul": "连击倍",
     }
+    # Only count-dependent power effects can be inferred from OCR power.
+    # Combo, usage, cost and damage-only multipliers do not change that value.
+    def affects_power(option: dict[str, Any]) -> bool:
+        from core.skill_finder import _coerce_numeric
+
+        def numeric(value):
+            try:
+                return _coerce_numeric(value)
+            except (TypeError, ValueError):
+                return None
+
+        table = option.get("skill_power_by_count")
+        if isinstance(table, list) and table:
+            return len({numeric(value) for value in table}) > 1
+        for key, identity in (
+            ("skill_power_plus", 0), ("skill_power_mul", 1),
+            ("power_multiplier", 0), ("power_multiplier_plus", 0), ("power_multiplier_mul", 1),
+            ("mini_advantage_plus", 0), ("mini_advantage_mul", 1),
+        ):
+            value = numeric(option.get(key))
+            if value is not None and value != identity:
+                return True
+        return False
+
     stackable = [
         {
             "index": index,
             "label": option.get("label") or next((labels.get(key, key) for key in option if key not in {"multiple", "condition", "override", "mode", "context", "skill_power_by_count", "label"}), "叠加"),
             "max": len(option["skill_power_by_count"]) - 1 if isinstance(option.get("skill_power_by_count"), list) and option["skill_power_by_count"] else 10,
+            "affects_power": affects_power(option),
         }
         for index, option in enumerate(options)
         if isinstance(option, dict) and (bool(option.get("multiple", False)) or bool(option.get("skill_power_by_count")))
@@ -937,6 +978,7 @@ def skill_trigger_info(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "skill_name": skill_name,
         "description": skill_data.get("description", "") if skill_data else "",
+        "element": skill_data.get("element", "") if skill_data else "",
         "has_damage": bool(skill_data and any(key in skill_data for key in ("skill_power", "power", "damage"))),
         "has_buff": bool(resolve_buff_options(skill_data)),
         "stackable": stackable,
@@ -1578,90 +1620,32 @@ def ocr_worker() -> int:
 
 
 def main() -> int:
+    """Only core calculations cross the desktop's Python process boundary.
+
+    Legacy data/inference helpers above remain as regression-test references;
+    production queries, persistence, OCR and sprite inference run in Rust.
+    """
     os.chdir(BASE_DIR)
+    handlers = {
+        "core-probe": lambda payload: call_core_probe(),
+        "trait-info": trait_info,
+        "calculate-battle": calculate_battle,
+        "calculate-quick-skills": calculate_quick_skills,
+        "calculate-quick-skills-batch": calculate_quick_skills_batch,
+        "trait-power-candidates": trait_power_candidates,
+        "calculate-enemy-attack-skills": calculate_enemy_attack_skills,
+        "calculate-willpower": calculate_willpower,
+        "calculate-required-power": calculate_required_power,
+    }
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "command",
-        choices=[
-            "summary",
-            "presets",
-            "core-probe",
-            "app-state",
-            "list-pets",
-            "list-skills",
-            "trait-info",
-            "list-traits",
-            "list-burst-effects",
-            "calculate-battle",
-            "calculate-quick-skills",
-            "trait-power-candidates",
-            "calculate-enemy-attack-skills",
-            "calculate-willpower",
-            "calculate-required-power",
-            "apply-skill-buffs",
-            "skill-trigger-info",
-            "save-preset",
-            "manage-preset",
-            "import-team-code",
-            "save-picker-config",
-            "classify-image-samples",
-            "ocr-worker",
-        ],
-    )
+    parser.add_argument("command", choices=list(handlers))
     parser.add_argument("--payload", default="")
     parser.add_argument("--payload-stdin", action="store_true")
     args = parser.parse_args()
-
-    if args.command == "ocr-worker":
-        return ocr_worker()
-
     try:
         with contextlib.redirect_stdout(sys.stderr):
             payload_arg = _payload_from_text(sys.stdin.read() if args.payload_stdin else args.payload)
-            if args.command == "summary":
-                payload = summary()
-            elif args.command == "presets":
-                payload = list_presets()
-            elif args.command == "core-probe":
-                payload = call_core_probe()
-            elif args.command == "app-state":
-                payload = app_state()
-            elif args.command == "list-pets":
-                payload = list_pets(payload_arg)
-            elif args.command == "list-skills":
-                payload = list_skills(payload_arg)
-            elif args.command == "trait-info":
-                payload = trait_info(payload_arg)
-            elif args.command == "list-traits":
-                payload = list_traits(payload_arg)
-            elif args.command == "list-burst-effects":
-                payload = list_burst_effects()
-            elif args.command == "calculate-battle":
-                payload = calculate_battle(payload_arg)
-            elif args.command == "calculate-quick-skills":
-                payload = calculate_quick_skills(payload_arg)
-            elif args.command == "trait-power-candidates":
-                payload = trait_power_candidates(payload_arg)
-            elif args.command == "calculate-enemy-attack-skills":
-                payload = calculate_enemy_attack_skills(payload_arg)
-            elif args.command == "calculate-willpower":
-                payload = calculate_willpower(payload_arg)
-            elif args.command == "calculate-required-power":
-                payload = calculate_required_power(payload_arg)
-            elif args.command == "apply-skill-buffs":
-                payload = apply_skill_buffs(payload_arg)
-            elif args.command == "skill-trigger-info":
-                payload = skill_trigger_info(payload_arg)
-            elif args.command == "save-preset":
-                payload = save_preset(payload_arg)
-            elif args.command == "manage-preset":
-                payload = manage_preset(payload_arg)
-            elif args.command == "import-team-code":
-                payload = import_team_code(payload_arg)
-            elif args.command == "classify-image-samples":
-                payload = classify_image_samples(payload_arg)
-            else:
-                payload = save_picker_config(payload_arg)
+            payload = handlers[args.command](payload_arg)
         _json_response({"ok": True, "data": payload})
         return 0
     except Exception as exc:

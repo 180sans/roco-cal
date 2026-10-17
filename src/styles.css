@@ -2689,18 +2689,26 @@ body:has(.plugin-mode) .app-header .weather-panel {
 
 .willpower-result-tabs {
   display: grid;
-  gap: 4px;
-  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 4px 6px;
+  grid-template-columns: repeat(9, minmax(64px, 1fr));
   padding: 0 0 5px;
 }
 
 .willpower-result-tabs button {
+  align-items: center;
+  display: inline-flex;
   font-size: 11px;
-  min-width: 0;
-  padding: 4px 2px;
+  gap: 3px;
+  justify-content: center;
+  min-width: 64px;
+  padding: 4px;
+  white-space: nowrap;
 }
 
 .willpower-result-tabs button.active { background: #23785e; border-color: #1c614c; color: #fff; }
+
+.result-floating.has-willpower { width: min(680px, calc(100vw - 32px)); }
+.battle-page.plugin-mode .result-floating.has-willpower { width: 680px; }
 
 .bonus-tool-floating {
   background: #f8fdf9;
@@ -4480,6 +4488,27 @@ body:has(.plugin-mode) .app-header .weather-panel {
   color: #174b3d;
 }
 
+button.refresh-button.refresh-button,
+button.trigger-button.trigger-button {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 24px !important;
+  justify-content: center;
+  max-width: 24px !important;
+  min-width: 24px !important;
+  padding: 3px !important;
+  width: 24px !important;
+}
+
+button.refresh-button > img,
+button.trigger-button > img {
+  flex: 0 0 16px;
+  height: 16px;
+  object-fit: contain;
+  pointer-events: none;
+  width: 16px;
+}
+
 .slot strong {
   flex: 1;
   font-size: var(--team-pet-font-size);
@@ -5621,6 +5650,17 @@ body:has(.plugin-mode) .app-header .weather-panel {
   color: #f0fff8 !important;
 }
 
+.battle-page.immersive-mode.plugin-mode .willpower-result-tabs button.active,
+.battle-page.immersive-mode.plugin-mode .willpower-result-tabs button.active:hover {
+  background: #23785e !important;
+  border-color: #7ee7b8 !important;
+  color: #fff !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .willpower-result-tabs button.active span {
+  color: #fff !important;
+}
+
 .overlay-attached-picker.skill-picker-backdrop .picker-modal {
   backdrop-filter: blur(10px) saturate(0.8) brightness(0.55);
   background: rgba(18, 26, 36, 0.88) !important;
@@ -6035,4 +6075,50 @@ body:has(.plugin-mode) .app-header .weather-panel {
   flex: 1 1 auto;
   min-width: 24px;
   overflow: hidden;
+}
+
+/* 技能框内完整响应点击；缩放热区放在框外，拖动仍可从卡片发起。 */
+.battle-page.plugin-mode .skill-card-floating::before {
+  pointer-events: none;
+}
+
+.battle-page.plugin-mode .skill-card-floating > .plugin-resize-edge.top {
+  top: -6px;
+}
+
+.battle-page.plugin-mode .skill-card-floating > .plugin-resize-edge.bottom {
+  bottom: -6px;
+}
+
+.battle-page.plugin-mode .skill-card-floating > .plugin-resize-edge.left {
+  left: -6px;
+}
+
+.battle-page.plugin-mode .skill-card-floating > .plugin-resize-edge.right {
+  right: -6px;
+}
+
+:is(.battle-page.immersive-mode.plugin-mode, .battle-page.plugin-mode) .skill-card-floating.team-skill-panel,
+:is(.battle-page.immersive-mode.plugin-mode, .battle-page.plugin-mode) .skill-card-floating.team-skill-panel:hover {
+  border-color: transparent !important;
+  outline: none !important;
+}
+
+/* 默认使用半透明属性色；选中时加深底色，并用红色边框提示。 */
+:is(.battle-page.immersive-mode.plugin-mode .skill-card-floating, .battle-page, .preset-editor-panel) .team-skill-card[data-skill-element],
+:is(.battle-page.immersive-mode.plugin-mode .skill-card-floating, .battle-page, .preset-editor-panel) .team-skill-card[data-skill-element]:hover {
+  background: color-mix(in srgb, var(--skill-element-bg) 35%, transparent) !important;
+  border: 2px solid transparent !important;
+  box-shadow: none !important;
+  color: var(--skill-element-text) !important;
+  position: relative;
+}
+
+:is(.battle-page.immersive-mode.plugin-mode .skill-card-floating, .battle-page, .preset-editor-panel) .team-skill-card[data-skill-element] :is(strong, span, .slot-action) {
+  color: var(--skill-element-text) !important;
+}
+
+:is(.battle-page.immersive-mode.plugin-mode .skill-card-floating, .battle-page, .preset-editor-panel) .team-skill-card[data-skill-element].selected {
+  background: color-mix(in srgb, var(--skill-element-bg) 88%, #000) !important;
+  border-color: #ff3030 !important;
 }

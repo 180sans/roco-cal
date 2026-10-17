@@ -61,6 +61,28 @@
     "type": "状态",
     "skill_power": null,
     "description": "光系技能威力永久+50%，应对防御：改为永久+100%。",
+    "buff_options": [
+      {
+        "label": "自己光系威力 +50%",
+        "effects": [
+          {
+            "target": "self",
+            "field": "light_power_buff",
+            "value": 50
+          }
+        ]
+      },
+      {
+        "label": "应对防御：自己光系威力 +100%",
+        "effects": [
+          {
+            "target": "self",
+            "field": "light_power_buff",
+            "value": 100
+          }
+        ]
+      }
+    ],
     "effect": "normal"
   },
   {
@@ -159,6 +181,18 @@
     "element": "光",
     "type": "防御",
     "description": "减伤90%，应对攻击：自己获得光系技能威力永久+50%。",
+    "buff_options": [
+      {
+        "label": "应对攻击：自己光系威力 +50%",
+        "effects": [
+          {
+            "target": "self",
+            "field": "light_power_buff",
+            "value": 50
+          }
+        ]
+      }
+    ],
     "skill_power": null,
     "cost": 2,
     "effect": "normal"
