@@ -5,6 +5,7 @@ import { createPortal, flushSync } from "react-dom";
 import { Fragment, type CSSProperties, type PointerEvent as ReactPointerEvent, type PointerEventHandler as ReactPointerEventHandler, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { prepareNumericImage, type NumericOcrMode } from "./numericOcr";
 import { matchTraitStacks, type TraitPowerCandidates } from "./traitAlignment";
+import { beginPluginLongPressDrag } from "./pluginLongPressDrag";
 
 const STATS = ["hp", "atk", "mag", "def", "res", "spd"] as const;
 const STAT_LABEL: Record<(typeof STATS)[number], string> = {
@@ -3032,6 +3033,69 @@ function TeamBattlePage({
     window.addEventListener("pointerup", stop);
   }
 
+  const pluginDragStartRef = useRef<(event: PointerEvent, panel: HTMLElement) => (() => void) | undefined>(() => undefined);
+  pluginDragStartRef.current = (event, panel) => {
+    const regionClasses: Array<[TeamRegionId, string]> = [
+      ["left-roster", "team-left-roster"], ["right-roster", "team-right-roster"],
+      ["left-bonus-tools", "team-left-bonus-toolbar"], ["right-bonus-tools", "team-right-bonus-toolbar"],
+      ["left-buff", "team-left-buff"], ["right-buff", "team-right-buff"], ["weather", "team-weather"],
+    ];
+    const regionId = regionClasses.find(([, name]) => panel.classList.contains(name))?.[0];
+    const overlayClass = [...panel.classList].find((name) => /^team-(left|right)-(trait|evolution|skill-\d+)$/.test(name));
+    const overlayId = panel.dataset.pluginOverlayId || overlayClass?.replace("team-", "");
+    const start = regionId ? regionPositions[regionId] : overlayId ? overlayLayout(overlayId) : undefined;
+    if (!start) return;
+    const bounds = panel.getBoundingClientRect();
+    const workspace = panel.closest(".team-layout")?.getBoundingClientRect();
+    return beginPluginLongPressDrag(event, panel, (dx, dy) => {
+      let x = snapToGrid(start.x + dx);
+      let y = snapToGrid(start.y + dy);
+      if (regionId) {
+        if (regionId === "left-buff" || regionId === "right-buff") {
+          x = start.x + Math.min(Math.max(-bounds.left, dx), window.innerWidth - bounds.right);
+          y = start.y + Math.min(Math.max(-bounds.top, dy), window.innerHeight - bounds.bottom);
+        } else if (workspace) {
+          const minX = start.x + workspace.left - bounds.left;
+          const maxX = start.x + workspace.right - bounds.right;
+          const minY = start.y + workspace.top - bounds.top;
+          const maxY = start.y + workspace.bottom - bounds.bottom;
+          x = Math.min(Math.max(minX, x), Math.max(minX, maxX));
+          y = Math.min(Math.max(minY, y), Math.max(minY, maxY));
+        }
+        moveRegion(regionId, { x, y });
+      } else if (overlayId) {
+        if (overlayId === "action") {
+          x = Math.min(Math.max(8, x), Math.max(8, window.innerWidth - panel.offsetWidth - 8));
+          y = Math.min(Math.max(8, y), Math.max(8, window.innerHeight - panel.offsetHeight));
+        } else {
+          x = Math.max(0, x);
+          y = Math.max(0, y);
+        }
+        updateOverlayLayout(overlayId, { x, y }, false);
+      }
+    }, regionId ? () => focusRegion(regionId) : undefined);
+  };
+
+  useEffect(() => {
+    if (displayMode !== "plugin") return;
+    let cleanupGesture: (() => void) | undefined;
+    const start = (event: PointerEvent) => {
+      if (event.button !== 0 || !event.isPrimary) return;
+      cleanupGesture?.();
+      cleanupGesture = undefined;
+      const path = event.composedPath();
+      if (path.some((node) => node instanceof HTMLElement && node.matches(".modal-backdrop, .trait-expanded-content, .team-buff-grid, .plugin-resize-edge"))) return;
+      const panel = path.find((node): node is HTMLElement => node instanceof HTMLElement && node.matches("[data-plugin-resizable]"));
+      if (!panel) return;
+      cleanupGesture = pluginDragStartRef.current(event, panel);
+    };
+    document.addEventListener("pointerdown", start, true);
+    return () => {
+      document.removeEventListener("pointerdown", start, true);
+      cleanupGesture?.();
+    };
+  }, [displayMode]);
+
   useEffect(() => {
     if (displayMode !== "plugin") return;
     const startResize = (event: PointerEvent) => {
@@ -3040,19 +3104,10 @@ function TeamBattlePage({
       const resizeEdge = path.find((node): node is HTMLElement => node instanceof HTMLElement && node.classList.contains("plugin-resize-edge"));
       const panel = resizeEdge?.closest<HTMLElement>("[data-plugin-resizable]")
         || path.find((node): node is HTMLElement => node instanceof HTMLElement && node.matches("[data-plugin-resizable]"));
-      if (!panel) return;
+      if (!panel || !resizeEdge) return;
       const rect = panel.getBoundingClientRect();
       const edge = resizeEdge?.dataset.resizeEdge;
-      const targetIsPanel = event.target === panel;
-      const distances = {
-        left: Math.abs(event.clientX - rect.left),
-        right: Math.abs(rect.right - event.clientX),
-        top: Math.abs(event.clientY - rect.top),
-        bottom: Math.abs(rect.bottom - event.clientY),
-      };
-      const nearest = (Object.entries(distances) as Array<["left" | "right" | "top" | "bottom", number]>)
-        .sort(([, first], [, second]) => first - second)[0];
-      const activeEdge = edge || (targetIsPanel && nearest && nearest[1] <= 8 ? nearest[0] : null);
+      const activeEdge = edge;
       if (!activeEdge) return;
       const edges = {
         left: activeEdge === "left",
@@ -4704,43 +4759,9 @@ function TeamSkillCards({
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
   const [skillData, setSkillData] = useState<SkillListResult>({ petSkills: [], allSkills: [] });
   const panelRef = useRef<HTMLElement | null>(null);
-  const suppressCardClickRef = useRef(false);
   const [skillInfo, setSkillInfo] = useState<SkillTriggerInfo | null>(null);
   const currentSkill = value.current_skill || value.skills.find(Boolean) || "";
   const controlSkill = onlyIndex === undefined ? currentSkill : cards[0]?.name || "";
-
-  function startFloatingDrag(event: ReactPointerEvent<HTMLElement>) {
-    if (!floating || pickerIndex !== null) return;
-    const dragTarget = event.target as HTMLElement;
-    if (dragTarget.closest("button, input, select, textarea, summary, .plugin-resize-edge")) return;
-    // 技能卡自身也可以拖动：超过阈值才算移动，普通点击仍然是选技能。
-    if (dragTarget.closest("[role=button]") && !dragTarget.closest(".team-skill-card")) return;
-    event.preventDefault();
-    suppressCardClickRef.current = false;
-    const start = { pointerX: event.clientX, pointerY: event.clientY, ...(layout || defaultPluginOverlayLayout(className)) };
-    let moved = false;
-    const move = (moveEvent: PointerEvent) => {
-      const dx = moveEvent.clientX - start.pointerX;
-      const dy = moveEvent.clientY - start.pointerY;
-      // 未超过拖动阈值时不移动卡片，避免轻微手抖引起重渲染或点击落空。
-      if (!moved && Math.abs(dx) <= 3 && Math.abs(dy) <= 3) return;
-      moved = true;
-      suppressCardClickRef.current = true;
-      onLayoutChange?.({
-        x: Math.max(0, snapToGrid(start.x + dx)),
-        y: Math.max(0, snapToGrid(start.y + dy)),
-      });
-    };
-    const stop = () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", stop);
-      window.removeEventListener("pointercancel", stop);
-      window.setTimeout(() => { suppressCardClickRef.current = false; }, 0);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", stop);
-    window.addEventListener("pointercancel", stop);
-  }
 
   useEffect(() => {
     if (pickerIndex === null) return;
@@ -4806,12 +4827,7 @@ function TeamSkillCards({
   }
 
   return (
-    <section ref={panelRef} className={`team-skill-panel ${floating ? "skill-card-floating" : ""} ${className}`.trim()} data-panel-state={state} data-overlay-control data-plugin-resizable={floating || undefined} style={floating && layout ? { left: layout.x, top: layout.y, width: layout.width, height: layout.height, ...pluginContentStyle(layout) } : undefined} onPointerDown={floating ? startFloatingDrag : undefined} onClickCapture={(event) => {
-      if (!suppressCardClickRef.current) return;
-      event.preventDefault();
-      event.stopPropagation();
-      suppressCardClickRef.current = false;
-    }}>
+    <section ref={panelRef} className={`team-skill-panel ${floating ? "skill-card-floating" : ""} ${className}`.trim()} data-panel-state={state} data-overlay-control data-plugin-resizable={floating || undefined} style={floating && layout ? { left: layout.x, top: layout.y, width: layout.width, height: layout.height, ...pluginContentStyle(layout) } : undefined}>
       {floating ? <PluginResizeEdges /> : null}
       <div className={floating ? "plugin-panel-content" : undefined}>
         <h2>{title}</h2>

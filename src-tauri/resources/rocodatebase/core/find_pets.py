@@ -1,6 +1,7 @@
 import os
 import json
 import re
+from copy import deepcopy
 from typing import Optional, List
 from typing import Callable
 
@@ -70,7 +71,31 @@ class SpiritFinder:
                 spirit = json.load(f)
         except (json.JSONDecodeError, IOError):
             return None
-        return self._merge_trait_summary(spirit)
+        return self._merge_trait_summary(self._inherit_mega_skills(spirit))
+
+    def _inherit_mega_skills(self, spirit: dict) -> dict:
+        """首领技能组只从原进化形态读取，忽略首领文件中的旧技能组。"""
+        current = spirit
+        visited = set()
+        while current.get("evolution", {}).get("stage") == "mega":
+            label = f"{current.get('id', '')}{current.get('name', '')}"
+            if label in visited:
+                raise ValueError(f"首领技能继承存在循环：{label}")
+            visited.add(label)
+            previous = current["evolution"].get("prev")
+            if not isinstance(previous, list) or len(previous) != 1 or not isinstance(previous[0], str):
+                raise ValueError(f"首领技能继承需要唯一原形态：{label}")
+            path = self._id_name_index.get(previous[0])
+            if path is None:
+                raise ValueError(f"首领技能继承找不到原形态：{label} → {previous[0]}")
+            with open(path, "r", encoding="utf-8") as file:
+                current = json.load(file)
+        if current is not spirit:
+            skills = current.get("skills")
+            if not isinstance(skills, list):
+                raise ValueError(f"首领技能继承的原形态技能组无效：{previous[0]}")
+            spirit["skills"] = deepcopy(skills)
+        return spirit
 
     def _merge_trait_summary(self, spirit: dict) -> dict:
         if not isinstance(spirit, dict):
@@ -197,7 +222,7 @@ class SpiritFinder:
     def load(self, filepath):
         with open(filepath, "r", encoding="utf-8") as f:
             spirit = json.load(f)
-        return self._merge_trait_summary(spirit)
+        return self._merge_trait_summary(self._inherit_mega_skills(spirit))
 
     def _apply_devolution(self, spirit: dict, steps: int) -> dict:
         """
@@ -436,7 +461,10 @@ def process_skills(skills_dir: str, output_dir: str):
             continue
 
         # ---- 3. 录入技能 ----
-        spirit["skills"] = skills
+        if spirit.get("evolution", {}).get("stage") == "mega":
+            spirit.pop("skills", None)
+        else:
+            spirit["skills"] = skills
 
         # ---- 4. 输出到目标文件夹 ----
         spirit_id= spirit.get("id", "")
@@ -447,7 +475,8 @@ def process_skills(skills_dir: str, output_dir: str):
         try:
             with open(out_filepath, "w", encoding="utf-8") as f:
                 json.dump(spirit, f, ensure_ascii=False, indent=2)
-            success_list.append(f"{query} -> {out_filename}（{len(skills)} 个技能）")
+            skill_note = "继承原形态技能组" if spirit.get("evolution", {}).get("stage") == "mega" else f"{len(skills)} 个技能"
+            success_list.append(f"{query} -> {out_filename}（{skill_note}）")
             print(f"[成功] {query} -> {out_filename}")
         except IOError as e:
             msg = f"写入失败 '{out_filename}': {e}"

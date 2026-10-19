@@ -819,11 +819,12 @@ def resolve_effective_skill_combos(
             (attacker_modifiers, defender_modifiers),
             key=lambda modifiers: modifiers["combo_fix_priority"],
         )["combo_fixed"]
-        if combo_fix is not None:
+        total_plus = combo_plus + attacker_modifiers["combo_plus"] + defender_modifiers["combo_plus"] + mark_modifiers["combo_plus"]
+        total_mul = combo_mul + attacker_modifiers["combo_mul_delta"] + defender_modifiers["combo_mul_delta"] + mark_modifiers["combo_mul_delta"]
+        # 固定连击只约束已有连击来源，不给普通单次技能新增连击。
+        if combo_fix is not None and (base_combo is not None or total_plus or total_mul != 1):
             combo = normalize_count(combo_fix)
         else:
-            total_plus = combo_plus + attacker_modifiers["combo_plus"] + defender_modifiers["combo_plus"] + mark_modifiers["combo_plus"]
-            total_mul = combo_mul + attacker_modifiers["combo_mul_delta"] + defender_modifiers["combo_mul_delta"] + mark_modifiers["combo_mul_delta"]
             combo = normalize_count(((base_combo if base_combo is not None else 1) + total_plus) * total_mul)
         combos.append(combo if combo is not None else 1)
     return combos
@@ -1086,7 +1087,8 @@ def battle_damage(
             (attacker_trait_modifiers, defender_trait_modifiers),
             key=lambda modifiers: modifiers["combo_fix_priority"],
         )["combo_fixed"]
-        if combo_fix is not None:
+        # 固定连击只约束已有连击来源，不给普通单次技能新增连击。
+        if combo_fix is not None and (combo is not None or combined_combo_plus or combined_combo_mul != 1):
             combo = normalize_count(combo_fix)
         elif combo is not None or combined_combo_plus or combined_combo_mul != 1:
             base_combo = combo if combo is not None else 1

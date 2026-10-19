@@ -72,7 +72,7 @@ def data_parity(api):
         pets = [
             {"id":"001","name":"喵喵","other_name":{"旧名":"小猫"},"elements":["草"],"特性":"电流刺激","evolution":{"next":["002大猫"]},"skills":[{"skill_name":"抓","unlock_condition":"初始"}]},
             {"id":"002","name":"大猫","elements":["草","电"],"特性":{"名称":"自带","效果":"直接摘要"},"evolution":{"next":["003大猫Mega"]},"skills":[{"skill_name":"雷暴"}]},
-            {"id":"003","name":"大猫Mega","elements":["电"],"evolution":{"stage":"mega"}},
+            {"id":"003","name":"大猫Mega","elements":["电"],"evolution":{"stage":"mega","prev":["002大猫"]}},
             {"id":"004","name":"鸭吉吉","elements":["水"],"other_name":["鸭子"],"skills":[{"skill_name":"抓"}]},
             {"id":"005","name":"鸭吉吉（形态）","elements":["水"],"skills":[{"skill_name":"引雷"}]},
             {"id":"006","name":"鸭吉吉国王","elements":["水"]},
@@ -130,7 +130,7 @@ def data_parity(api):
         for command in ["list-pets","list-traits"]:
             for payload in [{},{"sortDesc":True},{"finalOnly":True},{"query":"鸭"},{"element":"电"},{"query":"电流","finalOnly":True},{"limit":1}]:compare(command,payload)
         for query in ["","抓","雷","notfound"]:
-            for pet in ["","001喵喵","小猫","鸭子"]:compare("list-skills",{"query":query,"petQuery":pet})
+            for pet in ["","001喵喵","小猫","鸭子","003大猫Mega"]:compare("list-skills",{"query":query,"petQuery":pet})
         for name in ["抓","引雷","雷暴","错误选项","非法buff","光系强化","光系条件强化","不存在",""]:
             for cmd in ["apply-skill-buffs","skill-trigger-info"]:compare(cmd,{"skillName":name})
         for action,extra in [("create_group",{"groupName":"新组"}),("copy_preset",{"groupName":"第二组","presetKey":"旧预设","targetGroup":"新组"}),("move_preset",{"groupName":"新组","presetKey":"旧预设","targetGroup":"第二组"}),("delete_preset",{"groupName":"第二组","presetKey":"旧预设 副本2"}),("delete_group",{"groupName":"新组"}),("delete_group",{"groupName":"缺失"})]:compare("manage-preset",{"action":action,**extra})

@@ -1,7 +1,7 @@
 //! Desktop data operations. Battle formulas and trait runtime stay in Python.
 use regex::Regex;
 use serde_json::{json, Map, Value};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 pub type Result<T> = std::result::Result<T, String>;
@@ -129,6 +129,114 @@ pub struct DesktopData {
     traits: Vec<Value>,
     loaded: bool,
 }
+
+// Resolve against the raw records before updating the cache so every caller
+// (skill picker, summaries and team-code matching) sees the inherited skills.
+fn inherit_mega_skills(pets: &mut [Value]) -> Result<()> {
+    let updates = {
+        let by_label: BTreeMap<_, _> = pets.iter().map(|p| (label(p), p)).collect();
+        let mut updates = vec![];
+        for (index, pet) in pets.iter().enumerate() {
+            if text(&pet["evolution"]["stage"]) != "mega" {
+                continue;
+            }
+            let mut current = pet;
+            let mut visited = BTreeSet::new();
+            while text(&current["evolution"]["stage"]) == "mega" {
+                let current_label = label(current);
+                if !visited.insert(current_label.clone()) {
+                    return Err(format!("首领技能继承存在循环：{current_label}"));
+                }
+                let previous = array(&current["evolution"]["prev"]);
+                if previous.len() != 1 || !previous[0].is_string() {
+                    return Err(format!("首领技能继承需要唯一原形态：{current_label}"));
+                }
+                let base = text(&previous[0]);
+                current = by_label
+                    .get(base)
+                    .copied()
+                    .ok_or_else(|| format!("首领技能继承找不到原形态：{current_label} → {base}"))?;
+            }
+            let skills = current
+                .get("skills")
+                .filter(|v| v.is_array())
+                .ok_or_else(|| format!("首领技能继承的原形态技能组无效：{}", label(current)))?;
+            updates.push((index, skills.clone()));
+        }
+        updates
+    };
+    for (index, skills) in updates {
+        pets[index]["skills"] = skills;
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod mega_skill_tests {
+    use super::*;
+
+    #[test]
+    fn branches_inherit_full_entries_and_keep_their_own_form() {
+        let mut pets = vec![
+            json!({"id":"004","name":"原形态","skills":[{"skill_name":"斩断","unlock_condition":"技能石"}]}),
+            json!({"id":"004","name":"同编号异形","skills":[{"skill_name":"异形技能"}]}),
+            json!({"id":"004","name":"首领甲","atk":134,"特性":"首领特性","evolution":{"stage":"mega","prev":["004原形态"]},"skills":[{"skill_name":"旧错误技能"}]}),
+            json!({"id":"004","name":"首领乙","evolution":{"stage":"mega","prev":["004原形态"]}}),
+        ];
+        let original_base = pets[0].clone();
+        let other_form = pets[1].clone();
+        inherit_mega_skills(&mut pets).unwrap();
+        assert_eq!(pets[0], original_base);
+        assert_eq!(pets[1], other_form);
+        assert_eq!(pets[2]["skills"], original_base["skills"]);
+        assert_eq!(pets[3]["skills"], original_base["skills"]);
+        assert_eq!(pets[2]["atk"], 134);
+        assert_eq!(pets[2]["特性"], "首领特性");
+        pets[2]["skills"][0]["skill_name"] = json!("修改副本");
+        assert_eq!(pets[0], original_base);
+        assert_eq!(pets[3]["skills"], original_base["skills"]);
+    }
+
+    #[test]
+    fn follows_inheritance_chain_without_using_stale_skills() {
+        let mut pets = vec![
+            json!({"id":"004","name":"原形态","skills":[{"skill_name":"新技能"}]}),
+            json!({"id":"004","name":"首领甲","evolution":{"stage":"mega","prev":["004原形态"]},"skills":[{"skill_name":"旧技能"}]}),
+            json!({"id":"004","name":"首领乙","evolution":{"stage":"mega","prev":["004首领甲"]}}),
+        ];
+        inherit_mega_skills(&mut pets).unwrap();
+        assert_eq!(pets[1]["skills"], pets[0]["skills"]);
+        assert_eq!(pets[2]["skills"], pets[0]["skills"]);
+    }
+
+    #[test]
+    fn invalid_sources_fail_before_changing_any_pet() {
+        for previous in [
+            json!([]),
+            json!(["004不存在"]),
+            json!(["004原形态", "004其他"]),
+        ] {
+            let mut pets = vec![
+                json!({"id":"004","name":"原形态","skills":[]}),
+                json!({"id":"004","name":"首领甲","evolution":{"stage":"mega","prev":["004原形态"]}}),
+                json!({"id":"004","name":"首领乙","evolution":{"stage":"mega","prev":previous}}),
+            ];
+            let original = pets.clone();
+            assert!(inherit_mega_skills(&mut pets).is_err());
+            assert_eq!(pets, original);
+        }
+    }
+
+    #[test]
+    fn rejects_cycles() {
+        let mut pets = vec![
+            json!({"id":"004","name":"首领甲","evolution":{"stage":"mega","prev":["004首领乙"]}}),
+            json!({"id":"004","name":"首领乙","evolution":{"stage":"mega","prev":["004首领甲"]}}),
+        ];
+        assert!(inherit_mega_skills(&mut pets).unwrap_err().contains("循环"));
+    }
+}
+
 impl DesktopData {
     pub fn new(root: PathBuf, user: PathBuf) -> Self {
         Self {
@@ -169,6 +277,7 @@ impl DesktopData {
                 pets.push(p);
             }
         }
+        inherit_mega_skills(&mut pets)?;
         let mut skills = vec![];
         for path in json_files(&self.data().join("skills_database"))? {
             let data = load(&path, json!([]))?;

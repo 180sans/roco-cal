@@ -238,6 +238,10 @@
     {
       "skill_name": "有效预防",
       "unlock_condition": "[技能石]有效预防"
+    },
+    {
+      "skill_name": "恐吓",
+      "unlock_condition": "[技能石]恐吓"
     }
   ]
 }

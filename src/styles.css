@@ -6077,24 +6077,30 @@ button.trigger-button > img {
   overflow: hidden;
 }
 
-/* 技能框内完整响应点击；缩放热区放在框外，拖动仍可从卡片发起。 */
-.battle-page.plugin-mode .skill-card-floating::before {
+/* 插件框内短按点击、长按拖动；缩放热区仅放在框外。 */
+.battle-page.plugin-mode [data-plugin-resizable]::before,
+.battle-page.plugin-mode [data-plugin-resizable] > .plugin-drag-zone {
   pointer-events: none;
 }
 
-.battle-page.plugin-mode .skill-card-floating > .plugin-resize-edge.top {
+.battle-page.plugin-mode [data-plugin-dragging="true"],
+.battle-page.plugin-mode [data-plugin-dragging="true"] * {
+  cursor: grabbing !important;
+}
+
+.battle-page.plugin-mode [data-plugin-resizable] > .plugin-resize-edge.top {
   top: -6px;
 }
 
-.battle-page.plugin-mode .skill-card-floating > .plugin-resize-edge.bottom {
+.battle-page.plugin-mode [data-plugin-resizable] > .plugin-resize-edge.bottom {
   bottom: -6px;
 }
 
-.battle-page.plugin-mode .skill-card-floating > .plugin-resize-edge.left {
+.battle-page.plugin-mode [data-plugin-resizable] > .plugin-resize-edge.left {
   left: -6px;
 }
 
-.battle-page.plugin-mode .skill-card-floating > .plugin-resize-edge.right {
+.battle-page.plugin-mode [data-plugin-resizable] > .plugin-resize-edge.right {
   right: -6px;
 }
 
