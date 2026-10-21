@@ -153,7 +153,7 @@ def _normalize_buff_option(option: Any, index: int) -> dict[str, Any] | None:
     effects = [item for raw in raw_effects if (item := _normalize_buff_effect(raw)) is not None]
     if not effects:
         return None
-    label = str(option.get("label") or _buff_option_label(effects) or f"Buff 选项 {index + 1}").strip()
+    label = _buff_option_label(effects)
     return {"label": label, "effects": effects}
 
 
@@ -165,7 +165,7 @@ def _buff_option_label(effects: list[dict[str, Any]]) -> str:
         "mag_def_buff": ("魔防", "%"),
         "speed_buff": ("速度", ""),
         "power_multiplier": ("威力", "%"),
-        "light_power_buff": ("光系威力", "%"),
+        "light_power_buff": ("光威", "%"),
         "power_bonus": ("威力", ""),
         "combo_plus": ("连击", ""),
     }
@@ -175,10 +175,10 @@ def _buff_option_label(effects: list[dict[str, Any]]) -> str:
         field = effect["field"]
         value = effect["value"]
         if field == "combo_mul":
-            text = f"连击 x{value:g}"
+            text = f"连击倍{value:g}"
         else:
             field_label, suffix = field_labels[field]
-            text = f"{field_label} {value:+g}{suffix}"
+            text = f"{field_label}{value:+g}{suffix}"
         labels.append(f"{target}{text}")
     return " / ".join(labels)
 

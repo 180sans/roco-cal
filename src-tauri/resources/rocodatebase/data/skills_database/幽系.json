@@ -67,7 +67,7 @@
     "description": "造成魔伤，若敌方能量等于0，造成20倍伤害。",
     "triggered": {
       "mode": "enemy_energy_0",
-      "damage_multiplier": "19"
+      "skill_power_mul": "20"
     },
     "effect": "normal"
   },

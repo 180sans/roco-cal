@@ -779,7 +779,7 @@ fn buff_label(effects: &[Value]) -> String {
             let n = e["value"].as_f64().unwrap_or(0.0);
             let field = text(&e["field"]);
             if field == "combo_mul" {
-                format!("{target}连击 x{n}")
+                format!("{target}连击倍{n}")
             } else {
                 let (label, suffix) = match field {
                     "phys_atk_buff" => ("物攻", "%"),
@@ -788,11 +788,11 @@ fn buff_label(effects: &[Value]) -> String {
                     "mag_def_buff" => ("魔防", "%"),
                     "speed_buff" => ("速度", ""),
                     "power_multiplier" => ("威力", "%"),
-                    "light_power_buff" => ("光系威力", "%"),
+                    "light_power_buff" => ("光威", "%"),
                     "power_bonus" => ("威力", ""),
                     _ => ("连击", ""),
                 };
-                format!("{target}{label} {n:+}{suffix}")
+                format!("{target}{label}{n:+}{suffix}")
             }
         })
         .collect::<Vec<_>>()
@@ -808,17 +808,12 @@ fn buff_options(skill: &Value) -> Result<Vec<Value>> {
     };
     let mut out = vec![];
     if skill.get("buff_options").is_some() {
-        for (i, o) in array(&skill["buff_options"]).iter().enumerate() {
+        for o in array(&skill["buff_options"]) {
             let effects = normalize(&o["effects"])?;
             if effects.is_empty() {
                 continue;
             }
-            let generated = buff_label(&effects);
-            let label = string_default(
-                &o["label"],
-                if generated.is_empty() { "" } else { &generated },
-            );
-            out.push(json!({"label":if label.is_empty(){format!("Buff 选项 {}",i+1)}else{label},"effects":effects}));
+            out.push(json!({"label":buff_label(&effects),"effects":effects}));
         }
     } else {
         let effects = normalize(&skill["buff_effects"])?;

@@ -1,3 +1,22 @@
+/** Reserve both sides of the visible border for resizing, including corners. */
+export function pluginResizeEdges(
+  rect: { left: number; right: number; top: number; bottom: number; width: number; height: number },
+  x: number,
+  y: number,
+) {
+  const outside = 5;
+  if (x < rect.left - outside || x > rect.right + outside || y < rect.top - outside || y > rect.bottom + outside) return null;
+  const horizontal = Math.min(5, rect.width / 4);
+  const vertical = Math.min(5, rect.height / 4);
+  const edges = {
+    left: x <= rect.left + horizontal,
+    right: x >= rect.right - horizontal,
+    top: y <= rect.top + vertical,
+    bottom: y >= rect.bottom - vertical,
+  };
+  return edges.left || edges.right || edges.top || edges.bottom ? edges : null;
+}
+
 /** Own one panel gesture before child controls receive pointer-down handlers. */
 export function beginPluginLongPressDrag(
   event: PointerEvent,
@@ -5,6 +24,8 @@ export function beginPluginLongPressDrag(
   onMove: (dx: number, dy: number) => void,
   onActivate?: () => void,
 ): () => void {
+  // An edge gesture never arms the long-press timer, even if content covers it.
+  if (pluginResizeEdges(panel.getBoundingClientRect(), event.clientX, event.clientY)) return () => undefined;
   const pointerId = event.pointerId;
   let pointerX = event.clientX;
   let pointerY = event.clientY;
@@ -45,7 +66,11 @@ export function beginPluginLongPressDrag(
     if (next.pointerId !== pointerId) return;
     pointerX = next.clientX;
     pointerY = next.clientY;
-    if (!dragging) return;
+    if (!dragging) {
+      // Scrolling or moving before the hold completes is not a panel drag.
+      if (Math.hypot(pointerX - anchorX, pointerY - anchorY) > 5) cleanup();
+      return;
+    }
     next.preventDefault();
     onMove(pointerX - anchorX, pointerY - anchorY);
   }

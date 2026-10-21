@@ -112,7 +112,7 @@
     "description": "造成魔伤，对混血精灵造成伤害+50%。",
     "triggered": {
       "mode": "enemy_hybrid",
-      "damage_multiplier": "0.5"
+      "power_multiplier": "0.5"
     },
     "effect": "normal"
   },

@@ -2,10 +2,11 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { cursorPosition, getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { createPortal, flushSync } from "react-dom";
-import { Fragment, type CSSProperties, type PointerEvent as ReactPointerEvent, type PointerEventHandler as ReactPointerEventHandler, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createContext, Fragment, type CSSProperties, type PointerEvent as ReactPointerEvent, type PointerEventHandler as ReactPointerEventHandler, type ReactNode, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { prepareNumericImage, type NumericOcrMode } from "./numericOcr";
 import { matchTraitStacks, type TraitPowerCandidates } from "./traitAlignment";
-import { beginPluginLongPressDrag } from "./pluginLongPressDrag";
+import { beginPluginLongPressDrag, pluginResizeEdges } from "./pluginLongPressDrag";
+import { WATCH_RULE_OPTIONS, groupWatchedSkills, readWatchConfiguration, watchConfigurationValues, watchSkillMatchesSearch, type WatchConfiguration, type WatchGroup, type WatchRule } from "./watchSkills";
 
 const STATS = ["hp", "atk", "mag", "def", "res", "spd"] as const;
 const STAT_LABEL: Record<(typeof STATS)[number], string> = {
@@ -573,20 +574,30 @@ function buildPetIconLookup(icons: Record<string, string>) {
   const { exact, defaultForms } = buildIconLookup(icons, normalizePetIconName);
   const names = new Map<string, string | null>();
   const fallbackNames = new Map<string, string | null>();
+  const megaForms = new Map<string, string>();
+  const withoutSuffix = (value: string) => value.replace(/(?:（[^）]*）|\([^)]*\))+$/, "");
   for (const [identity, src] of exact) {
     const name = identity.replace(/^\d+/, "");
     names.set(name, names.has(name) ? null : src);
+    const base = withoutSuffix(identity);
+    if (!megaForms.has(base)) megaForms.set(base, src);
+    const baseName = base.replace(/^\d+/, "");
+    if (!megaForms.has(baseName)) megaForms.set(baseName, src);
   }
   for (const [identity, src] of defaultForms) {
     const name = identity.replace(/^\d+/, "");
     fallbackNames.set(name, fallbackNames.has(name) ? null : src);
   }
-  return (value: string) => /^\d/.test(value.trim())
-    ? exact.get(normalizePetIconName(value)) || defaultForms.get(normalizePetIconName(value))
-    : names.has(value.trim()) ? names.get(value.trim()) || undefined : fallbackNames.get(value.trim()) || undefined;
+  return (value: string, mega = false) => {
+    if (mega) return megaForms.get(withoutSuffix(normalizePetIconName(value)));
+    return /^\d/.test(value.trim())
+      ? exact.get(normalizePetIconName(value)) || defaultForms.get(normalizePetIconName(value))
+      : names.has(value.trim()) ? names.get(value.trim()) || undefined : fallbackNames.get(value.trim()) || undefined;
+  };
 }
 
 const petIconSource = buildPetIconLookup(PET_ICONS);
+const MegaPetIconContext = createContext<ReadonlySet<string>>(new Set());
 const skillIconLookup = buildIconLookup(SKILL_ICONS);
 const croppedPetIcons = new Map<string, Promise<string>>();
 const croppedPetIconUrls = new Map<string, string>();
@@ -699,7 +710,8 @@ function EntityLabel({ kind, value, children = value, iconOnly = false, classNam
   className?: string;
   imageLoading?: "eager" | "lazy";
 }) {
-  const src = kind === "pet" ? petIconSource(value) : skillIconLookup.exact.get(value.trim()) || skillIconLookup.defaultForms.get(value.trim());
+  const megaPets = useContext(MegaPetIconContext);
+  const src = kind === "pet" ? petIconSource(value, megaPets.has(normalizePetIconName(value))) : skillIconLookup.exact.get(value.trim()) || skillIconLookup.defaultForms.get(value.trim());
   return <ImageLabel key={src || value} src={src} iconOnly={iconOnly} className={className} imageClassName={kind === "pet" ? "entity-icon pet-icon" : "entity-icon"} trimTransparent={kind === "pet"} imageLoading={imageLoading} title={typeof children === "string" ? children : value}>{children}</ImageLabel>;
 }
 
@@ -753,10 +765,50 @@ function cachedListSkills(petQuery: string) {
   return skillListCache.get(key)!;
 }
 
-function groupWatchSkills(configs: PickerConfigs, groupName: string, firstGroupName: string): string[] {
-  const groups = configs.team_layout?.watch_skills_by_group as Record<string, unknown> | undefined;
-  const saved = groups?.[groupName] ?? (groupName === firstGroupName ? configs.team_layout?.watch_skills : []);
-  return Array.isArray(saved) ? saved.filter((item): item is string => typeof item === "string") : [];
+function useWatchConfiguration(configs: PickerConfigs, onConfigsChanged: (configs: PickerConfigs) => void, onError: (error: string) => void) {
+  const [configuration, setConfiguration] = useState(() => readWatchConfiguration(configs.team_layout));
+  const current = useRef(configuration);
+  const saved = useRef(configuration);
+  const queue = useRef(Promise.resolve());
+  const revision = useRef(0);
+  const pending = useRef(0);
+  useEffect(() => {
+    if (pending.current) return;
+    const next = readWatchConfiguration(configs.team_layout);
+    current.current = next;
+    saved.current = next;
+    setConfiguration(next);
+  }, [configs.team_layout]);
+
+  function update(change: (value: WatchConfiguration) => WatchConfiguration) {
+    const next = change(current.current);
+    current.current = next;
+    setConfiguration(next);
+    const version = ++revision.current;
+    pending.current++;
+    const operation = queue.current.then(async () => {
+      try {
+        const data = await invoke<{ configs: PickerConfigs }>("save_picker_config", {
+          payload: { section: "team_layout", values: watchConfigurationValues(next) },
+        });
+        saved.current = next;
+        if (version === revision.current) onConfigsChanged(data.configs);
+        return true;
+      } catch (error) {
+        if (version === revision.current) {
+          current.current = saved.current;
+          setConfiguration(saved.current);
+        }
+        onError(asError(error));
+        return false;
+      } finally {
+        pending.current--;
+      }
+    });
+    queue.current = operation.then(() => undefined);
+    return operation;
+  }
+  return [configuration, update] as const;
 }
 
 function cachedTraitInfo(payload: Record<string, unknown>) {
@@ -1120,7 +1172,7 @@ function skillMeta(skill: SkillItem, imageLoading: "eager" | "lazy" = "eager", p
 
 function skillText(skill: SkillItem) {
   const detail = skillDetail(skill);
-  return skill.unlock || detail.description || skill.description || "";
+  return [detail.description || skill.description, skill.unlock].filter(Boolean).join("\n");
 }
 
 function skillCardSlots(skills: string[], count = DEFAULT_SKILL_CARD_COUNT) {
@@ -1146,8 +1198,10 @@ function speedValue(raceValue: number, iv: number, personality: number | null) {
   const star = 5;
   const effort = 10 * star;
   const effectiveIv = iv + iv * star;
-  const base = Math.floor(level * (raceValue / 100) + 50 * (raceValue / 100) + 10 + 0.5)
+  let base = Math.floor(level * (raceValue / 100) + 50 * (raceValue / 100) + 10 + 0.5)
     + Math.floor(level * ((effectiveIv / 2) / 100) + 50 * ((effectiveIv / 2) / 100) + 0.5);
+  // Match calc_attr's confirmed exception for original race 105 with zero talent.
+  if (raceValue === 105 && iv === 0) base -= 1;
   return Math.floor((base * (1 + (personality || 0))) + effort + 0.5);
 }
 
@@ -1240,6 +1294,17 @@ function PluginResizeEdges({ onPointerDown }: { onPointerDown?: ReactPointerEven
 
 function PluginDragZone() {
   return <div className="plugin-drag-zone" aria-label="拖动面板" />;
+}
+
+const pluginPanelMoves = new WeakMap<HTMLElement, (position: { x: number; y: number }) => void>();
+
+function usePluginPanelMove(ref: { current: HTMLElement | null }, onMove: (position: { x: number; y: number }) => void) {
+  useLayoutEffect(() => {
+    const panel = ref.current;
+    if (!panel) return;
+    pluginPanelMoves.set(panel, onMove);
+    return () => { pluginPanelMoves.delete(panel); };
+  });
 }
 
 function traitSummaryAtPoint(target: HTMLElement, x: number, y: number): HTMLButtonElement | null {
@@ -1363,29 +1428,123 @@ function NumberInput({
   );
 }
 
-function megaFormsForPet(name: string, pets: Pet[]) {
-  const basePet = pets.find((pet) => pet.label === name || `${pet.id}${pet.name}` === name || pet.name === name);
-  if (!basePet) return [];
-  return (basePet.nextForms || [])
-    .map((label) => pets.find((pet) => pet.label === label))
-    .filter((pet): pet is Pet => Boolean(pet && pet.evolutionStage === "mega"));
+function familyFormsForPet(name: string, pets: Pet[]) {
+  const base = pets.find((pet) => [pet.label, `${pet.id}${pet.name}`, pet.name].includes(name));
+  if (!base) return [];
+  const labels = new Set(base.evolutionChain?.length ? base.evolutionChain : [base.label]);
+  const forms = pets.filter((pet) => labels.has(pet.label));
+  const byLabel = new Map(forms.map((pet) => [pet.label, pet]));
+  const chain = [...labels];
+  const chainOrder = new Map(chain.map((label, index) => [label, index]));
+  const depths = new Map<string, number>();
+  const evolutionDepth = (pet: Pet, visiting = new Set<string>()): number => {
+    if (depths.has(pet.label)) return depths.get(pet.label)!;
+    if (visiting.has(pet.label)) return 0;
+    const ancestors = new Set([...visiting, pet.label]);
+    const previous = (pet.prevForms || []).map((label) => byLabel.get(label)).filter((form): form is Pet => Boolean(form));
+    const depth = previous.length
+      ? 1 + Math.max(...previous.map((form) => evolutionDepth(form, ancestors)))
+      : Math.max(0, (Number(pet.evolutionStage) || 1) - 1);
+    depths.set(pet.label, depth);
+    return depth;
+  };
+  for (const pet of forms) evolutionDepth(pet);
+  return forms.sort((first, second) =>
+    Number(first.evolutionStage === "mega") - Number(second.evolutionStage === "mega")
+    || depths.get(first.label)! - depths.get(second.label)!
+    || (chainOrder.get(first.label) ?? chain.length) - (chainOrder.get(second.label) ?? chain.length),
+  );
 }
 
-function MegaFormSelect({ value, pets, onChange }: { value: UnitState; pets: Pet[]; onChange: (partial: Partial<UnitState>) => void }) {
-  const forms = megaFormsForPet(value.name, pets);
-  const selected = forms.some((pet) => pet.label === value.mega_form) ? value.mega_form || "" : "";
-  return (
-    <select
-      aria-label="超进化形态"
-      value={selected}
-      onChange={(event) => onChange({ mega: false, mega_form: event.target.value || null })}
-    >
-      <option value="">普通</option>
-      {forms.map((pet) => (
-        <option key={pet.label} value={pet.label}>{pet.name}</option>
-      ))}
-    </select>
-  );
+function selectedFamilyForm(value: UnitState, pets: Pet[]) {
+  const find = (name: string) => pets.find((pet) => [pet.label, `${pet.id}${pet.name}`, pet.name].includes(name));
+  let selected = find(value.mega_form || value.name);
+  for (let step = 0; selected && step < value.devolution; step += 1) {
+    selected = find(selected.prevForms?.[0] || "") || selected;
+  }
+  if (selected && value.mega && !value.mega_form) selected = find(selected.nextForms?.[0] || "") || selected;
+  return selected;
+}
+
+function familyFormPatch(value: UnitState, target: Pet, pets: Pet[]): Partial<UnitState> {
+  let current = pets.find((pet) => [pet.label, `${pet.id}${pet.name}`, pet.name].includes(value.name));
+  const visited = new Set<string>();
+  let devolution = 0;
+  // Keep existing devolution semantics for ancestors, including their trait source.
+  while (current && !visited.has(current.label)) {
+    if (current.label === target.label) return { devolution, mega: false, mega_form: null };
+    visited.add(current.label);
+    const previous = current.prevForms?.[0];
+    current = pets.find((pet) => pet.label === previous);
+    devolution += 1;
+  }
+  return { devolution: 0, mega: false, mega_form: target.label };
+}
+
+function FamilyFormSelect({ value, pets, onChange, pluginMode = false }: { value: UnitState; pets: Pet[]; onChange: (partial: Partial<UnitState>) => void; pluginMode?: boolean }) {
+  const forms = useMemo(() => familyFormsForPet(value.name, pets), [value.name, pets]);
+  const selected = selectedFamilyForm(value, pets);
+  const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState({ left: 0, top: 0, maxHeight: 240 });
+  const anchorRef = useRef<HTMLButtonElement | null>(null);
+  const popupRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => { setOpen(false); }, [value.name, value.devolution, value.mega, value.mega_form]);
+  useLayoutEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const rect = anchorRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const below = window.innerHeight - rect.bottom - 8;
+      const above = rect.top - 8;
+      const up = below < 160 && above > below;
+      const maxHeight = Math.max(40, Math.min(240, up ? above : below));
+      const height = Math.min(popupRef.current?.offsetHeight || maxHeight, maxHeight);
+      const width = popupRef.current?.offsetWidth || rect.width;
+      setPosition({ left: Math.max(4, Math.min(rect.left, window.innerWidth - width - 4)), top: up ? rect.top - height - 4 : rect.bottom + 4, maxHeight });
+    };
+    const dismiss = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!anchorRef.current?.contains(target) && !popupRef.current?.contains(target)) setOpen(false);
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    if (popupRef.current) observer.observe(popupRef.current);
+    if (anchorRef.current) observer.observe(anchorRef.current);
+    document.addEventListener("pointerdown", dismiss, true);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("pointerdown", dismiss, true);
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open]);
+  const choose = (pet: Pet) => {
+    onChange(familyFormPatch(value, pet, pets));
+    setOpen(false);
+    anchorRef.current?.focus();
+  };
+  const handleKey = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key === "Escape") { event.preventDefault(); setOpen(false); anchorRef.current?.focus(); }
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!open) { setOpen(true); return; }
+      const options = Array.from(popupRef.current?.querySelectorAll<HTMLButtonElement>("[role=option]") || []);
+      const index = options.findIndex((option) => option === document.activeElement);
+      const next = index < 0 ? (event.key === "ArrowDown" ? 0 : options.length - 1) : (index + (event.key === "ArrowDown" ? 1 : -1) + options.length) % options.length;
+      options[next]?.focus();
+    }
+    if (event.key === "Tab") setOpen(false);
+  };
+  return <>
+    <button ref={anchorRef} type="button" className="family-form-select" aria-label="同进化链精灵形态" aria-haspopup="listbox" aria-expanded={open} disabled={!forms.length} onClick={() => setOpen(!open)} onKeyDown={handleKey}>
+      {selected ? <EntityLabel kind="pet" value={selected.label} iconOnly>{selected.name}</EntityLabel> : pluginMode ? "形态" : "选择形态"}<span aria-hidden="true">▾</span>
+    </button>
+    {open ? createPortal(<div ref={popupRef} className={`family-form-options${document.documentElement.classList.contains("overlay-attached") || anchorRef.current?.closest(".battle-page.immersive-mode") ? " overlay-form-options" : ""}`} role="listbox" aria-label="同进化链精灵形态" data-overlay-control style={position} onKeyDown={handleKey}>
+      {forms.map((pet) => <button type="button" role="option" aria-selected={pet.label === selected?.label} key={pet.label} onClick={() => choose(pet)}><EntityLabel kind="pet" value={pet.label} iconOnly>{pet.name}</EntityLabel></button>)}
+    </div>, document.body) : null}
+  </>;
 }
 
 function TeamEvolutionControls({
@@ -1393,20 +1552,18 @@ function TeamEvolutionControls({
   pets,
   onChange,
   className = "",
+  pluginMode = false,
 }: {
   value: UnitState;
   pets: Pet[];
   onChange: (partial: Partial<UnitState>) => void;
   className?: string;
+  pluginMode?: boolean;
 }) {
   return (
     <div className={`slot-evolution-row ${className}`.trim()}>
-      <div className="slot-evolution-control slot-devolution-control">
-        <FieldLabel>萌化</FieldLabel>
-        <NumberInput value={value.devolution} min={0} max={5} onChange={(devolution) => onChange({ devolution })} />
-      </div>
-      <div className="slot-evolution-control slot-mega-control">
-        <MegaFormSelect value={value} pets={pets} onChange={onChange} />
+      <div className="slot-evolution-control slot-family-control">
+        <FamilyFormSelect value={value} pets={pets} onChange={onChange} pluginMode={pluginMode} />
       </div>
       <RefreshButton className="compact-button evolution-reset-button" onClick={() => onChange({ devolution: 0, mega: false, mega_form: null })} />
     </div>
@@ -1532,6 +1689,7 @@ function PickerModal({
   onClearPet,
   initialSkillName = "",
   onClearSkill,
+  searchSkillDescriptions = false,
 }: {
   mode: PickerMode;
   presets?: PresetGroup[];
@@ -1553,6 +1711,7 @@ function PickerModal({
   onClearPet?: () => void;
   initialSkillName?: string;
   onClearSkill?: () => void;
+  searchSkillDescriptions?: boolean;
 }) {
   const section = mode === "pet" ? "pet_picker" : mode === "trait" ? "trait_picker" : "skill_picker";
   const config = configs[section] || {};
@@ -1560,7 +1719,7 @@ function PickerModal({
   const locateCurrentSkill = mode === "skill" && Boolean(initialSkillName);
   const initialPet = pets.find((pet) => pet.label === initialPetName || pet.name === initialPetName || `${pet.id}${pet.name}` === initialPetName);
   const [query, setQuery] = useState("");
-  const [element, setElement] = useState(locateCurrentSkill ? "" : (config.element as string) || "");
+  const [element, setElement] = useState(locateCurrentSkill || searchSkillDescriptions ? "" : (config.element as string) || "");
   const [petElements, setPetElements] = useState<string[]>(() => {
     if (locateCurrentPet && !useSavedPetFilters) return [];
     const savedElements = Array.isArray(config.selected_elements)
@@ -1568,7 +1727,7 @@ function PickerModal({
       : [];
     return (savedElements.length ? savedElements : [(config.element as string) || ""]).filter(Boolean).slice(-2);
   });
-  const [skillType, setSkillType] = useState(locateCurrentSkill ? "" : (config.skill_type as string) || "");
+  const [skillType, setSkillType] = useState(locateCurrentSkill || searchSkillDescriptions ? "" : (config.skill_type as string) || "");
   const [sortDesc, setSortDesc] = useState(Boolean(config.sort_desc));
   const [finalOnly, setFinalOnly] = useState(locateCurrentPet && !useSavedPetFilters ? false : Boolean(config.final_only));
   const configuredPetTab = config.active_tab === "preset" || config.active_tab === "library" ? config.active_tab : null;
@@ -1634,7 +1793,7 @@ function PickerModal({
   }, [mode, petTab, sourcePets, normalizedQuery, petElements, element, finalOnly, sortDesc]);
   const currentSkillSource = skillTab === "pet" ? petSkills : allSkills;
   const filteredSkills = useMemo(() => mode === "skill" ? currentSkillSource
-    .filter((skill) => !normalizedQuery || skill.name.toLowerCase().includes(normalizedQuery))
+    .filter((skill) => !normalizedQuery || (searchSkillDescriptions ? watchSkillMatchesSearch(skill, normalizedQuery) : skill.name.toLowerCase().includes(normalizedQuery)))
     .filter((skill) => {
       if (!element) return true;
       const detail = skill.detail || skill;
@@ -1647,7 +1806,7 @@ function PickerModal({
         return index < 0 ? elements.length : index;
       };
       return rank(a) - rank(b);
-    }) : [], [mode, currentSkillSource, normalizedQuery, element, skillType, skillTab, elements]);
+    }) : [], [mode, currentSkillSource, normalizedQuery, element, skillType, skillTab, elements, searchSkillDescriptions]);
 
   async function saveConfig(values: Record<string, unknown>) {
     const data = await invoke<{ configs: PickerConfigs }>("save_picker_config", {
@@ -1674,7 +1833,7 @@ function PickerModal({
         </header>
         <div className={mode === "pet" ? "picker-tools pet-picker-tools" : "picker-tools"}>
           <div className="picker-tools-main">
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索..." />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchSkillDescriptions ? "搜索技能名称或描述，如：印记" : "搜索..."} />
             {mode === "pet" && onPickPreset && presets.length ? (
               <div className="segmented">
                 <button
@@ -1734,6 +1893,7 @@ function PickerModal({
                 </button>
                 <button
                   className={finalOnly ? "filter-toggle active" : "filter-toggle"}
+                  aria-pressed={finalOnly}
                   onClick={() => {
                     const next = !finalOnly;
                     setFinalOnly(next);
@@ -2926,22 +3086,20 @@ function TeamBattlePage({
     return () => window.clearTimeout(timer);
   }, [detectionToast]);
 
+  const detectionGestureRef = useRef<(() => void) | undefined>(undefined);
+  useEffect(() => () => detectionGestureRef.current?.(), []);
   function startDetectionDrag(event: ReactPointerEvent<HTMLElement>, key: string) {
     if (!detectionGroup) return;
-    event.preventDefault(); event.stopPropagation();
     const region = detectionRegions[key];
     const container = event.currentTarget.parentElement;
     if (!container) return;
     const rect = container.getBoundingClientRect();
-    const move = (moveEvent: PointerEvent) => setDetectionRegions((current) => {
-      const next = { ...current, [key]: { ...current[key], x: Math.max(0, Math.min(100 - region.width, (moveEvent.clientX - rect.left) / rect.width * 100 - region.width / 2)), y: Math.max(0, Math.min(100 - region.height, (moveEvent.clientY - rect.top) / rect.height * 100 - region.height / 2)) } };
+    detectionGestureRef.current?.();
+    detectionGestureRef.current = beginPluginLongPressDrag(event.nativeEvent, event.currentTarget, (dx, dy) => setDetectionRegions((current) => {
+      const next = { ...current, [key]: { ...current[key], x: Math.max(0, Math.min(100 - region.width, region.x + dx / rect.width * 100)), y: Math.max(0, Math.min(100 - region.height, region.y + dy / rect.height * 100)) } };
       detectionRegionsRef.current = next;
       return next;
-    });
-    const stop = () => {
-      window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", stop);
-    };
-    window.addEventListener("pointermove", move); window.addEventListener("pointerup", stop);
+    }));
   }
 
   function startDetectionResize(event: ReactPointerEvent<HTMLElement>, key: string, edges: { left: boolean; right: boolean; top: boolean; bottom: boolean }) {
@@ -2975,6 +3133,8 @@ function TeamBattlePage({
   }
 
   function startDetectionPointer(event: ReactPointerEvent<HTMLButtonElement>, key: string) {
+    if (event.button !== 0 || !event.isPrimary) return;
+    detectionGestureRef.current?.();
     const bounds = event.currentTarget.getBoundingClientRect();
     const edges = {
       left: event.clientX - bounds.left <= 7,
@@ -3035,6 +3195,22 @@ function TeamBattlePage({
 
   const pluginDragStartRef = useRef<(event: PointerEvent, panel: HTMLElement) => (() => void) | undefined>(() => undefined);
   pluginDragStartRef.current = (event, panel) => {
+    const localMove = pluginPanelMoves.get(panel);
+    if (localMove) {
+      const rect = panel.getBoundingClientRect();
+      const parent = getComputedStyle(panel).position !== "fixed" && panel.offsetParent instanceof HTMLElement ? panel.offsetParent.getBoundingClientRect() : null;
+      const start = { x: rect.left - (parent?.left || 0), y: rect.top - (parent?.top || 0) };
+      return beginPluginLongPressDrag(event, panel, (dx, dy) => localMove({ x: Math.max(0, start.x + dx), y: Math.max(0, start.y + dy) }));
+    }
+    const readoutId = panel.dataset.pluginReadout as keyof DetectionReadoutLayouts | undefined;
+    if (readoutId) {
+      const start = detectionReadoutLayouts[readoutId];
+      return beginPluginLongPressDrag(event, panel, (dx, dy) => setDetectionReadoutLayouts((current) => {
+        const next = { ...current, [readoutId]: { x: start.x + dx, y: start.y + dy } };
+        detectionReadoutLayoutsRef.current = next;
+        return next;
+      }));
+    }
     const regionClasses: Array<[TeamRegionId, string]> = [
       ["left-roster", "team-left-roster"], ["right-roster", "team-right-roster"],
       ["left-bonus-tools", "team-left-bonus-toolbar"], ["right-bonus-tools", "team-right-bonus-toolbar"],
@@ -3084,9 +3260,10 @@ function TeamBattlePage({
       cleanupGesture?.();
       cleanupGesture = undefined;
       const path = event.composedPath();
-      if (path.some((node) => node instanceof HTMLElement && node.matches(".modal-backdrop, .trait-expanded-content, .team-buff-grid, .plugin-resize-edge"))) return;
+      if (path.some((node) => node instanceof HTMLElement && node.matches(".modal-backdrop, .trait-expanded-content, .team-buff-grid, .slot-iv-popover, .plugin-resize-edge"))) return;
       const panel = path.find((node): node is HTMLElement => node instanceof HTMLElement && node.matches("[data-plugin-resizable]"));
       if (!panel) return;
+      if (pluginResizeEdges(panel.getBoundingClientRect(), event.clientX, event.clientY)) return;
       cleanupGesture = pluginDragStartRef.current(event, panel);
     };
     document.addEventListener("pointerdown", start, true);
@@ -3096,30 +3273,44 @@ function TeamBattlePage({
     };
   }, [displayMode]);
 
+  const resizeContextRef = useRef({ regionPositions, overlayLayouts, moveRegion, updateOverlayLayout, detectionReadoutCoordinateMode });
+  resizeContextRef.current = { regionPositions, overlayLayouts, moveRegion, updateOverlayLayout, detectionReadoutCoordinateMode };
   useEffect(() => {
     if (displayMode !== "plugin") return;
+    let cleanupResize: (() => void) | undefined;
+    let cleanupResizeClick: (() => void) | undefined;
     const startResize = (event: PointerEvent) => {
-      if (event.target instanceof HTMLElement && traitSummaryAtPoint(event.target, event.clientX, event.clientY)) return;
+      if (event.button !== 0 || !event.isPrimary) return;
+      cleanupResize?.();
+      cleanupResizeClick?.();
       const path = event.composedPath();
+      if (path.some((node) => node instanceof HTMLElement && node.matches(".modal-backdrop, .trait-expanded-content, .team-buff-grid, .slot-iv-popover"))) return;
       const resizeEdge = path.find((node): node is HTMLElement => node instanceof HTMLElement && node.classList.contains("plugin-resize-edge"));
       const panel = resizeEdge?.closest<HTMLElement>("[data-plugin-resizable]")
         || path.find((node): node is HTMLElement => node instanceof HTMLElement && node.matches("[data-plugin-resizable]"));
-      if (!panel || !resizeEdge) return;
+      if (!panel) return;
       const rect = panel.getBoundingClientRect();
-      const edge = resizeEdge?.dataset.resizeEdge;
-      const activeEdge = edge;
-      if (!activeEdge) return;
-      const edges = {
-        left: activeEdge === "left",
-        right: activeEdge === "right",
-        top: activeEdge === "top",
-        bottom: activeEdge === "bottom",
-      };
-      if (!edges.left && !edges.right && !edges.top && !edges.bottom) return;
+      const edges = pluginResizeEdges(rect, event.clientX, event.clientY);
+      if (!edges) return;
+      const { regionPositions, overlayLayouts, moveRegion, updateOverlayLayout, detectionReadoutCoordinateMode } = resizeContextRef.current;
       event.preventDefault();
-      event.stopPropagation();
-      resizeEdge?.setPointerCapture?.(event.pointerId);
+      event.stopImmediatePropagation();
+      try { panel.setPointerCapture(event.pointerId); } catch { return; }
       panel.dataset.pluginResizing = "true";
+      let clickTimer: number | undefined;
+      const clearResizeClick = () => {
+        window.clearTimeout(clickTimer);
+        document.removeEventListener("click", suppressResizeClick, true);
+        if (cleanupResizeClick === clearResizeClick) cleanupResizeClick = undefined;
+      };
+      const suppressResizeClick = (click: MouseEvent) => {
+        if (click.detail === 0 || !panel.contains(click.target as Node)) return;
+        click.preventDefault();
+        click.stopImmediatePropagation();
+        clearResizeClick();
+      };
+      cleanupResizeClick = clearResizeClick;
+      document.addEventListener("click", suppressResizeClick, true);
       const regionClasses: Array<[TeamRegionId, string]> = [
         ["left-roster", "team-left-roster"], ["right-roster", "team-right-roster"],
         ["left-bonus-tools", "team-left-bonus-toolbar"], ["right-bonus-tools", "team-right-bonus-toolbar"],
@@ -3134,9 +3325,8 @@ function TeamBattlePage({
         : overlayId
           ? overlayLayouts[overlayId] || defaultPluginOverlayLayout(overlayId)
           : undefined;
-      const parentRect = panel.offsetParent instanceof HTMLElement && (
-        Boolean(regionId) || (!targetAttached && displayMode === "plugin")
-      )
+      const panelStyle = getComputedStyle(panel);
+      const parentRect = panel.offsetParent instanceof HTMLElement && panelStyle.position !== "fixed"
         ? panel.offsetParent.getBoundingClientRect()
         : null;
       const coordinateOffset = parentRect ? { x: parentRect.left, y: parentRect.top } : { x: 0, y: 0 };
@@ -3147,10 +3337,14 @@ function TeamBattlePage({
         right: rect.right - coordinateOffset.x,
         top: rect.top - coordinateOffset.y,
         bottom: rect.bottom - coordinateOffset.y,
-        contentX: currentLayout?.contentX || 0,
-        contentY: currentLayout?.contentY || 0,
+        contentX: currentLayout?.contentX ?? (Number.parseFloat(panelStyle.getPropertyValue("--plugin-content-x")) || 0),
+        contentY: currentLayout?.contentY ?? (Number.parseFloat(panelStyle.getPropertyValue("--plugin-content-y")) || 0),
       };
+      const readoutId = panel.dataset.pluginReadout as keyof DetectionReadoutLayouts | undefined;
+      const readoutStart = readoutId ? detectionReadoutLayoutsRef.current[readoutId] : undefined;
       const move = (moveEvent: PointerEvent) => {
+        if (moveEvent.pointerId !== event.pointerId) return;
+        moveEvent.preventDefault();
         const dx = moveEvent.clientX - start.pointerX;
         const dy = moveEvent.clientY - start.pointerY;
         let left = start.left;
@@ -3170,25 +3364,46 @@ function TeamBattlePage({
         if (regionId) moveRegion(regionId, { x, y, width, height, contentX, contentY });
         else if (overlayId) updateOverlayLayout(overlayId, { x, y, width, height, contentX, contentY });
         else {
+          if (readoutId && readoutStart) {
+            const anchored = detectionReadoutCoordinateMode !== "page";
+            const next = { ...detectionReadoutLayoutsRef.current, [readoutId]: {
+              x: readoutStart.x + left - start.left + (anchored ? (width - rect.width) * (readoutId === "health" ? 1 : 0.5) : 0),
+              y: readoutStart.y + top - start.top + (anchored ? height - rect.height : 0),
+            } };
+            detectionReadoutLayoutsRef.current = next;
+            setDetectionReadoutLayouts(next);
+          } else pluginPanelMoves.get(panel)?.({ x, y });
           panel.style.width = `${width}px`;
           panel.style.height = `${height}px`;
           panel.style.setProperty("--plugin-content-x", `${contentX}px`);
           panel.style.setProperty("--plugin-content-y", `${contentY}px`);
         }
       };
-      const stop = () => {
+      const stop = (end?: PointerEvent) => {
+        if (end && end.pointerId !== event.pointerId) return;
         delete panel.dataset.pluginResizing;
-        window.removeEventListener("pointermove", move);
-        window.removeEventListener("pointerup", stop);
-        window.removeEventListener("pointercancel", stop);
+        window.removeEventListener("pointermove", move, true);
+        window.removeEventListener("pointerup", stop, true);
+        window.removeEventListener("pointercancel", stop, true);
+        window.removeEventListener("blur", cancel);
+        panel.removeEventListener("lostpointercapture", lostCapture);
+        if (panel.hasPointerCapture(event.pointerId)) panel.releasePointerCapture(event.pointerId);
+        if (end?.type === "pointerup") clickTimer = window.setTimeout(clearResizeClick, 500);
+        else clearResizeClick();
+        cleanupResize = undefined;
       };
-      window.addEventListener("pointermove", move);
-      window.addEventListener("pointerup", stop);
-      window.addEventListener("pointercancel", stop);
+      const cancel = () => stop();
+      const lostCapture = (end: PointerEvent) => { if (end.target === panel) stop(end); };
+      cleanupResize = cancel;
+      window.addEventListener("pointermove", move, { passive: false, capture: true });
+      window.addEventListener("pointerup", stop, true);
+      window.addEventListener("pointercancel", stop, true);
+      window.addEventListener("blur", cancel);
+      panel.addEventListener("lostpointercapture", lostCapture);
     };
     document.addEventListener("pointerdown", startResize, true);
-    return () => document.removeEventListener("pointerdown", startResize, true);
-  }, [displayMode, regionPositions, overlayLayouts]);
+    return () => { document.removeEventListener("pointerdown", startResize, true); cleanupResize?.(); cleanupResizeClick?.(); };
+  }, [displayMode]);
 
   async function changeDisplayMode(nextMode: "normal" | "plugin") {
     calibrationSessionRef.current += 1;
@@ -3913,21 +4128,7 @@ function TeamBattlePage({
   const pluginSkillCardCount = Math.max(DEFAULT_SKILL_CARD_COUNT, teamSkillCardCount);
   const leftPluginSkillSlots = skillCardSlots(leftSlots[leftIndex].skills, pluginSkillCardCount);
   const rightPluginSkillSlots = skillCardSlots(rightSlots[rightIndex].skills, pluginSkillCardCount);
-  // 醒目技能跟随我方当前导入的分组。
-  const watchSkills = useMemo(() => {
-    return groupWatchSkills(configs, leftGroupName, presets[0]?.name || "attackers");
-  }, [configs, leftGroupName, presets]);
-  async function setWatchSkills(next: string[]) {
-    if (!leftGroupName) return;
-    try {
-      const data = await invoke<{ configs: PickerConfigs }>("save_picker_config", {
-        payload: { section: "team_layout", values: { watch_skills_by_group: { ...(configs.team_layout?.watch_skills_by_group as Record<string, unknown> || {}), [leftGroupName]: next } } },
-      });
-      onConfigsChanged(data.configs);
-    } catch (err) {
-      setError(asError(err));
-    }
-  }
+  const [watchConfiguration, updateWatchConfiguration] = useWatchConfiguration(configs, onConfigsChanged, setError);
 
   return (
     <section
@@ -3997,14 +4198,15 @@ function TeamBattlePage({
         {targetStatus || layoutMessage || detectionMessage ? <span>{targetStatus || layoutMessage || detectionMessage}</span> : null}
       </div>
       <div className="team-layout" style={teamLayoutStyle} onPointerDown={startTeamRegionDrag}>
-        {displayMode === "plugin" && recognitionStatus ? <section className="recognition-status-panel" data-overlay-control style={{ left: overlayLayout("recognition-status").x, top: overlayLayout("recognition-status").y }} onPointerDown={startRecognitionStatusDrag} role="status" aria-live="polite">
+        {displayMode === "plugin" && recognitionStatus ? <section className="recognition-status-panel" data-overlay-control data-plugin-resizable data-plugin-overlay-id="recognition-status" style={{ left: overlayLayout("recognition-status").x, top: overlayLayout("recognition-status").y, width: overlayLayouts["recognition-status"]?.width, height: overlayLayouts["recognition-status"]?.height }} onPointerDown={startRecognitionStatusDrag} role="status" aria-live="polite">
+          <PluginResizeEdges />
           <strong>{recognitionStatus.label}</strong>
           <span>{recognitionStatus.detail}</span>
           <small>{recognitionStatus.progress}</small>
         </section> : null}
         {displayMode === "plugin" ? <div ref={detectionReadoutLayerRef} className="plugin-readout-layer" data-overlay-control>
-          <section ref={(element) => { detectionReadoutRefs.current.health = element; }} className="battle-health-readout draggable-readout" data-overlay-control style={detectionReadoutStyle("health")} onPointerDown={(event) => startReadoutDrag(event, "health")}><span>我方 HP {detectedHealth.self}</span><span>敌方 HP {detectedHealth.enemy}</span></section>
-          <section ref={(element) => { detectionReadoutRefs.current.powers = element; }} className="battle-power-readout draggable-readout" data-overlay-control style={detectionReadoutStyle("powers")} onPointerDown={(event) => startReadoutDrag(event, "powers")}>{detectedSkillPowers.map((power, index) => <span key={index}>技能{index + 1} {power}</span>)}</section>
+          <section ref={(element) => { detectionReadoutRefs.current.health = element; }} className="battle-health-readout draggable-readout" data-overlay-control data-plugin-resizable data-plugin-readout="health" style={detectionReadoutStyle("health")} onPointerDown={(event) => startReadoutDrag(event, "health")}><PluginResizeEdges /><span>我方 HP {detectedHealth.self}</span><span>敌方 HP {detectedHealth.enemy}</span></section>
+          <section ref={(element) => { detectionReadoutRefs.current.powers = element; }} className="battle-power-readout draggable-readout" data-overlay-control data-plugin-resizable data-plugin-readout="powers" style={detectionReadoutStyle("powers")} onPointerDown={(event) => startReadoutDrag(event, "powers")}><PluginResizeEdges />{detectedSkillPowers.map((power, index) => <span key={index}>技能{index + 1} {power}</span>)}</section>
         </div> : null}
         {displayMode === "plugin" && detectionToast ? <div className="detection-toast" role="status">{detectionToast}</div> : null}
         {calibrationActive ? <section className="calibration-results" data-overlay-control aria-live="polite">
@@ -4019,7 +4221,7 @@ function TeamBattlePage({
           {[...BATTLE_START_IMAGE_KEYS, ...BATTLE_LIVE_IMAGE_KEYS, ...BATTLE_LIVE_NUMBER_KEYS].map((key) => {
             const region = detectionRegions[key];
             const visible = (detectionGroup === "battleStart" && BATTLE_START_IMAGE_KEYS.includes(key as typeof BATTLE_START_IMAGE_KEYS[number])) || (detectionGroup === "battleLive" && !BATTLE_START_IMAGE_KEYS.includes(key as typeof BATTLE_START_IMAGE_KEYS[number]));
-            return <button key={key} ref={(element) => { detectionRoiRefs.current[key] = element; }} className={`detection-roi ${key.includes("Image") ? "image" : "number"}${visible ? "" : " hidden"}`} style={{ left: `${region.x}%`, top: `${region.y}%`, width: `${region.width}%`, height: `${region.height}%` }} onPointerDown={(event) => startDetectionPointer(event, key)} title={`拖动 ${detectionLabel(key)}；拖动边缘缩放`}><span>{detectionLabel(key)}</span></button>;
+            return <button key={key} ref={(element) => { detectionRoiRefs.current[key] = element; }} className={`detection-roi ${key.includes("Image") ? "image" : "number"}${visible ? "" : " hidden"}`} style={{ left: `${region.x}%`, top: `${region.y}%`, width: `${region.width}%`, height: `${region.height}%` }} onPointerDown={(event) => startDetectionPointer(event, key)} title={`长按中心移动 ${detectionLabel(key)}；拖动边缘缩放`}><span>{detectionLabel(key)}</span></button>;
           })}
         </div> : null}
         <Roster selectedGroup={leftGroupName} panelState={panelState(leftSlots.some((slot) => Boolean(slot.name)))} pluginMode={displayMode === "plugin"} className="team-left-roster" title="队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={leftSlots} activeIndex={leftIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("left", groupName)} onSelect={setLeftIndex} onPatchSlot={(partial) => patchSlot("left", leftIndex, partial)} onPatchSlotAt={(index, partial) => patchSlot("left", index, partial)} onChoose={(index) => { setLeftIndex(index); setPetPicker({ side: "left", index }); }} />
@@ -4039,8 +4241,8 @@ function TeamBattlePage({
           />
           <FloatingTeamPanel panelState={panelState(leftSlots[leftIndex]?.trait_triggered || leftSlots[leftIndex]?.trait_stacks > 0)} className="trait-floating-panel team-left-trait" layout={overlayLayout("left-trait")} onLayoutChange={(partial) => updateOverlayLayout("left-trait", partial)}><TeamTraitEditor expanded={openPopover.left === "trait"} onExpandedChange={(next) => togglePopover("left", "trait", next)} value={leftSlots[leftIndex]} pets={pets} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onChange={(partial) => patchSlot("left", leftIndex, partial)} /></FloatingTeamPanel>
           <FloatingTeamPanel panelState={panelState(rightSlots[rightIndex]?.trait_triggered || rightSlots[rightIndex]?.trait_stacks > 0)} className="trait-floating-panel team-right-trait" layout={overlayLayout("right-trait")} onLayoutChange={(partial) => updateOverlayLayout("right-trait", partial)}><TeamTraitEditor expanded={openPopover.right === "trait"} onExpandedChange={(next) => togglePopover("right", "trait", next)} value={rightSlots[rightIndex]} pets={pets} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onChange={(partial) => patchSlot("right", rightIndex, partial)} /></FloatingTeamPanel>
-          <FloatingTeamPanel panelState={panelState(leftSlots[leftIndex]?.devolution > 0 || Boolean(leftSlots[leftIndex]?.mega))} className="team-left-evolution" layout={overlayLayout("left-evolution")} onLayoutChange={(partial) => updateOverlayLayout("left-evolution", partial)}><TeamEvolutionControls value={leftSlots[leftIndex]} pets={pets} onChange={(partial) => patchSlot("left", leftIndex, partial)} /></FloatingTeamPanel>
-          <FloatingTeamPanel panelState={panelState(rightSlots[rightIndex]?.devolution > 0 || Boolean(rightSlots[rightIndex]?.mega))} className="team-right-evolution" layout={overlayLayout("right-evolution")} onLayoutChange={(partial) => updateOverlayLayout("right-evolution", partial)}><TeamEvolutionControls value={rightSlots[rightIndex]} pets={pets} onChange={(partial) => patchSlot("right", rightIndex, partial)} /></FloatingTeamPanel>
+          <FloatingTeamPanel panelState={panelState(leftSlots[leftIndex]?.devolution > 0 || Boolean(leftSlots[leftIndex]?.mega || leftSlots[leftIndex]?.mega_form))} className="team-left-evolution" layout={overlayLayout("left-evolution")} onLayoutChange={(partial) => updateOverlayLayout("left-evolution", partial)}><TeamEvolutionControls pluginMode value={leftSlots[leftIndex]} pets={pets} onChange={(partial) => patchSlot("left", leftIndex, partial)} /></FloatingTeamPanel>
+          <FloatingTeamPanel panelState={panelState(rightSlots[rightIndex]?.devolution > 0 || Boolean(rightSlots[rightIndex]?.mega || rightSlots[rightIndex]?.mega_form))} className="team-right-evolution" layout={overlayLayout("right-evolution")} onLayoutChange={(partial) => updateOverlayLayout("right-evolution", partial)}><TeamEvolutionControls pluginMode value={rightSlots[rightIndex]} pets={pets} onChange={(partial) => patchSlot("right", rightIndex, partial)} /></FloatingTeamPanel>
         </> : null}
         <section className="team-bonus-toolbar team-left-bonus-toolbar" data-panel-state={panelState(bonusesArmed(leftOtherBonuses))} data-overlay-control data-plugin-resizable={displayMode === "plugin" || undefined} aria-label="己方其他加成">
           {displayMode === "plugin" ? <PluginResizeEdges /> : null}
@@ -4070,9 +4272,10 @@ function TeamBattlePage({
             key="right-watch"
             layout={overlayLayout("right-watch")}
             onLayoutChange={(partial) => updateOverlayLayout("right-watch", partial)}
-            watchSkills={watchSkills}
-            enemyName={rightSlots[rightIndex]?.name || ""}
-            onRemove={(name) => setWatchSkills(watchSkills.filter((item) => item !== name))}
+            configuration={watchConfiguration}
+            onConfigurationChange={updateWatchConfiguration}
+            self={leftSlots[leftIndex]}
+            enemy={rightSlots[rightIndex]}
           />
         </> : <>
           <TeamSkillCards className="team-left-skills" title="己方技能卡片" cardCount={teamSkillCardCount} value={leftSlots[leftIndex]} elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onApplySkill={leftAttacks ? (skill) => void applyBuff(skill) : undefined} onChange={(partial) => patchSlot("left", leftIndex, partial)} />
@@ -4185,7 +4388,6 @@ function PresetManagerPage({
   const [editor, setEditor] = useState<UnitState>(blankUnit());
   const [picker, setPicker] = useState<"pet" | null>(null);
   const [skillPickerIndex, setSkillPickerIndex] = useState<number | null>(null);
-  const [watchPicker, setWatchPicker] = useState(false);
   const [watchSettingsOpen, setWatchSettingsOpen] = useState(false);
   const [skillData, setSkillData] = useState<SkillListResult>({ petSkills: [], allSkills: [] });
   const [skillDataPetName, setSkillDataPetName] = useState<string | null>(null);
@@ -4235,29 +4437,6 @@ function PresetManagerPage({
     });
     return () => { cancelled = true; };
   }, [editor.name, skillPickerIndex]);
-
-  // 每个预设分组保存独立的醒目技能列表。
-  const watchSkills = useMemo(() => {
-    return groupWatchSkills(configs, currentGroup?.name || "", firstGroupName);
-  }, [configs, currentGroup?.name, firstGroupName]);
-
-  useEffect(() => {
-    if (!watchPicker) return;
-    void cachedListSkills("").then((data) => { setSkillData(data); setSkillDataPetName(""); }).catch(() => setSkillData({ petSkills: [], allSkills: [] }));
-  }, [watchPicker]);
-
-  async function saveWatchSkills(next: string[]) {
-    if (!currentGroup) return;
-    try {
-      const data = await invoke<{ configs: PickerConfigs }>("save_picker_config", {
-        payload: { section: "team_layout", values: { watch_skills_by_group: { ...(configs.team_layout?.watch_skills_by_group as Record<string, unknown> || {}), [currentGroup.name]: next } } },
-      });
-      onConfigsChanged(data.configs);
-      setMessage("醒目技能已保存");
-    } catch (err) {
-      setError(asError(err));
-    }
-  }
 
   function defaultBloodlineForPet(name: string) {
     const element = petLookup.get(name)?.elements[0];
@@ -4484,7 +4663,7 @@ function PresetManagerPage({
             presetNameInputRef.current?.focus();
           }}>新建预设</button>
           <button className="preset-create-button" onClick={openCreateGroup}>创建分组</button>
-          <button className="compact-button preset-watch-button" disabled={!currentGroup} onClick={() => setWatchSettingsOpen(true)}>醒目技能</button>
+          <button className="compact-button preset-watch-button" onClick={() => setWatchSettingsOpen(true)}>醒目技能</button>
           <button className="compact-button preset-delete-group-button" disabled={!currentGroup} onClick={() => { setError(""); setDeleteGroupConfirm(currentGroup || null); }}>删除当前分组</button>
         </div>
         <div className="preset-list">
@@ -4619,44 +4798,7 @@ function PresetManagerPage({
           onPickTrait={() => undefined}
         />
       ) : null}
-      {watchSettingsOpen ? createPortal(
-        <div data-overlay-control className="modal-backdrop" onMouseDown={(event) => {
-          if (event.target === event.currentTarget) setWatchSettingsOpen(false);
-        }}>
-          <section className="team-code-modal preset-watch-modal" role="dialog" aria-modal="true" aria-labelledby="preset-watch-title">
-            <header>
-              <h2 id="preset-watch-title">醒目技能 · {currentGroup?.name}</h2>
-              <button className="compact-button" onClick={() => setWatchSettingsOpen(false)}>关闭</button>
-            </header>
-            <button className="compact-button" onClick={() => setWatchPicker(true)}>选择技能</button>
-            {watchSkills.length ? <div className="watch-skill-chips">
-              {watchSkills.map((name) => <button type="button" className="watch-skill-chip" key={name} title="点击移除" onClick={() => void saveWatchSkills(watchSkills.filter((item) => item !== name))}>
-                <EntityLabel kind="skill" value={name} /> ×
-              </button>)}
-            </div> : <p className="muted preset-watch-hint">当前分组未配置醒目技能。</p>}
-            {error ? <p className="error-text preset-message">错误：{error}</p> : null}
-          </section>
-        </div>, document.body,
-      ) : null}
-      {watchPicker ? (
-        <PickerModal
-          mode="skill"
-          pets={[]}
-          elements={elements}
-          /* 醒目技能是全局关注列表：两个标签都给完整技能库，避免默认标签是空的。 */
-          petSkills={skillData.allSkills}
-          allSkills={skillData.allSkills}
-          traits={[]}
-          configs={configs}
-          onConfigsChanged={onConfigsChanged}
-          onClose={() => setWatchPicker(false)}
-          onPickPet={() => undefined}
-          onPickSkill={(skill) => {
-            if (!watchSkills.includes(skill.name)) void saveWatchSkills([...watchSkills, skill.name]);
-          }}
-          onPickTrait={() => undefined}
-        />
-      ) : null}
+      {watchSettingsOpen ? <WatchSkillsSettings elements={elements} configs={configs} onConfigsChanged={onConfigsChanged} onClose={() => setWatchSettingsOpen(false)} /> : null}
       {deleteGroupConfirm ? createPortal(
         <div data-overlay-control className="modal-backdrop" onMouseDown={(event) => {
           if (event.target === event.currentTarget && !deleteGroupBusy) setDeleteGroupConfirm(null);
@@ -4906,43 +5048,242 @@ function TeamSkillCards({
   );
 }
 
-/* 敌方醒目技能：只列出我方配置关注、且敌方当前精灵可能拥有的技能。 */
-function EnemyWatchSkillsPanel({ layout, onLayoutChange, watchSkills, enemyName, onRemove }: {
+function WatchSkillsSettings({ elements, configs, onConfigsChanged, onClose }: {
+  elements: string[];
+  configs: PickerConfigs;
+  onConfigsChanged: (configs: PickerConfigs) => void;
+  onClose: () => void;
+}) {
+  const [error, setError] = useState("");
+  const [saveMessage, setSaveMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [configuration, update] = useWatchConfiguration(configs, onConfigsChanged, setError);
+  const group = configuration.groups.find((item) => item.id === configuration.activeGroupId)!;
+  const [groupDraft, setGroupDraft] = useState<WatchGroup>(group);
+  const [editingGroupName, setEditingGroupName] = useState(false);
+  const draftIsSaved = configuration.groups.some((item) => item.id === groupDraft.id);
+  const [newTags, setNewTags] = useState("");
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [editingTag, setEditingTag] = useState<string | null>(null);
+  const [tagNameDraft, setTagNameDraft] = useState("");
+  useEffect(() => { setGroupDraft(group); setEditingGroupName(false); setSelectedTag(null); setEditingTag(null); setSaveMessage(""); }, [group.id]);
+  const tags = [...new Set([...(groupDraft.tags || []), ...groupDraft.rules.flatMap((rule) => rule.tags)])];
+  const visibleTags = groupDraft.rules.some((rule) => !rule.tags.length) || !tags.length ? ["", ...tags] : tags;
+  const activeTag = selectedTag !== null && visibleTags.includes(selectedTag) ? selectedTag : visibleTags[0];
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [allSkills, setAllSkills] = useState<SkillItem[]>([]);
+  useEffect(() => {
+    if (!pickerOpen) return;
+    let cancelled = false;
+    void cachedListSkills("").then((data) => { if (!cancelled) setAllSkills(data.allSkills); }).catch((error) => { if (!cancelled) setError(asError(error)); });
+    return () => { cancelled = true; };
+  }, [pickerOpen]);
+
+  function changeRules(change: (rules: WatchRule[]) => WatchRule[]) {
+    setSaveMessage("");
+    setGroupDraft((value) => ({ ...value, rules: change(value.rules) }));
+  }
+  function addRule(kind: WatchRule["kind"], name: string) {
+    const tags = activeTag ? [activeTag] : [];
+    changeRules((rules) => {
+      const existing = rules.find((rule) => rule.kind === kind && (kind !== "skill" || rule.name === name));
+      if (existing) return rules.map((rule) => rule.id === existing.id ? { ...rule, name, tags: [...new Set([...rule.tags, ...tags])] } : rule);
+      return [...rules, { id: crypto.randomUUID(), kind, name, tags }];
+    });
+  }
+  function addTag() {
+    const tag = newTags.trim();
+    if (!tag) { setError("请填写标签名"); return; }
+    if (tags.includes(tag)) { setError("标签已存在"); return; }
+    setError("");
+    setSaveMessage("");
+    setGroupDraft((value) => ({ ...value, tags: [...new Set([...(value.tags || []), ...value.rules.flatMap((rule) => rule.tags), tag])] }));
+    setSelectedTag(tag);
+    setNewTags("");
+  }
+  function renameTag(tag: string) {
+    const name = tagNameDraft.trim();
+    if (!name) { setError("标签名不能为空"); return; }
+    if (name !== tag && tags.includes(name)) { setError("标签已存在"); return; }
+    setError("");
+    setSaveMessage("");
+    setGroupDraft((value) => ({
+      ...value,
+      tags: [...new Set([...(value.tags || []), ...value.rules.flatMap((rule) => rule.tags), ...(tag ? [] : [name])].map((item) => item === tag ? name : item))],
+      rules: value.rules.map((rule) => ({ ...rule, tags: tag ? rule.tags.map((item) => item === tag ? name : item) : rule.tags.length ? rule.tags : [name] })),
+    }));
+    setSelectedTag(name);
+    setEditingTag(null);
+  }
+  async function saveGroup() {
+    const name = groupDraft.name.trim();
+    if (!name) { setError("请填写醒目技能分组名"); return; }
+    if (configuration.groups.some((item) => item.name === name && item.id !== groupDraft.id)) { setError("醒目技能分组名已存在"); return; }
+    setError("");
+    setSaveMessage("");
+    setSaving(true);
+    const next = { ...groupDraft, name };
+    setGroupDraft(next);
+    const success = await update((value) => ({
+      groups: value.groups.some((item) => item.id === next.id)
+        ? value.groups.map((item) => item.id === next.id ? next : item)
+        : [...value.groups, next],
+      activeGroupId: next.id,
+    }));
+    setSaving(false);
+    if (success) {
+      setEditingGroupName(false);
+      setSaveMessage(`已保存醒目技能分组：${name}`);
+    }
+  }
+
+  return <>{createPortal(
+    <div data-overlay-control className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section className="team-code-modal preset-watch-modal" role="dialog" aria-modal="true" aria-labelledby="preset-watch-title">
+        <header><h2 id="preset-watch-title">醒目技能</h2><button className="compact-button" onClick={onClose}>关闭</button></header>
+        <div className="watch-settings-row watch-settings-group">
+          <label htmlFor="watch-group-name">分组</label>
+          {editingGroupName || !draftIsSaved ? <input id="watch-group-name" aria-label="醒目技能分组名" autoFocus value={groupDraft.name} placeholder="输入分组名" onChange={(event) => {
+            setSaveMessage("");
+            setGroupDraft((value) => ({ ...value, name: event.target.value }));
+          }} onKeyDown={(event) => {
+            if (event.key === "Enter" && !saving) void saveGroup();
+            if (event.key === "Escape" && draftIsSaved) {
+              const saved = configuration.groups.find((item) => item.id === groupDraft.id)!;
+              setGroupDraft((value) => ({ ...value, name: saved.name }));
+              setEditingGroupName(false);
+            }
+          }} /> : <select id="watch-group-name" aria-label="醒目技能分组" value={groupDraft.id} disabled={saving} onChange={(event) => {
+            const selected = configuration.groups.find((item) => item.id === event.target.value);
+            if (!selected) return;
+            setGroupDraft(selected);
+            setEditingGroupName(false);
+            setSelectedTag(null);
+            setEditingTag(null);
+            setNewTags("");
+            setError("");
+            setSaveMessage("");
+            void update((value) => ({ ...value, activeGroupId: selected.id }));
+          }}>
+            {configuration.groups.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>}
+          <button className="compact-button" disabled={saving || !draftIsSaved} onClick={() => { setEditingGroupName(true); setSaveMessage(""); }}>重命名</button>
+          <button className="compact-button" disabled={saving} onClick={() => void saveGroup()}>{saving ? "保存中…" : "保存"}</button>
+          <button className="compact-button" disabled={saving} onClick={() => {
+            setError("");
+            setGroupDraft({ id: crypto.randomUUID(), name: "", rules: [] });
+            setEditingGroupName(true);
+            setSelectedTag(null);
+            setEditingTag(null);
+            setSaveMessage("");
+            setNewTags("");
+          }}>新建</button>
+          <button className="compact-button watch-settings-delete" disabled={saving || configuration.groups.length === 1 || !draftIsSaved} onClick={() => {
+            if (!window.confirm(`删除醒目技能分组“${groupDraft.name}”？`)) return;
+            update((value) => { const groups = value.groups.filter((item) => item.id !== groupDraft.id); setGroupDraft(groups[0]); return { groups, activeGroupId: groups[0].id }; });
+          }}>删除分组</button>
+        </div>
+        {saveMessage ? <p className="save-message" role="status">{saveMessage}</p> : null}
+        <div className="watch-settings-tag-groups">
+          {visibleTags.map((tag) => <section className="watch-settings-tag-group" key={`${groupDraft.id}-${tag}`}>
+            <div className="watch-settings-tag-header">
+              {editingTag === tag ? <>
+                <input className="watch-settings-tag-name" aria-label="修改标签名" autoFocus value={tagNameDraft} onChange={(event) => setTagNameDraft(event.target.value)} onKeyDown={(event) => {
+                  if (event.key === "Enter") renameTag(tag);
+                  if (event.key === "Escape") setEditingTag(null);
+                }} />
+                <button className="compact-button" title="确认标签名" aria-label="确认标签名" onClick={() => renameTag(tag)}>✓</button>
+                <button className="compact-button" title="取消修改标签名" aria-label="取消修改标签名" onClick={() => setEditingTag(null)}>×</button>
+              </> : <>
+                <button type="button" className={`compact-button watch-settings-tag${tag === activeTag ? " active" : ""}`} aria-pressed={tag === activeTag} onClick={() => setSelectedTag(tag)}>{tag || "未标签"}</button>
+                <button className="compact-button watch-settings-tag-edit" title="修改标签名" aria-label={`修改${tag || "未标签"}标签名`} onClick={() => { setEditingTag(tag); setTagNameDraft(tag); }}>✎</button>
+              </>}
+            </div>
+            <div className="watch-settings-rules">
+              {groupDraft.rules.filter((rule) => tag ? rule.tags.includes(tag) : !rule.tags.length).map((rule) => <div className="watch-settings-rule" key={rule.id}>
+                <span>{rule.kind === "skill" ? <EntityLabel kind="skill" value={rule.name} /> : WATCH_RULE_OPTIONS.find((option) => option.kind === rule.kind)?.label || rule.name}</span>
+                <button className="compact-button" aria-label={`从${tag || "未标签"}移除${rule.name}`} onClick={() => changeRules((rules) => rules.flatMap((item) => {
+                  if (item.id !== rule.id) return [item];
+                  const tags = item.tags.filter((itemTag) => itemTag !== tag);
+                  return tags.length ? [{ ...item, tags }] : [];
+                }))}>×</button>
+              </div>)}
+            </div>
+          </section>)}
+        </div>
+        <div className="watch-settings-row watch-settings-add-skills">
+          {WATCH_RULE_OPTIONS.map((option) => <button className="compact-button" key={option.kind} onClick={() => addRule(option.kind, option.label)}>{option.label}</button>)}
+          <button className="compact-button watch-settings-pick" title="按技能名称或描述搜索" onClick={() => setPickerOpen(true)}>选择</button>
+          <div className="watch-settings-new-tag">
+            <input aria-label="标签名" value={newTags} onChange={(event) => setNewTags(event.target.value)} placeholder="标签名" onKeyDown={(event) => { if (event.key === "Enter") addTag(); }} />
+            <button className="compact-button" onClick={addTag}>新增标签</button>
+          </div>
+        </div>
+        {error ? <p className="error-text">错误：{error}</p> : null}
+      </section>
+    </div>, document.body,
+  )}{pickerOpen ? <PickerModal mode="skill" searchSkillDescriptions pets={[]} elements={elements} petSkills={allSkills} allSkills={allSkills} traits={[]} configs={configs} onConfigsChanged={onConfigsChanged} onClose={() => setPickerOpen(false)} onPickPet={() => undefined} onPickTrait={() => undefined} onPickSkill={(skill) => addRule("skill", skill.name)} /> : null}</>;
+}
+
+/* 敌方醒目技能按独立分组中的规则匹配，再按自定义标签归类。 */
+function EnemyWatchSkillsPanel({ layout, onLayoutChange, configuration, onConfigurationChange, self, enemy }: {
   layout: PluginOverlayLayout;
   onLayoutChange: (partial: Partial<PluginOverlayLayout>) => void;
-  watchSkills: string[];
-  enemyName: string;
-  onRemove: (name: string) => void;
+  configuration: WatchConfiguration;
+  onConfigurationChange: (change: (value: WatchConfiguration) => WatchConfiguration) => void;
+  self: UnitState;
+  enemy: UnitState;
 }) {
-  const [petSkillNames, setPetSkillNames] = useState<string[]>([]);
+  const enemyName = enemy.mega_form || enemy.name;
+  const [skillData, setSkillData] = useState<{ name: string; skills: SkillItem[] }>({ name: "", skills: [] });
+  const group = configuration.groups.find((item) => item.id === configuration.activeGroupId)!;
+  const needsAdvantages = group.rules.some((rule) => rule.kind === "super-effective");
+  const defenderKey = JSON.stringify([self.name, self.devolution, self.mega, self.mega_form]);
+  const [advantageData, setAdvantageData] = useState<{ key: string; values: Record<string, number> }>({ key: "", values: {} });
+  const [advantageError, setAdvantageError] = useState("");
+  const [skillError, setSkillError] = useState("");
+  const [collapsedTags, setCollapsedTags] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (!enemyName) {
-      setPetSkillNames([]);
-      return;
-    }
+    setSkillError("");
+    if (!enemyName) return;
     let cancelled = false;
     void cachedListSkills(enemyName)
-      .then((data) => { if (!cancelled) setPetSkillNames(data.petSkills.map((item) => item.name)); })
-      .catch(() => { if (!cancelled) setPetSkillNames([]); });
+      .then((data) => { if (!cancelled) setSkillData({ name: enemyName, skills: data.petSkills }); })
+      .catch((error) => { if (!cancelled) { setSkillData({ name: enemyName, skills: [] }); setSkillError(asError(error)); } });
     return () => { cancelled = true; };
   }, [enemyName]);
 
-  const matched = watchSkills.filter((name) => petSkillNames.includes(name));
+  useEffect(() => {
+    setAdvantageError("");
+    if (!needsAdvantages || !self.name) return;
+    let cancelled = false;
+    void invoke<Record<string, number>>("calculate_watch_advantages", { payload: { defender: { name: self.name, devolution: self.devolution, mega: self.mega, mega_form: self.mega_form } } })
+      .then((values) => { if (!cancelled) setAdvantageData({ key: defenderKey, values }); })
+      .catch((error) => { if (!cancelled) { setAdvantageData({ key: defenderKey, values: {} }); setAdvantageError(asError(error)); } });
+    return () => { cancelled = true; };
+  }, [defenderKey, needsAdvantages]);
+
+  const matchedGroups = groupWatchedSkills(group.rules, skillData.name === enemyName ? skillData.skills : [], advantageData.key === defenderKey ? advantageData.values : {}).filter(({ matches }) => matches.length > 0);
 
   return (
     <FloatingTeamPanel className="watch-skill-panel" overlayId="right-watch" layout={layout} onLayoutChange={onLayoutChange}>
-      <div className="watch-skill-title">醒目技能</div>
-      {matched.length ? (
-        <div className="watch-skill-list">
-          {matched.map((name) => (
-            <div className="watch-skill-item" key={name}>
-              <span><EntityLabel kind="skill" value={name} /></span>
-              <button type="button" className="compact-button watch-skill-remove" title="从醒目技能移除" onClick={() => onRemove(name)}>×</button>
-            </div>
-          ))}
-        </div>
-      ) : <div className="watch-skill-empty">无</div>}
+      <div className="watch-skill-title">醒目技能 <select aria-label="插件醒目技能分组" value={group.id} onChange={(event) => onConfigurationChange((value) => ({ ...value, activeGroupId: event.target.value }))}>
+        {configuration.groups.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+      </select></div>
+      {matchedGroups.map(({ tag, matches }) => {
+        const tagKey = JSON.stringify([group.id, tag]);
+        const collapsed = Boolean(collapsedTags[tagKey]);
+        return <div className="watch-skill-tag-group" key={tag}>
+          <button type="button" className="watch-skill-tag" aria-expanded={!collapsed} onClick={() => setCollapsedTags((value) => ({ ...value, [tagKey]: !value[tagKey] }))}>{tag} <span aria-hidden="true">{collapsed ? "▸" : "▾"}</span></button>
+          {!collapsed ? <div className="watch-skill-list" onPointerDown={(event) => event.stopPropagation()}>{matches.map(({ skill }) => <div className="watch-skill-item" key={skill.name} title={[skill.name, skillDetail(skill).description || skill.description].filter(Boolean).join("\n")}>
+            <span><EntityLabel kind="skill" value={skill.name} /></span>
+          </div>)}</div> : null}
+        </div>;
+      })}
+      {!matchedGroups.length ? <div className="watch-skill-empty">无</div> : null}
+      {needsAdvantages && self.name && advantageData.key !== defenderKey && !advantageError ? <div className="watch-skill-empty">克制技能计算中…</div> : null}
+      {advantageError || skillError ? <div className="error-text">{advantageError || skillError}</div> : null}
     </FloatingTeamPanel>
   );
 }
@@ -5130,6 +5471,7 @@ function BattleBonusToolPanel({
   const panelRef = useRef<HTMLElement | null>(null);
   const dragRef = useRef<{ pointerX: number; pointerY: number; x: number; y: number } | null>(null);
   const title = `${side === "left" ? "己方" : "敌方"}${{ dedication: "奉献", marks: "印记", thunderstorm: "雷暴" }[tool]}`;
+  usePluginPanelMove(panelRef, onPositionChange);
 
   function clampToViewport(x: number, y: number) {
     const width = panelRef.current?.offsetWidth || 330;
@@ -5165,7 +5507,8 @@ function BattleBonusToolPanel({
   }
 
   return (
-    <section ref={panelRef} className={`bonus-tool-floating ${side}-${tool} ${tool}`} data-overlay-control style={{ left: position.x, top: position.y }}>
+    <section ref={panelRef} className={`bonus-tool-floating ${side}-${tool} ${tool}`} data-overlay-control data-plugin-resizable={pluginMode || undefined} style={{ left: position.x, top: position.y }}>
+      {pluginMode ? <PluginResizeEdges /> : null}
       <header onPointerDown={startDrag}>
         <strong>{title}</strong>
         <button className="icon-button" title="关闭" aria-label="关闭" onClick={onClose}>×</button>
@@ -5869,6 +6212,8 @@ function ResultView({
   const [selected, setSelected] = useState<BattleResult | null>(null);
   const [visible, setVisible] = useState(false);
   const [position, setPosition] = useState({ x: 80, y: 88 });
+  const panelRef = useRef<HTMLElement | null>(null);
+  usePluginPanelMove(panelRef, setPosition);
   const dragRef = useRef<{ pointerX: number; pointerY: number; x: number; y: number } | null>(null);
   const grouped = orderedResultGroups(results);
 
@@ -5914,7 +6259,8 @@ function ResultView({
   const showLegacyResultCards = false;
   const showLegacyResultDetail = false;
   return (
-    <section className={`result-floating${willpower ? " has-willpower" : ""}`} data-overlay-control style={{ left: position.x, top: position.y }}>
+    <section ref={panelRef} className={`result-floating${willpower ? " has-willpower" : ""}`} data-overlay-control data-plugin-resizable style={{ left: position.x, top: position.y }}>
+      <PluginResizeEdges />
       <header className="result-floating-header" onPointerDown={startDrag}>
         <div>
           <h2>对战结果</h2>
@@ -6066,6 +6412,8 @@ function ResultView({
 function RequiredPowerView({ value, context }: { value: RequiredPowerResponse; context: BattleContext | null }) {
   const [visible, setVisible] = useState(true);
   const [position, setPosition] = useState({ x: 80, y: 88 });
+  const panelRef = useRef<HTMLElement | null>(null);
+  usePluginPanelMove(panelRef, setPosition);
   const dragRef = useRef<{ pointerX: number; pointerY: number; x: number; y: number } | null>(null);
   const labels = ["天分加性格++", "天分+", "正常", "减性格-"];
   const physical = value.rows.filter((row) => row.attack_type === "物攻");
@@ -6091,7 +6439,8 @@ function RequiredPowerView({ value, context }: { value: RequiredPowerResponse; c
 
   if (!visible) return null;
   return (
-    <section className="required-power-panel" style={{ left: position.x, top: position.y }}>
+    <section ref={panelRef} className="required-power-panel" data-overlay-control data-plugin-resizable style={{ left: position.x, top: position.y }}>
+      <PluginResizeEdges />
       <header onPointerDown={startDrag}>
         <div>
           <strong>判死所需威力</strong>
@@ -6154,6 +6503,7 @@ const ELEMENT_RESULT_COLORS: Record<string, string> = {
 function EnemyAttackSkillPanel({ value, onBack, onPickSkill, onClose }: { value: EnemyAttackSkillResponse; onBack?: () => void; onPickSkill: () => void; onClose: () => void }) {
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const panelRef = useRef<HTMLElement | null>(null);
+  usePluginPanelMove(panelRef, setPosition);
   const dragRef = useRef<{ pointerId: number; pointerX: number; pointerY: number; x: number; y: number } | null>(null);
 
   function startDrag(event: ReactPointerEvent<HTMLElement>) {
@@ -6203,7 +6553,8 @@ function EnemyAttackSkillPanel({ value, onBack, onPickSkill, onClose }: { value:
   }
 
   return (
-    <section ref={panelRef} className="enemy-attack-panel" data-overlay-control role="dialog" aria-label="敌方攻击技能结果" style={position ? { left: position.x, top: position.y, transform: "none" } : undefined}>
+    <section ref={panelRef} className="enemy-attack-panel" data-overlay-control data-plugin-resizable role="dialog" aria-label="敌方攻击技能结果" style={position ? { left: position.x, top: position.y, transform: "none" } : undefined}>
+      <PluginResizeEdges />
       <header className="enemy-attack-panel-header" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={stopDrag} onPointerCancel={stopDrag} onLostPointerCapture={stopDrag}>
         {onBack ? <button onClick={onBack} aria-label="返回最初结果" title="返回最初结果">←</button> : null}
         <div>
@@ -6615,8 +6966,12 @@ function App() {
   const teamConfigs = data && previewUiTokens
     ? { ...data.configs, ui_tokens: { ...(data.configs.ui_tokens || {}), ...previewUiTokens } }
     : data?.configs;
+  const megaPetIcons = useMemo(() => new Set((data?.pets || [])
+    .filter((pet) => pet.evolutionStage === "mega")
+    .flatMap((pet) => [pet.label, `${pet.id}${pet.name}`, pet.name].map(normalizePetIconName))), [data?.pets]);
 
   return (
+    <MegaPetIconContext.Provider value={megaPetIcons}>
     <main className={`${tab === "presets" ? "app-shell preset-shell" : "app-shell"}${overlayAttached ? " overlay-attached" : ""}`} style={data ? (previewUiTokens ? uiTokenStyleFromValues(previewUiTokens) : uiTokenStyle(data.configs)) : undefined}>
       <header className="app-header overlay-header" onPointerDown={dragWindow}>
         <nav className="tabs">
@@ -6682,6 +7037,7 @@ function App() {
         <section className="loading-panel">正在读取 Python 核心和 JSON 数据...</section>
       )}
     </main>
+    </MegaPetIconContext.Provider>
   );
 }
 

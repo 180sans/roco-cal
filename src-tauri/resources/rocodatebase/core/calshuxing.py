@@ -85,6 +85,10 @@ def calc_attr(
         race_attr = level * race_base + 50 * race_base
         iv_attr = level * iv_base + 50 * iv_base
         final_attr = normal_round(race_attr) + normal_round(iv_attr) + 10
+        # 已确认的例外：60级五星、原始种族105且天分0，非生命基础值少1。
+        # 非零天分及其他种族（例如75＋天分10）仍按原公式计算。
+        if race_value == 105 and iv == 0 and level == 60 and star == 5:
+            final_attr -= 1
     
     # 属性修正值
     result = final_attr * (1 + personality_bonus) + ev

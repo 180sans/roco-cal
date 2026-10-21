@@ -590,7 +590,7 @@ body:has(.battle-page.mixed-active) .app-header,
   box-shadow: none !important;
 }
 
-/* 标题按钮铺满整块面板：点面板任意位置都能展开/收起。 */
+/* 特性名与叠层、触发、重置控件在插件模式下同行显示。 */
 .battle-page.plugin-mode .floating-team-panel:is(.team-left-trait, .team-right-trait):hover {
   /* 悬停不再出现任何额外描边层。 */
   outline: none !important;
@@ -598,15 +598,31 @@ body:has(.battle-page.mixed-active) .app-header,
 }
 
 .battle-page.plugin-mode .floating-team-panel:is(.team-left-trait, .team-right-trait) .team-slot-section {
+  --trait-row-height: max(23px, var(--trait-stack-height), var(--trait-trigger-height), var(--trait-reset-height));
+  align-items: flex-start;
   display: flex;
-  flex-direction: column;
-  height: 100%;
+  flex-direction: row;
+  gap: 6px;
+  height: auto;
+  min-height: var(--trait-row-height);
 }
 
 .battle-page.plugin-mode .floating-team-panel:is(.team-left-trait, .team-right-trait) .trait-summary-button.compact {
-  flex: 1 1 auto;
-  height: auto;
-  min-height: 23px;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  height: var(--trait-row-height);
+  margin-bottom: 0;
+  min-height: var(--trait-row-height);
+  width: auto;
+}
+
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-trait, .team-right-trait) .trait-status-row {
+  align-items: center;
+  min-height: var(--trait-row-height);
+}
+
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-trait, .team-right-trait) .trait-status-row > .trait-stack-control {
+  order: -1;
 }
 
 .preset-shell {
@@ -2230,6 +2246,11 @@ body:has(.preset-shell) {
 .watch-skill-list {
   display: grid;
   gap: 3px;
+  grid-auto-rows: 22px;
+  max-height: 97px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
 }
 
 .watch-skill-item {
@@ -2246,12 +2267,9 @@ body:has(.preset-shell) {
   white-space: nowrap;
 }
 
-.watch-skill-remove {
-  flex: 0 0 auto;
-  font-size: 11px;
-  height: 18px;
-  min-width: 18px;
-  padding: 0 4px;
+/* 技能图标不覆盖所在行的完整描述提示。 */
+.watch-skill-item > span {
+  pointer-events: none;
 }
 
 .watch-skill-empty {
@@ -2517,6 +2535,7 @@ body:has(.plugin-mode) .app-header .weather-panel {
 }
 
 .plugin-resize-edge {
+  display: none;
   pointer-events: auto;
   position: absolute;
   z-index: 100;
@@ -3829,7 +3848,175 @@ body:has(.plugin-mode) .app-header .weather-panel {
 }
 
 .team-code-modal.preset-watch-modal {
-  width: min(420px, calc(100vw - 36px));
+  width: min(620px, calc(100vw - 36px));
+  max-height: calc(100vh - 36px);
+  overflow-y: auto;
+}
+
+.watch-settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.watch-settings-row.watch-settings-group {
+  flex-wrap: nowrap;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.watch-settings-group > input,
+.watch-settings-group > select {
+  flex: 1 1 140px;
+  width: 140px;
+  min-width: 70px;
+}
+
+.watch-settings-group > label,
+.watch-settings-group > button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.watch-settings-group > label {
+  min-width: 0;
+}
+
+.preset-watch-modal .watch-settings-delete {
+  background: #fde8e8;
+  border-color: #edc0c0;
+  color: #8b3030;
+}
+
+.preset-watch-modal .watch-settings-delete:hover:not(:disabled) {
+  background: #fbd6d6;
+}
+
+.watch-settings-tag-groups {
+  display: grid;
+  gap: 4px;
+}
+
+.watch-settings-rules {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+
+.watch-settings-tag-group {
+  display: grid;
+  gap: 4px;
+}
+
+.watch-settings-tag-group + .watch-settings-tag-group {
+  border-top: 1px solid #d8e0e8;
+  padding-top: 4px;
+}
+
+.watch-settings-tag-header {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.watch-settings-tag-name {
+  width: 8em;
+}
+
+.watch-settings-tag-edit {
+  padding: 0 4px;
+}
+
+.watch-settings-tag {
+  justify-self: start;
+}
+
+.watch-settings-tag.active {
+  background: #e0f1e9;
+  border-color: #87b9a4;
+  color: #246b58;
+}
+
+.watch-settings-rule {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+  gap: 3px;
+}
+
+.watch-settings-rule > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.watch-settings-rule > button {
+  flex: 0 0 auto;
+  padding: 0 4px;
+}
+
+.watch-settings-new-tag {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.watch-settings-new-tag > input {
+  flex: 0 1 auto;
+  width: 7em;
+  min-width: 0;
+}
+
+.preset-watch-modal .watch-settings-pick {
+  background: #fde8e8;
+  border-color: #edc0c0;
+  color: #a52d2d;
+}
+
+.preset-watch-modal .watch-settings-pick:hover {
+  background: #fbd6d6;
+}
+
+.watch-skill-title select {
+  font-size: 11px;
+  max-width: 130px;
+  padding: 0 3px;
+}
+
+.watch-skill-tag-group + .watch-skill-tag-group {
+  margin-top: 6px;
+}
+
+.watch-skill-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 3px;
+  height: auto;
+  line-height: 18px;
+  background: var(--ov-field, #eef2f5);
+  border: 1px solid var(--ov-field-border, #d8e0e8);
+  color: var(--ov-text, #263442);
+  padding: 1px 5px;
+  margin-bottom: 3px;
+}
+
+/* 醒目技能高度随标签内容收缩，空标签与折叠内容不保留空间。 */
+.battle-page.plugin-mode .floating-team-panel.watch-skill-panel {
+  height: auto !important;
+  min-height: 0;
+}
+
+.battle-page.plugin-mode .floating-team-panel.watch-skill-panel > .plugin-panel-content {
+  position: relative;
+  min-width: 0;
+  width: 100%;
 }
 
 .preset-watch-modal .watch-skill-chip {
@@ -4611,6 +4798,138 @@ button.trigger-button > img {
   width: var(--evolution-reset-width);
 }
 
+.slot-evolution-row:has(.slot-family-control),
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .slot-evolution-row:has(.slot-family-control) {
+  grid-template-columns: max-content max-content;
+}
+
+.family-form-select {
+  --form-height: max(44px, var(--mega-height));
+  align-items: center;
+  box-sizing: border-box;
+  display: inline-flex;
+  font-size: var(--mega-font-size);
+  gap: 6px;
+  height: var(--form-height);
+  justify-content: space-between;
+  min-width: calc(4em + 32px);
+  padding: 3px 6px;
+  white-space: nowrap;
+  width: max-content;
+}
+
+.preset-evolution-controls .family-form-select {
+  --form-height: max(44px, var(--preset-mega-height));
+  font-size: var(--preset-mega-number-font-size);
+}
+
+.family-form-select:has(.image-label[data-image-loaded="true"]) {
+  min-width: 0;
+}
+
+.family-form-select .image-label .entity-icon.pet-icon,
+.family-form-options .image-label .entity-icon.pet-icon {
+  height: 36px;
+  max-width: none;
+  width: auto;
+}
+
+.family-form-select .image-label .entity-icon.pet-icon {
+  height: calc(var(--form-height) - 8px);
+}
+
+.family-form-options {
+  background: #fff;
+  border: 1px solid #c9d3dc;
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(20, 31, 43, 0.2);
+  box-sizing: border-box;
+  display: grid;
+  gap: 3px;
+  max-width: calc(100vw - 8px);
+  min-width: 0;
+  overflow-y: auto;
+  padding: 4px;
+  position: fixed;
+  width: max-content;
+  z-index: 2100;
+}
+
+.family-form-options > button {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  box-sizing: border-box;
+  height: auto;
+  min-height: 44px;
+  min-width: calc(4em + 18px);
+  padding: 3px 6px;
+  white-space: nowrap;
+}
+
+.family-form-options > button:has(.image-label[data-image-loaded="true"]) {
+  min-width: 0;
+}
+
+.family-form-options > button[aria-selected="true"] {
+  background: #eaf3ff;
+  border-color: #507ba8;
+}
+
+.family-form-options.overlay-form-options {
+  background: rgba(18, 26, 36, 0.94);
+  border-color: rgba(154, 178, 202, 0.5);
+  color: #f2f7fd;
+}
+
+.family-form-options.overlay-form-options > button {
+  background: rgba(226, 238, 252, 0.13);
+  border-color: rgba(196, 216, 238, 0.3);
+  color: #f2f7fd;
+}
+
+.family-form-options.overlay-form-options > button:hover {
+  background: rgba(226, 238, 252, 0.22);
+}
+
+.family-form-options.overlay-form-options > button[aria-selected="true"] {
+  background: rgba(36, 107, 88, 0.82);
+  border-color: #8fdcb8;
+  color: #f0fff8;
+}
+
+.battle-page.immersive-mode.plugin-mode .slot-family-control .family-form-select {
+  background: var(--ov-field) !important;
+  border-color: var(--ov-field-border) !important;
+  color: var(--ov-field-text) !important;
+  min-width: 0;
+  gap: 3px;
+  padding-inline: 4px;
+}
+
+/* 萌化形态使用固定按钮和图片占位，切换图片或完成透明边裁剪时不改变宽度。 */
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .family-form-select {
+  --form-width: calc(var(--form-height) + 20px);
+  flex: 0 0 auto;
+  max-width: var(--form-width);
+  min-width: var(--form-width);
+  overflow: hidden;
+  width: var(--form-width);
+}
+
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .family-form-select > .image-label {
+  flex: 1 1 0;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .family-form-select .image-label .entity-icon.pet-icon {
+  height: calc(var(--form-height) - 8px);
+  max-width: 100%;
+  object-fit: contain;
+  width: calc(var(--form-height) - 8px);
+}
+
 .iv-reset-button {
   font-size: var(--iv-reset-font-size);
   height: var(--iv-reset-height);
@@ -5269,6 +5588,11 @@ button.trigger-button > img {
   font-style: normal;
 }
 
+/* 技能卡片统一使用外层的完整描述提示，避免内部图标标题覆盖。 */
+.compact-picker-card.picker-skill-card > * {
+  pointer-events: none;
+}
+
 .compact-picker-card.picker-skill-card {
   align-content: center;
   grid-template-rows: 20px 18px;
@@ -5699,6 +6023,14 @@ button.trigger-button > img {
   color: #f0fff8 !important;
 }
 
+.overlay-attached-picker.skill-picker-backdrop .picker-modal .filter-toggle[aria-pressed="true"],
+.overlay-attached-picker.skill-picker-backdrop .picker-modal .filter-toggle[aria-pressed="true"]:hover {
+  background: #23785e !important;
+  border-color: #8fdcb8 !important;
+  color: #fff !important;
+  font-weight: 700;
+}
+
 /* 左右阵营用一条描边区分，是叠加层里唯一的方位信息，
    必须盖过上面统一的面板 / 控件描边。 */
 .battle-page.immersive-mode.plugin-mode :is(
@@ -6077,7 +6409,7 @@ button.trigger-button > img {
   overflow: hidden;
 }
 
-/* 插件框内短按点击、长按拖动；缩放热区仅放在框外。 */
+/* 边框内外均为缩放热区；中心短按点击，长按后移动。 */
 .battle-page.plugin-mode [data-plugin-resizable]::before,
 .battle-page.plugin-mode [data-plugin-resizable] > .plugin-drag-zone {
   pointer-events: none;
@@ -6089,19 +6421,35 @@ button.trigger-button > img {
 }
 
 .battle-page.plugin-mode [data-plugin-resizable] > .plugin-resize-edge.top {
-  top: -6px;
+  display: block;
+  height: 10px;
+  left: -5px;
+  right: -5px;
+  top: -5px;
 }
 
 .battle-page.plugin-mode [data-plugin-resizable] > .plugin-resize-edge.bottom {
-  bottom: -6px;
+  display: block;
+  height: 10px;
+  left: -5px;
+  right: -5px;
+  bottom: -5px;
 }
 
 .battle-page.plugin-mode [data-plugin-resizable] > .plugin-resize-edge.left {
-  left: -6px;
+  display: block;
+  width: 10px;
+  top: -5px;
+  bottom: -5px;
+  left: -5px;
 }
 
 .battle-page.plugin-mode [data-plugin-resizable] > .plugin-resize-edge.right {
-  right: -6px;
+  display: block;
+  width: 10px;
+  top: -5px;
+  bottom: -5px;
+  right: -5px;
 }
 
 :is(.battle-page.immersive-mode.plugin-mode, .battle-page.plugin-mode) .skill-card-floating.team-skill-panel,

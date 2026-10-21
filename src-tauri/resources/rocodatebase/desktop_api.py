@@ -820,6 +820,23 @@ def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
     return {"targetHp": target_hp, "groups": groups}
 
 
+def calculate_watch_advantages(payload: dict[str, Any]) -> dict[str, float]:
+    """Resolve current defending form and reuse the battle type chart."""
+    from core.ele_advantage import Type, TypeChart
+    from core.find_pets import pets_dataset
+
+    defender = payload.get("defender") or {}
+    mega_form = (defender.get("mega_form") or "").strip()
+    pet = pets_dataset.find(
+        mega_form or defender.get("name", ""),
+        devolution=int(defender.get("devolution", 0) or 0),
+        mega=bool(defender.get("mega", False)) and not mega_form,
+    )
+    if not pet:
+        raise ValueError("未找到当前我方精灵，无法计算克制技能")
+    return {element.name: TypeChart.calc([element.name], pet["elements"]) for element in Type}
+
+
 def calculate_willpower(payload: dict[str, Any]) -> dict[str, Any]:
     """Calculate only distinct relation/STAB cases, then reuse them for all 18 elements."""
     from core.will_power import WILLPOWER_ELEMENTS, willpower_skill_cases
@@ -1634,6 +1651,7 @@ def main() -> int:
         "calculate-quick-skills-batch": calculate_quick_skills_batch,
         "trait-power-candidates": trait_power_candidates,
         "calculate-enemy-attack-skills": calculate_enemy_attack_skills,
+        "calculate-watch-advantages": calculate_watch_advantages,
         "calculate-willpower": calculate_willpower,
         "calculate-required-power": calculate_required_power,
     }

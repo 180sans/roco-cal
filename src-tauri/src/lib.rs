@@ -444,11 +444,16 @@ async fn run_python_payload_async(
         .map_err(|error| format!("Cannot serialize payload: {error}"))?;
     let command = command.to_string();
     tauri::async_runtime::spawn_blocking(move || {
-        run_python_with_input(
+        let started = std::time::Instant::now();
+        let result = run_python_with_input(
             app,
             &[command.as_str(), "--payload-stdin"],
             Some(&payload_text),
-        )
+        );
+        if command == "calculate-quick-skills-batch" {
+            eprintln!("[recognition] power stack trials (Python startup + calculation): {:.1} ms", started.elapsed().as_secs_f64() * 1000.0);
+        }
+        result
     })
     .await
     .map_err(|error| format!("Python task failed: {error}"))?
@@ -471,7 +476,10 @@ async fn run_native_inference(app: tauri::AppHandle, payload: Value, classify: b
     let resources = resource_root(&app)?.parent().ok_or("Invalid resources directory")?.to_path_buf();
     tauri::async_runtime::spawn_blocking(move || {
         let engine = state.0.get_or_init(|| inference::Inference::new(resources));
-        if classify { engine.classify(&payload) } else { engine.recognize(&payload) }
+        let started = std::time::Instant::now();
+        let result = if classify { engine.classify(&payload) } else { engine.recognize(&payload) };
+        eprintln!("[recognition] {} inference: {:.1} ms", if classify { "pet" } else { "number" }, started.elapsed().as_secs_f64() * 1000.0);
+        result
     }).await.map_err(|e| format!("Native inference task failed: {e}"))?
 }
 
@@ -1414,6 +1422,7 @@ fn copy_wgc_frame_to_bmp(
 
 #[cfg(windows)]
 fn capture_window_client_wgc(hwnd_value: usize) -> Result<CapturedClientFrame, String> {
+    let started = Instant::now();
     let apartment_initialized = match unsafe { RoInitialize(RO_INIT_MULTITHREADED) } {
         Ok(()) => true,
         Err(error) if error.code() == RPC_E_CHANGED_MODE => false,
@@ -1469,6 +1478,7 @@ fn capture_window_client_wgc(hwnd_value: usize) -> Result<CapturedClientFrame, S
     let token = pool
         .FrameArrived(&handler)
         .map_err(|error| format!("Cannot subscribe to WGC frames: {error}"))?;
+    let prepared = Instant::now();
     let result = (|| {
         session.StartCapture().map_err(|error| format!("Cannot start WGC capture: {error}"))?;
         let deadline = Instant::now() + Duration::from_secs(2);
@@ -1492,6 +1502,7 @@ fn capture_window_client_wgc(hwnd_value: usize) -> Result<CapturedClientFrame, S
     let _ = pool.RemoveFrameArrived(token);
     let _ = session.Close();
     let _ = pool.Close();
+    eprintln!("[recognition] WGC capture: setup {:.1} ms, frame/readback/cleanup {:.1} ms", prepared.duration_since(started).as_secs_f64() * 1000.0, prepared.elapsed().as_secs_f64() * 1000.0);
     result
 }
 
@@ -1505,6 +1516,7 @@ fn capture_overlay_target(target_state: tauri::State<'_, OverlayTargetState>) ->
 
     #[cfg(windows)]
     {
+        let started = Instant::now();
         let captured = capture_window_client_wgc(binding.target_hwnd)?;
         let overlay = binding.overlay_hwnd as *mut c_void;
         let mut overlay_rect = WinRect { left: 0, top: 0, right: 0, bottom: 0 };
@@ -1516,13 +1528,15 @@ fn capture_overlay_target(target_state: tauri::State<'_, OverlayTargetState>) ->
         }
         let overlay_width = (overlay_rect.right - overlay_rect.left).max(1);
         let overlay_height = (overlay_rect.bottom - overlay_rect.top).max(1);
-        return Ok(serde_json::json!({
+        let response = serde_json::json!({
             "imageDataUrl": format!("data:image/bmp;base64,{}", base64_encode(&captured.bmp)),
             "width": captured.width,
             "height": captured.height,
             "targetClient": { "x": captured.origin.x, "y": captured.origin.y, "width": captured.width, "height": captured.height },
             "overlayClient": { "x": overlay_origin.x, "y": overlay_origin.y, "width": overlay_width, "height": overlay_height },
-        }));
+        });
+        eprintln!("[recognition] screenshot + BMP/base64 transport preparation: {:.1} ms ({}x{})", started.elapsed().as_secs_f64() * 1000.0, captured.width, captured.height);
+        return Ok(response);
     }
     #[cfg(not(windows))]
     { let _ = binding; Err("Target screenshots are only available on Windows".to_string()) }
@@ -1600,6 +1614,11 @@ async fn trait_power_candidates(app: tauri::AppHandle, payload: Value) -> Result
 #[tauri::command]
 async fn calculate_enemy_attack_skills(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
     run_python_payload_async(app, "calculate-enemy-attack-skills", payload).await
+}
+
+#[tauri::command]
+async fn calculate_watch_advantages(app: tauri::AppHandle, payload: Value) -> Result<Value, String> {
+    run_python_payload_async(app, "calculate-watch-advantages", payload).await
 }
 
 #[tauri::command]
@@ -2066,6 +2085,7 @@ pub fn run() {
             calculate_quick_skills_batch,
             trait_power_candidates,
             calculate_enemy_attack_skills,
+            calculate_watch_advantages,
             calculate_willpower,
             calculate_required_power,
             apply_skill_buffs,
