@@ -611,12 +611,12 @@ def trait_power_candidates(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
-    """Calculate enemy skills, optionally selecting stacks for known player HP."""
+    """Return every damage branch and stack trial for the Ctrl+K table."""
     from itertools import product
 
     from core.damresult import battle_damage, get_personality_bonus_for_attr, parse_personality
     from core.find_pets import pets_dataset
-    from core.skill_finder import skill_dataset
+    from core.skill_finder import resolve_skill, skill_dataset
 
     attacker = payload.get("attacker") or {}
     defender = payload.get("defender") or {}
@@ -625,10 +625,8 @@ def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
     selected_skill = str(payload.get("skill_name") or "").strip()
 
     defender_args = _defender_args(defender)
-    suffix_order = ["++", "+", "", "-"]
-
-    def attack_type_label(skill_type: str) -> str:
-        return "物攻" if skill_type == "物攻" else "魔攻"
+    suffix_order = ["++", "+", ""]
+    max_hp = 0
 
     def suffix_for_result(label: str, skill_type: str) -> str:
         if label.startswith("加") and "天分加性格" in label:
@@ -652,79 +650,28 @@ def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
             return ""
         return ""
 
-    def stack_dimensions(skill_data: dict[str, Any]) -> list[int]:
+    def stack_dimensions(skill_data: dict[str, Any]) -> list[tuple[int, int]]:
         triggered = skill_data.get("triggered")
         options = [triggered] if isinstance(triggered, dict) else triggered if isinstance(triggered, list) else []
         return [
-            len(option.get("skill_power_by_count")) - 1 if isinstance(option.get("skill_power_by_count"), list) and option.get("skill_power_by_count") else 10
-            for option in options
+            (index, len(option["skill_power_by_count"]) - 1 if isinstance(option.get("skill_power_by_count"), list) and option["skill_power_by_count"] else 10)
+            for index, option in enumerate(options)
             if isinstance(option, dict) and (bool(option.get("multiple")) or bool(option.get("skill_power_by_count")))
         ]
 
-    def stack_vectors(skill_data: dict[str, Any], state: dict[str, Any], skill_name: str) -> list[list[int]]:
-        dimensions = stack_dimensions(skill_data)
+    def stack_vectors(dimensions: list[tuple[int, int]]) -> list[list[int]]:
         if not dimensions:
             return [[]]
-        if target_hp <= 0 or selected_skill:
-            configured = (state.get("skill_trigger_stacks") or {}).get(skill_name)
-            if not isinstance(configured, list):
-                configured = [state.get("multiple", 0) or 0]
-            return [configured]
-        vectors = [list(values) for values in product(*(range(maximum + 1) for maximum in dimensions))]
+        vectors = []
+        for counts in product(*(range(maximum + 1) for _, maximum in dimensions)):
+            values = [0] * (dimensions[-1][0] + 1)
+            for (index, _), count in zip(dimensions, counts):
+                values[index] = count
+            vectors.append(values)
         vectors.sort(key=lambda values: (sum(values), max(values, default=0), values))
         return vectors
 
-    def candidate_for_suffix(skill_name: str, skill_data: dict[str, Any], attack_type: str, suffix: str):
-        candidates = []
-        for stacks in stack_vectors(skill_data, attacker, skill_name):
-            stack_state = {
-                **attacker,
-                "current_skill": skill_name,
-                "skill_trigger_stacks": {**(attacker.get("skill_trigger_stacks") or {}), skill_name: stacks},
-            }
-            results = battle_damage(**_attacker_args(stack_state), **defender_args, weather=weather)
-            matching = [item for item in results if suffix_for_result(item.get("atk_label", ""), skill_data.get("type", "")) == suffix]
-            for item in matching:
-                damage = float(item.get("damage") or 0)
-                candidates.append({
-                    "item": item,
-                    "stacks": sum(stacks),
-                    "killed": target_hp > 0 and damage >= target_hp,
-                    "damage": damage,
-                })
-        if not candidates:
-            return None
-        def choose_candidate(values):
-            killed = [candidate for candidate in values if candidate["killed"]]
-            pool = killed or values
-            if killed:
-                return min(pool, key=lambda candidate: (
-                    candidate["stacks"],
-                    candidate["damage"] - target_hp,
-                    bool(candidate["item"].get("is_triggered")),
-                ))
-            return max(pool, key=lambda candidate: candidate["damage"])
-
-        chosen = choose_candidate(candidates)
-        cell = cell_for_candidate(skill_name, skill_data, chosen)
-        if selected_skill:
-            # 主动选技能时逐个保留基础/触发分支，不能跨分支只选出一个结果。
-            cases: dict[tuple[bool, str], list[dict[str, Any]]] = {}
-            for candidate in candidates:
-                item = candidate["item"]
-                triggered = bool(item.get("is_triggered"))
-                case_label = item.get("case_label") or ("触发情况" if triggered else "非触发情况")
-                cases.setdefault((triggered, case_label), []).append(candidate)
-            cell["variants"] = [
-                {**cell_for_candidate(skill_name, skill_data, choose_candidate(values)), "caseLabel": case_label}
-                for (_, case_label), values in cases.items()
-            ]
-        return cell
-
-    def cell_for_candidate(skill_name: str, skill_data: dict[str, Any], chosen: dict[str, Any]):
-        item = chosen["item"]
-        stack_text = str(chosen["stacks"]) if chosen["stacks"] > 0 else ""
-        trigger_text = "*" if item.get("is_triggered") else ""
+    def cell_for_result(item: dict[str, Any], stacks: list[int]):
         combo = item.get("combo") or 1
         usage_count = item.get("usage_time") or 1
         extra_damage = (item.get("starfall") or {}).get("damage", 0)
@@ -739,17 +686,14 @@ def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
             "damage": usage.get("damage", 0) / (usage.get("combo") or 1),
         } for usage in usage_results]
         return {
-            "skillName": skill_name,
-            "displayName": f"{skill_name}{trigger_text}{stack_text}",
             "skillPower": item.get("effective_power"),
             "damage": item.get("damage"),
             "combo": combo,
             "hitSegments": hit_segments,
             "totalSkillPower": sum(segment["power"] * segment["combo"] for segment in hit_segments if segment["power"] is not None),
             "extraDamage": extra_damage,
-            "element": skill_data.get("element") or "普通",
-            "stacks": chosen["stacks"],
-            "triggered": bool(item.get("is_triggered")),
+            "stacks": sum(stacks),
+            "stackValues": stacks,
         }
 
     # Ctrl+K 取敌方精灵的技能库（该精灵可学到的全部技能），不是当前携带的技能。
@@ -772,52 +716,62 @@ def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
         library_names = [selected_skill]
 
     profiles: dict[str, list[dict[str, Any]]] = {"物攻": [], "魔攻": []}
+    seen = set()
     for raw_name in library_names:
         skill_name = str(raw_name or "").strip()
-        if not skill_name or any(profile["skillName"] == skill_name for values in profiles.values() for profile in values):
+        if not skill_name or skill_name in seen:
             continue
+        seen.add(skill_name)
         skill_data = skill_dataset.find_skill(skill_name)
         if not isinstance(skill_data, dict) or skill_data.get("type") not in {"物攻", "魔攻"}:
             continue
-        attack_type = attack_type_label(skill_data["type"])
-        cells = {suffix: candidate_for_suffix(skill_name, skill_data, attack_type, suffix) for suffix in suffix_order}
-        values = [float(cell["damage"]) for cell in cells.values() if cell is not None and cell.get("damage") is not None]
-        if not values:
-            continue
-        profiles[attack_type].append({"skillName": skill_name, "cells": cells, "low": min(values), "high": max(values)})
-
-    def select_profiles(values: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        def damage_score(value: dict[str, Any]) -> float:
-            return (value["low"] + value["high"]) / 2
-
-        ordered = sorted(values, key=lambda value: (damage_score(value), value["skillName"]))
-        if len(ordered) <= 4:
-            return ordered
-
-        # 在实际伤害区间内取四档，不能按技能数量等分：低伤害技能密集时会漏掉克制档。
-        minimum = damage_score(ordered[0])
-        span = damage_score(ordered[-1]) - minimum
-        targets = [minimum + span / 3, minimum + span * 2 / 3]
-        # 一起选择两个中间档，保留首尾，保证四列不同且按伤害递增。
-        middle = min(
-            ((first, second) for first in range(1, len(ordered) - 2) for second in range(first + 1, len(ordered) - 1)),
-            key=lambda indices: sum(abs(damage_score(ordered[index]) - target) for index, target in zip(indices, targets)),
-        )
-        return [ordered[0], ordered[middle[0]], ordered[middle[1]], ordered[-1]]
+        dimensions = stack_dimensions(skill_data)
+        attacker_args = _attacker_args({**attacker, "current_skill": skill_name})
+        branches: dict[int, dict[str, Any]] = {}
+        for stacks in stack_vectors(dimensions):
+            multiple = stacks if dimensions else attacker_args.get("multiple", 0)
+            cases = skill_data.get("resolved_cases") or resolve_skill(
+                skill_data, multiple=multiple, usage_mode_choice=attacker_args.get("usage_mode_choice"),
+            )
+            # Stable case IDs keep a stacking base branch separate from real trigger branches.
+            resolved = []
+            for index, case in enumerate(cases):
+                if index not in branches:
+                    branches[index] = {
+                        "skillName": skill_name,
+                        "caseLabel": (case.get("case_label") or case.get("trigger_label") or ("非触发情况" if index == 0 else "触发情况")) if len(cases) > 1 else case.get("case_label") or case.get("trigger_label") or "",
+                        "triggered": bool(case.get("is_triggered") or case.get("trigger_label") or index > 0),
+                        "description": skill_data.get("description") or "",
+                        "element": skill_data.get("element") or "普通",
+                        "stackable": bool(dimensions),
+                        "columns": [{"label": suffix, "candidates": []} for suffix in suffix_order],
+                    }
+                resolved.append({**case, "case_label": str(index)})
+            results = battle_damage(
+                **{**attacker_args, "multiple": multiple}, **defender_args, weather=weather,
+                skill_data_override={**skill_data, "resolved_cases": resolved},
+            )
+            for item in results:
+                max_hp = max(max_hp, *(float(hp.get("hp") or 0) for hp in item.get("hp_results") or [{}]))
+                suffix = suffix_for_result(item.get("atk_label", ""), skill_data["type"])
+                if suffix not in suffix_order:
+                    continue
+                branch = branches[int(item["case_label"])]
+                branch["columns"][suffix_order.index(suffix)]["candidates"].append(cell_for_result(item, stacks))
+        for branch in branches.values():
+            if any(column["candidates"] for column in branch["columns"]):
+                profiles[skill_data["type"]].append(branch)
 
     groups = []
     for attack_type in ("物攻", "魔攻"):
-        selected = select_profiles(profiles[attack_type])
-        if not selected:
+        skills = profiles[attack_type]
+        if not skills:
             continue
-        rows = []
-        for suffix in suffix_order:
-            cells = [profile["cells"].get(suffix) for profile in selected]
-            if not any(cells):
-                continue
-            rows.append({"label": suffix, "skills": cells})
-        groups.append({"attackType": attack_type, "skills": [profile["skillName"] for profile in selected], "rows": rows})
-    return {"targetHp": target_hp, "groups": groups}
+        skills.sort(key=lambda skill: (-max(
+            (cell["totalSkillPower"] for column in skill["columns"] for cell in column["candidates"] if cell["stacks"] == 0), default=0,
+        ), skill["skillName"], skill["caseLabel"]))
+        groups.append({"attackType": attack_type, "skills": skills})
+    return {"targetHp": target_hp, "maxHp": max_hp, "groups": groups}
 
 
 def calculate_watch_advantages(payload: dict[str, Any]) -> dict[str, float]:

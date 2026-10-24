@@ -609,11 +609,18 @@ body:has(.battle-page.mixed-active) .app-header,
 
 .battle-page.plugin-mode .floating-team-panel:is(.team-left-trait, .team-right-trait) .trait-summary-button.compact {
   box-sizing: border-box;
-  flex: 0 0 auto;
+  flex: 0 0 38px;
   height: var(--trait-row-height);
   margin-bottom: 0;
   min-height: var(--trait-row-height);
-  width: auto;
+  max-width: 38px;
+  min-width: 38px;
+  overflow: hidden;
+  width: 38px;
+}
+
+.battle-page.plugin-mode .floating-team-panel:is(.team-left-trait, .team-right-trait) .trait-summary-button strong {
+  text-overflow: clip;
 }
 
 .battle-page.plugin-mode .floating-team-panel:is(.team-left-trait, .team-right-trait) .trait-status-row {
@@ -2376,6 +2383,40 @@ body:has(.plugin-mode) .app-header .weather-panel {
   width: 100%;
 }
 
+.battle-page.plugin-mode .team-action-floating {
+  display: grid;
+  gap: 6px;
+  grid-template-rows: 1fr auto;
+  min-height: calc(max(var(--calc-button-height), var(--buff-button-height)) + var(--calc-button-height) + 20px);
+}
+
+.team-action-shortcuts {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+}
+
+.team-action-shortcuts button {
+  flex: 1 0 auto;
+  font-size: var(--calc-button-font-size);
+  height: var(--calc-button-height);
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+.team-action-shortcuts button[aria-pressed="true"] {
+  background: #23785e;
+  border-color: #1c614c;
+  color: #fff;
+}
+
+.battle-page.immersive-mode.plugin-mode .team-action-shortcuts button[aria-pressed="true"],
+.battle-page.immersive-mode.plugin-mode .team-action-shortcuts button[aria-pressed="true"]:hover {
+  background: var(--ov-accent-bg) !important;
+  border-color: var(--ov-accent-border) !important;
+  color: #f0fff8 !important;
+}
+
 .team-action-floating .direction-button {
   flex: 0 0 var(--direction-button-width);
   font-size: var(--direction-button-font-size);
@@ -2801,6 +2842,10 @@ body:has(.plugin-mode) .app-header .weather-panel {
   font-size: var(--weather-select-font-size);
   height: var(--weather-select-height);
   width: var(--weather-select-width);
+}
+
+.plugin-mode .team-layout > .team-weather select {
+  width: calc(var(--weather-select-width) + 20px);
 }
 
 .preset-row-top,
@@ -3277,15 +3322,17 @@ body:has(.plugin-mode) .app-header .weather-panel {
   border: 1px solid rgba(182, 205, 221, 0.55);
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.42);
   color: #edf5fa;
+  display: flex;
+  flex-direction: column;
   left: 50%;
   max-height: min(86vh, 760px);
   max-width: min(94vw, 1180px);
-  overflow: auto;
-  padding: 14px;
+  overflow: visible;
+  padding: 8px;
   position: fixed;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: max-content;
+  width: min(660px, 94vw);
   z-index: 1200;
 }
 
@@ -3293,9 +3340,10 @@ body:has(.plugin-mode) .app-header .weather-panel {
   align-items: center;
   cursor: grab;
   display: flex;
-  gap: 18px;
+  flex: 0 0 auto;
+  gap: 8px;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
   touch-action: none;
   user-select: none;
 }
@@ -3315,95 +3363,108 @@ body:has(.plugin-mode) .app-header .weather-panel {
 }
 
 .enemy-attack-groups {
-  display: grid;
-  gap: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
 }
 
 .enemy-attack-group {
-  display: grid;
-  gap: 6px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
-.enemy-attack-group h3 {
-  font-size: 13px;
-  margin: 0;
+.enemy-attack-table {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.enemy-attack-table.is-scrollable {
+  max-height: var(--enemy-attack-table-height);
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
 }
 
 .enemy-attack-grid {
   display: grid;
-  gap: 4px;
-}
-
-.enemy-attack-state {
-  align-items: center;
-  background: rgba(255, 255, 255, 0.08);
-  display: flex;
-  justify-content: center;
-  min-height: 30px;
-  padding: 4px 6px;
-  text-align: center;
-}
-
-.enemy-attack-grid-heading:not(.enemy-attack-state) {
-  align-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  color: #17212b;
-  display: grid;
   gap: 2px;
-  padding: 5px 7px;
+  grid-template-columns: minmax(104px, 1.4fr) minmax(76px, 1fr) repeat(3, minmax(80px, 1fr));
+}
+
+.enemy-attack-grid-heading {
+  align-items: center;
+  background: rgb(20, 28, 36);
+  box-sizing: border-box;
+  height: 26px;
+  margin-bottom: 2px;
+  position: sticky;
+  text-align: center;
+  top: 0;
+  z-index: 1;
+}
+
+.enemy-attack-grid-heading strong {
+  font-size: 14px;
+}
+
+.enemy-attack-row {
+  height: var(--enemy-attack-row-height);
+  margin-bottom: 2px;
+}
+
+.enemy-attack-row:last-child {
+  margin-bottom: 0;
 }
 
 .enemy-attack-skill-heading {
-  align-items: baseline;
-  display: flex;
-  gap: 2px 6px;
+  text-align: left;
 }
 
 .enemy-attack-skill-heading strong {
-  font-size: 12px;
+  font-size: 14px;
   overflow-wrap: anywhere;
-  white-space: nowrap;
-}
-
-.enemy-attack-skill-heading > span {
-  flex-shrink: 0;
-  font-size: 10px;
-  overflow-wrap: anywhere;
-}
-
-.enemy-attack-state {
-  color: #d7e7ef;
-  font-size: 12px;
-  font-weight: 600;
 }
 
 .enemy-attack-cell {
   align-content: center;
   border: 1px solid rgba(255, 255, 255, 0.24);
+  box-sizing: border-box;
   color: #17212b;
   display: grid;
-  gap: 2px;
-  min-height: 30px;
-  padding: 5px 7px;
+  gap: 0;
+  min-height: 0;
+  min-width: 0;
+  padding: 1px 4px;
+  text-align: center;
 }
 
-.enemy-attack-cell strong {
-  font-size: 12px;
+.enemy-attack-cell.enemy-attack-skill-heading {
+  text-align: left;
+}
+
+.enemy-attack-cell :is(span, small) {
+  font-size: 14px;
+  line-height: 16px;
   overflow-wrap: anywhere;
 }
 
-.enemy-attack-cell span {
-  font-size: 10px;
-  overflow-wrap: anywhere;
-  white-space: normal;
-}
-
-.enemy-attack-cell.is-empty {
-  align-items: center;
-  background: rgba(255, 255, 255, 0.04);
-  color: #91a4b0;
+.enemy-attack-sample {
+  align-items: baseline;
   display: flex;
+  gap: 4px;
   justify-content: center;
+  min-width: 0;
+}
+
+.enemy-attack-sample small {
+  flex: 0 0 auto;
+  font-size: 11px;
+  opacity: 0.75;
 }
 
 .enemy-attack-empty {
@@ -6450,6 +6511,35 @@ button.trigger-button > img {
   top: -5px;
   bottom: -5px;
   right: -5px;
+}
+
+/* 其他工具、愿力及敌方攻击结果的缩放热区留在框内，避免撑出无内容的滚动条。 */
+.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating.has-willpower, .enemy-attack-panel) > .plugin-resize-edge.top {
+  height: 5px;
+  left: 0;
+  right: 0;
+  top: 0;
+}
+
+.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating.has-willpower, .enemy-attack-panel) > .plugin-resize-edge.bottom {
+  height: 5px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating.has-willpower, .enemy-attack-panel) > .plugin-resize-edge.left {
+  width: 5px;
+  top: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating.has-willpower, .enemy-attack-panel) > .plugin-resize-edge.right {
+  width: 5px;
+  top: 0;
+  bottom: 0;
+  right: 0;
 }
 
 :is(.battle-page.immersive-mode.plugin-mode, .battle-page.plugin-mode) .skill-card-floating.team-skill-panel,

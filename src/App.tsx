@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import defaultConfigs from "../src-tauri/resources/rocodatebase/data/configs.json";
 import { listen } from "@tauri-apps/api/event";
 import { cursorPosition, getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { createPortal, flushSync } from "react-dom";
@@ -6,6 +7,7 @@ import { createContext, Fragment, type CSSProperties, type PointerEvent as React
 import { prepareNumericImage, type NumericOcrMode } from "./numericOcr";
 import { matchTraitStacks, type TraitPowerCandidates } from "./traitAlignment";
 import { beginPluginLongPressDrag, pluginResizeEdges } from "./pluginLongPressDrag";
+import { enemyAttackPowerText, enemyAttackRows, parseEnemyAttackHealth, type EnemyAttackSample, type EnemyAttackSkillCell, type EnemyAttackSkillResponse } from "./enemyAttack";
 import { WATCH_RULE_OPTIONS, groupWatchedSkills, readWatchConfiguration, watchConfigurationValues, watchSkillMatchesSearch, type WatchConfiguration, type WatchGroup, type WatchRule } from "./watchSkills";
 
 const STATS = ["hp", "atk", "mag", "def", "res", "spd"] as const;
@@ -492,23 +494,6 @@ type BattleResult = {
   hp_results: Array<{ hp_label: string; hp: number; damage_percent: number }>;
 };
 type QuickSkillResult = { skillName: string; displayPower?: number | null; results: BattleResult[] };
-type EnemyAttackSkillCell = {
-  skillName: string;
-  displayName: string;
-  caseLabel?: string;
-  triggered?: boolean;
-  variants?: EnemyAttackSkillCell[];
-  skillPower?: number | null;
-  damage?: number | null;
-  element?: string;
-  combo?: number;
-  hitSegments?: Array<{ power: number | null; damage: number; combo: number }>;
-  totalSkillPower?: number;
-  extraDamage?: number;
-};
-type EnemyAttackSkillRow = { label: string; skills: Array<EnemyAttackSkillCell | null> };
-type EnemyAttackSkillGroup = { attackType: "物攻" | "魔攻"; skills: string[]; rows: EnemyAttackSkillRow[] };
-type EnemyAttackSkillResponse = { targetHp: number; groups: EnemyAttackSkillGroup[] };
 type EnemyAttackPayload = { attacker: UnitState & { other_bonuses: TeamOtherBonuses }; defender: UnitState & { other_bonuses: TeamOtherBonuses }; target_hp: number; weather: string };
 type WillpowerElementResult = { element: string; advantage: number; has_stab: boolean; results: BattleResult[] };
 type WillpowerResponse = { attack_type: "atk" | "mag"; elements: WillpowerElementResult[] };
@@ -702,17 +687,18 @@ function ImageLabel({ src, children, iconOnly = false, className = "", imageClas
   </span>;
 }
 
-function EntityLabel({ kind, value, children = value, iconOnly = false, className = "", imageLoading = "eager" }: {
+function EntityLabel({ kind, value, children = value, iconOnly = false, className = "", imageLoading = "eager", title }: {
   kind: "pet" | "skill";
   value: string;
   children?: ReactNode;
   iconOnly?: boolean;
   className?: string;
   imageLoading?: "eager" | "lazy";
+  title?: string;
 }) {
   const megaPets = useContext(MegaPetIconContext);
   const src = kind === "pet" ? petIconSource(value, megaPets.has(normalizePetIconName(value))) : skillIconLookup.exact.get(value.trim()) || skillIconLookup.defaultForms.get(value.trim());
-  return <ImageLabel key={src || value} src={src} iconOnly={iconOnly} className={className} imageClassName={kind === "pet" ? "entity-icon pet-icon" : "entity-icon"} trimTransparent={kind === "pet"} imageLoading={imageLoading} title={typeof children === "string" ? children : value}>{children}</ImageLabel>;
+  return <ImageLabel key={src || value} src={src} iconOnly={iconOnly} className={className} imageClassName={kind === "pet" ? "entity-icon pet-icon" : "entity-icon"} trimTransparent={kind === "pet"} imageLoading={imageLoading} title={title ?? (typeof children === "string" ? children : value)}>{children}</ImageLabel>;
 }
 
 function PickerIcon({ value, kind = "element", imageLoading = "eager" }: { value: string; kind?: "element" | "skill-type"; imageLoading?: "eager" | "lazy" }) {
@@ -2029,6 +2015,13 @@ function TeamActionPanel({
   leftAttacks,
   onToggleDirection,
   onCalculate,
+  onRecognizeBattleLive,
+  onRecognizeBattleStart,
+  onToggleQuickCalculate,
+  quickCalculationActive,
+  onRecognizeSkillPowers,
+  onCalculateEnemyAttack,
+  onAlignTraitStacks,
   onApplyBuff,
   onReverseBuff,
   onResetBattle,
@@ -2046,6 +2039,13 @@ function TeamActionPanel({
   leftAttacks: boolean;
   onToggleDirection: () => void;
   onCalculate: () => void;
+  onRecognizeBattleLive: () => void;
+  onRecognizeBattleStart: () => void;
+  onToggleQuickCalculate: () => void;
+  quickCalculationActive: boolean;
+  onRecognizeSkillPowers: () => void;
+  onCalculateEnemyAttack: () => void;
+  onAlignTraitStacks: () => void;
   onApplyBuff: () => void;
   onReverseBuff: () => void;
   onResetBattle: () => void;
@@ -2129,6 +2129,14 @@ function TeamActionPanel({
         {(!pluginMode || visibility?.["action-apply"] !== false) ? <button className="buff-button" onClick={onApplyBuff} disabled={!buffOptions.length}>应用</button> : null}
         {pluginMode && visibility?.["action-reverse"] !== false ? <button className="buff-button" onClick={onReverseBuff} disabled={!buffOptions.length}>反向</button> : null}
       </div>
+      {pluginMode ? <div className="team-action-shortcuts">
+        <button type="button" title="战斗内识别 Ctrl+U" aria-keyshortcuts="Control+U" onClick={onRecognizeBattleLive}>战斗内识别</button>
+        <button type="button" title="战斗开始识别 Ctrl+B" aria-keyshortcuts="Control+B" onClick={onRecognizeBattleStart}>战斗开始识别</button>
+        <button type="button" title={quickCalculationActive ? "取消显示计算 Ctrl+D" : "快捷计算 Ctrl+J"} aria-keyshortcuts="Control+J" aria-pressed={quickCalculationActive} onClick={onToggleQuickCalculate}>快捷计算</button>
+        <button type="button" title="校对威力 Ctrl+P" aria-keyshortcuts="Control+P" onClick={onRecognizeSkillPowers}>校对威力</button>
+        <button type="button" title="判死 Ctrl+K" aria-keyshortcuts="Control+K" onClick={onCalculateEnemyAttack}>判死</button>
+        <button type="button" title="校对特性 Ctrl+T" aria-keyshortcuts="Control+T" onClick={onAlignTraitStacks}>校对特性</button>
+      </div> : null}
     </section>
   );
 }
@@ -2480,6 +2488,8 @@ function TeamBattlePage({
   const [rightMarkFields, setRightMarkFields] = useState<MarkField[]>([]);
   const [results, setResults] = useState<BattleResult[]>([]);
   const [quickSkillResults, setQuickSkillResults] = useState<QuickSkillResult[] | null>(null);
+  const [quickCalculationActive, setQuickCalculationActive] = useState(false);
+  const quickSkillRequestRef = useRef(0);
   const [enemyAttackResults, setEnemyAttackResults] = useState<EnemyAttackSkillResponse | null>(null);
   const [enemyAttackInitialResults, setEnemyAttackInitialResults] = useState<EnemyAttackSkillResponse | null>(null);
   const [targetHp, setTargetHp] = useState(0);
@@ -2494,6 +2504,7 @@ function TeamBattlePage({
   const [bonusSide, setBonusSide] = useState<"left" | "right">("left");
   const [bonusToolPositions, setBonusToolPositions] = useState<BonusToolPositions>(() => savedBonusToolPositions(configs));
   const enemyAttackPayloadRef = useRef<EnemyAttackPayload | null>(null);
+  const enemyAttackRequestRef = useRef(0);
   const [enemySkillPicker, setEnemySkillPicker] = useState(false);
   const [enemySkillData, setEnemySkillData] = useState<SkillListResult>({ petSkills: [], allSkills: [] });
   const [layoutMessage, setLayoutMessage] = useState("");
@@ -3231,8 +3242,9 @@ function TeamBattlePage({
           x = start.x + Math.min(Math.max(-bounds.left, dx), window.innerWidth - bounds.right);
           y = start.y + Math.min(Math.max(-bounds.top, dy), window.innerHeight - bounds.bottom);
         } else if (workspace) {
-          const minX = start.x + workspace.left - bounds.left;
-          const maxX = start.x + workspace.right - bounds.right;
+          const isBonusToolbar = regionId === "left-bonus-tools" || regionId === "right-bonus-tools";
+          const minX = start.x + (isBonusToolbar ? 0 : workspace.left) - bounds.left;
+          const maxX = start.x + (isBonusToolbar ? window.innerWidth : workspace.right) - bounds.right;
           const minY = start.y + workspace.top - bounds.top;
           const maxY = start.y + workspace.bottom - bounds.bottom;
           x = Math.min(Math.max(minX, x), Math.max(minX, maxX));
@@ -3460,6 +3472,16 @@ function TeamBattlePage({
   }
 
   function resetLayout() {
+    if (displayMode === "plugin") {
+      setRegionPositions(savedTeamRegionPositions(defaultConfigs, teamValues["team-region-width"], teamValues["team-region-height"]));
+      setOverlayLayouts(savedPluginOverlayLayouts(defaultConfigs));
+      setBonusToolPositions(savedBonusToolPositions(defaultConfigs));
+      setDetectionRegions(savedDetectionRegions(defaultConfigs));
+      setDetectionReadoutLayouts(savedDetectionReadoutLayouts(defaultConfigs));
+      setDetectionReadoutCoordinateMode(savedDetectionReadoutCoordinateMode(defaultConfigs));
+      setLayoutMessage("已恢复默认布局，点击保存后写入个人配置");
+      return;
+    }
     setRegionPositions(initialTeamRegionPositions(teamValues["team-region-width"], teamValues["team-region-height"]));
     setOverlayLayouts({});
     setBonusToolPositions({});
@@ -3480,7 +3502,10 @@ function TeamBattlePage({
     setRightOtherBonuses(blankTeamOtherBonuses());
     setResults([]);
     setQuickSkillResults(null);
+    setQuickCalculationActive(false);
+    quickSkillRequestRef.current += 1;
     setEnemyAttackResults(null);
+    enemyAttackRequestRef.current += 1;
     enemyAttackPayloadRef.current = null;
     setEnemyAttackInitialResults(null);
     setEnemySkillPicker(false);
@@ -3709,8 +3734,9 @@ function TeamBattlePage({
     const workspace = event.currentTarget;
     const workspaceBounds = workspace.getBoundingClientRect();
     const regionBounds = region.getBoundingClientRect();
-    const minX = start.x + workspaceBounds.left - regionBounds.left;
-    const maxX = start.x + workspaceBounds.right - regionBounds.right;
+    const isBonusToolbar = id === "left-bonus-tools" || id === "right-bonus-tools";
+    const minX = start.x + (isBonusToolbar ? 0 : workspaceBounds.left) - regionBounds.left;
+    const maxX = start.x + (isBonusToolbar ? window.innerWidth : workspaceBounds.right) - regionBounds.right;
     const minY = start.y + workspaceBounds.top - regionBounds.top;
     const maxY = start.y + workspaceBounds.bottom - regionBounds.bottom;
     const move = (moveEvent: PointerEvent) => {
@@ -3885,6 +3911,7 @@ function TeamBattlePage({
   }
 
   async function calculateQuickSkills() {
+    const request = ++quickSkillRequestRef.current;
     const attacker = leftAttacks ? leftSlots[leftIndex] : rightSlots[rightIndex];
     const defender = leftAttacks ? rightSlots[rightIndex] : leftSlots[leftIndex];
     const otherBonuses = leftAttacks ? leftOtherBonuses : rightOtherBonuses;
@@ -3892,8 +3919,10 @@ function TeamBattlePage({
     const skills = uniqueByOrder(attacker.skills.filter(Boolean)).slice(0, teamSkillCardCount);
     if (!skills.length) {
       setQuickSkillResults(null);
+      setQuickCalculationActive(false);
       return;
     }
+    setQuickCalculationActive(true);
     setError("");
     try {
       const data = await invoke<{ items: QuickSkillResult[] }>("calculate_quick_skills", {
@@ -3904,13 +3933,17 @@ function TeamBattlePage({
           weather,
         },
       });
+      if (request !== quickSkillRequestRef.current) return;
       setQuickSkillResults(data.items);
+      setQuickCalculationActive(data.items.length > 0);
       setResults([]);
       setWillpower(null);
       setRequiredPower(null);
       setBattleContext(null);
     } catch (err) {
+      if (request !== quickSkillRequestRef.current) return;
       setQuickSkillResults(null);
+      setQuickCalculationActive(false);
       setError(asError(err));
     }
   }
@@ -3919,28 +3952,60 @@ function TeamBattlePage({
     if (displayMode !== "plugin") return;
     const attacker = rightSlots[rightIndex];
     const defender = leftSlots[leftIndex];
-    const targetHp = Number(detectedHealth.self.match(/^\s*(\d+)/)?.[1] || 0);
     const payload = skillName ? enemyAttackPayloadRef.current : {
       attacker: { ...attacker, other_bonuses: rightOtherBonuses },
       defender: { ...defender, other_bonuses: leftOtherBonuses },
-      target_hp: targetHp,
+      target_hp: 0,
       weather,
     };
     if (!payload) return;
+    const request = ++enemyAttackRequestRef.current;
+    const pending: { health: ReturnType<typeof parseEnemyAttackHealth>; published: EnemyAttackSkillResponse | null } = { health: null, published: null };
+    // OCR and damage trials start together. Late/failed OCR never blocks the result.
+    void (async () => {
+      if (!targetAttached || calibrationGroupRef.current) return;
+      const capture = await targetCanvas();
+      const response = await recognizeNumericImages([
+        { key: "selfHealth", imageDataUrl: cropDetection(capture, "selfHealth"), mode: "self_health" },
+        { key: "enemyHealth", imageDataUrl: cropDetection(capture, "enemyHealth"), mode: "enemy_health" },
+      ]);
+      if (request !== enemyAttackRequestRef.current) return;
+      const health = parseEnemyAttackHealth(response.items[0]?.text || "");
+      pending.health = health;
+      const enemy = response.items[1]?.text?.trim().match(/^(100|[1-9]?\d)\s*%?$/)?.[1];
+      setDetectedHealth((current) => ({
+        self: health ? `${health.current}/${health.maximum}` : "识别失败",
+        enemy: enemy != null ? `${enemy}%` : current.enemy,
+      }));
+      const published = pending.published;
+      if (published && health) {
+        const updated = { ...published, targetHp: health.current };
+        setEnemyAttackResults((current) => current?.groups === published?.groups ? updated : current);
+        setEnemyAttackInitialResults((current) => current?.groups === published?.groups ? updated : current);
+      }
+    })().catch(() => {
+      if (request === enemyAttackRequestRef.current) setDetectedHealth((current) => ({ ...current, self: "识别失败" }));
+    });
     setError("");
     try {
       const data = await invoke<EnemyAttackSkillResponse>("calculate_enemy_attack_skills", {
         payload: { ...payload, skill_name: skillName },
       });
+      if (request !== enemyAttackRequestRef.current) return;
+      const published = { ...data, targetHp: pending.health?.current ?? null };
+      pending.published = published;
       enemyAttackPayloadRef.current = payload;
-      if (!skillName) setEnemyAttackInitialResults(data);
-      setEnemyAttackResults(data);
+      if (!skillName) setEnemyAttackInitialResults(published);
+      setEnemyAttackResults(published);
       setQuickSkillResults(null);
+      setQuickCalculationActive(false);
+      quickSkillRequestRef.current += 1;
       setResults([]);
       setWillpower(null);
       setRequiredPower(null);
       setBattleContext(null);
     } catch (err) {
+      if (request !== enemyAttackRequestRef.current) return;
       setEnemyAttackResults(null);
       setError(asError(err));
     }
@@ -3964,7 +4029,10 @@ function TeamBattlePage({
   alignTraitStacksRef.current = () => void alignTraitStacks();
   hideQuickSkillResultsRef.current = () => {
     setQuickSkillResults(null);
+    setQuickCalculationActive(false);
+    quickSkillRequestRef.current += 1;
     setEnemyAttackResults(null);
+    enemyAttackRequestRef.current += 1;
     setEnemySkillPicker(false);
   };
 
@@ -4284,13 +4352,12 @@ function TeamBattlePage({
         {displayMode === "plugin" ? <section className="weather-panel team-weather" data-panel-state={panelState(weather !== "none")} data-overlay-control data-plugin-resizable aria-label="天气">
           <PluginResizeEdges />
           <label>
-            <span className="ui-field-title">天气</span>
-            <select value={weather} onChange={(event) => onWeatherChange(event.target.value as (typeof WEATHER_OPTIONS)[number]["value"])}>
-              {WEATHER_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            <select aria-label="天气" value={weather} onChange={(event) => onWeatherChange(event.target.value as (typeof WEATHER_OPTIONS)[number]["value"])}>
+              {WEATHER_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.value === "none" ? "无天气" : option.label}</option>)}
             </select>
           </label>
         </section> : null}
-        <TeamActionPanel pluginMode={displayMode === "plugin"} visibility={pluginVisibility} layout={displayMode === "plugin" ? overlayLayout("action") : undefined} onLayoutChange={(partial) => updateOverlayLayout("action", partial)} leftAttacks={leftAttacks} onToggleDirection={() => setLeftAttacks((value) => !value)} onCalculate={() => void calculate()} onApplyBuff={() => void applyBuff()} onReverseBuff={() => void applyBuff(undefined, true)} onResetBattle={resetBattle} targetHp={targetHp} onTargetHpChange={setTargetHp} onCalculateRequiredPower={() => void calculateRequiredPower()} buffOptions={buffOptions} selectedBuffOption={selectedBuffOption} onSelectBuffOption={setSelectedBuffOption} />
+        <TeamActionPanel pluginMode={displayMode === "plugin"} visibility={pluginVisibility} layout={displayMode === "plugin" ? overlayLayout("action") : undefined} onLayoutChange={(partial) => updateOverlayLayout("action", partial)} leftAttacks={leftAttacks} onToggleDirection={() => setLeftAttacks((value) => !value)} onCalculate={() => void calculate()} onRecognizeBattleLive={() => void recognizeDetection("battleLive")} onRecognizeBattleStart={() => void recognizeDetection("battleStart")} onToggleQuickCalculate={() => quickCalculationActive ? hideQuickSkillResultsRef.current() : calculateQuickSkillsRef.current()} quickCalculationActive={quickCalculationActive} onRecognizeSkillPowers={() => void recognizeSkillPowers()} onCalculateEnemyAttack={() => calculateEnemyAttackSkillsRef.current()} onAlignTraitStacks={() => alignTraitStacksRef.current()} onApplyBuff={() => void applyBuff()} onReverseBuff={() => void applyBuff(undefined, true)} onResetBattle={resetBattle} targetHp={targetHp} onTargetHpChange={setTargetHp} onCalculateRequiredPower={() => void calculateRequiredPower()} buffOptions={buffOptions} selectedBuffOption={selectedBuffOption} onSelectBuffOption={setSelectedBuffOption} />
         {bonusTool ? (
           <BattleBonusToolPanel
             key={`${bonusSide}-${bonusTool}`}
@@ -4318,7 +4385,7 @@ function TeamBattlePage({
           onSelectWillpowerElement={selectWillpowerElement}
         />
         {requiredPower ? <RequiredPowerView value={requiredPower} context={battleContext} /> : null}
-        {enemyAttackResults ? <EnemyAttackSkillPanel value={enemyAttackResults} onBack={enemyAttackInitialResults && enemyAttackResults !== enemyAttackInitialResults ? () => setEnemyAttackResults(enemyAttackInitialResults) : undefined} onPickSkill={() => void openEnemySkillPicker()} onClose={() => { setEnemyAttackResults(null); setEnemySkillPicker(false); }} /> : null}
+        {enemyAttackResults ? <EnemyAttackSkillPanel value={enemyAttackResults} onBack={enemyAttackInitialResults && enemyAttackResults !== enemyAttackInitialResults ? () => setEnemyAttackResults(enemyAttackInitialResults) : undefined} onPickSkill={() => void openEnemySkillPicker()} onClose={() => { enemyAttackRequestRef.current += 1; setEnemyAttackResults(null); setEnemySkillPicker(false); }} /> : null}
       </div>
       {enemySkillPicker ? (
         <PickerModal
@@ -5414,7 +5481,7 @@ function BonusToolContent({
     ] as const;
     return (
       <div className="bonus-tool-fields">
-        {markOptions.filter(([id]) => markFields.includes(id)).map(([id, label, key]) => <div key={id}><FieldLabel>{label}</FieldLabel><NumberInput value={value[key]} min={0} max={99} onChange={(stacks) => onChange({ [key]: stacks })} />{id === "charge" ? <TriggerButton className={value.charge_mark_triggered ? "compact-button active" : "compact-button"} aria-pressed={value.charge_mark_triggered} onClick={() => onChange({ charge_mark_triggered: !value.charge_mark_triggered })} /> : null}<button className="compact-button" title="移除印记" onClick={() => { onChange({ [key]: 0, ...(id === "charge" ? { charge_mark_triggered: false } : {}) }); onMarkFieldsChange(markFields.filter((field) => field !== id)); }}>移除</button></div>)}
+        {markOptions.filter(([id]) => markFields.includes(id)).map(([id, label, key]) => <div key={id}><FieldLabel>{label}</FieldLabel><NumberInput value={value[key]} min={0} max={99} onChange={(stacks) => onChange({ [key]: stacks })} />{id === "charge" ? <TriggerButton className={value.charge_mark_triggered ? "compact-button active" : "compact-button"} aria-pressed={value.charge_mark_triggered} onClick={() => onChange({ charge_mark_triggered: !value.charge_mark_triggered })} /> : null}<button className="compact-button" title="移除印记" aria-label={`移除${label}`} onClick={() => { onChange({ [key]: 0, ...(id === "charge" ? { charge_mark_triggered: false } : {}) }); onMarkFieldsChange(markFields.filter((field) => field !== id)); }}>x</button></div>)}
         {markFields.length < markOptions.length ? <label className="mark-add-control"><span>新增印记</span><select value="" onChange={(event) => { const next = event.target.value as MarkField; if (next) onMarkFieldsChange([...markFields, next]); }}><option value="">选择印记</option>{markOptions.filter(([id]) => !markFields.includes(id)).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label> : null}
       </div>
     );
@@ -5510,7 +5577,10 @@ function BattleBonusToolPanel({
     <section ref={panelRef} className={`bonus-tool-floating ${side}-${tool} ${tool}`} data-overlay-control data-plugin-resizable={pluginMode || undefined} style={{ left: position.x, top: position.y }}>
       {pluginMode ? <PluginResizeEdges /> : null}
       <header onPointerDown={startDrag}>
-        <strong>{title}</strong>
+        <div className="inline-row">
+          <strong>{title}</strong>
+          {tool === "dedication" || tool === "thunderstorm" ? <RefreshButton className="compact-button" onClick={() => onChange(tool === "dedication" ? { dedication_power_stacks: 0, dedication_combo_stacks: 0 } : { burst_triggered_effect_ids: [] })} /> : null}
+        </div>
         <button className="icon-button" title="关闭" aria-label="关闭" onClick={onClose}>×</button>
       </header>
       <BonusToolContent tool={tool} value={value} burstEffects={burstEffects} markFields={markFields} onMarkFieldsChange={onMarkFieldsChange} onChange={onChange} />
@@ -5820,7 +5890,7 @@ function TeamTraitEditor({
 
   return (
     <section ref={sectionRef} className="team-slot-section" data-popup-flip={popupPlacement.up ? "up" : undefined} data-popup-side={popupPlacement.left ? "left" : undefined}>
-      <button className="trait-summary-button compact" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
+      <button className="trait-summary-button compact" title={traitLabel} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
         <strong className="ui-field-title">{traitLabel}</strong>
       </button>
       <div className="trait-control-grid compact">
@@ -6062,7 +6132,7 @@ function SpeedLine({ left, right, pets, weather, layout, buffLayout, onLayoutCha
     );
   };
   return <>
-    <FloatingTeamPanel className="speed-line" layout={layout} onLayoutChange={onLayoutChange}>
+    <FloatingTeamPanel className="speed-line" overlayId="speed-line" layout={layout} onLayoutChange={onLayoutChange}>
       <div className="speed-line-sides">
         {renderSide(left, leftScenarios, "己方")}
         {renderSide(right, rightScenarios, "敌方")}
@@ -6545,11 +6615,10 @@ function EnemyAttackSkillPanel({ value, onBack, onPickSkill, onClose }: { value:
     return cell.hitSegments?.some((segment) => segment.combo > 1) ? hitExpression(cell, "power") : String(cell.skillPower ?? "-");
   }
 
-  function skillHeading(cell: EnemyAttackSkillCell) {
-    return <div className="enemy-attack-skill-heading">
-      <strong><EntityLabel kind="skill" value={cell.skillName}>{cell.displayName}</EntityLabel></strong>
-      <span>威力 {powerText(cell)}</span>
-    </div>;
+  function sampleTitle(sample: EnemyAttackSample) {
+    if (!sample.cell) return "没有对应攻击档位";
+    const label = sample.kind === "base" ? "无叠层" : sample.kind === "middle" ? "中间值" : sample.killed ? "最少击杀层数" : "当前叠层上限内未达到击杀";
+    return `${label}；${sample.cell.stackValues.join("/") || 0} 层；威力 ${powerText(sample.cell)}；伤害 ${hitExpression(sample.cell, "damage")}`;
   }
 
   return (
@@ -6559,53 +6628,42 @@ function EnemyAttackSkillPanel({ value, onBack, onPickSkill, onClose }: { value:
         {onBack ? <button onClick={onBack} aria-label="返回最初结果" title="返回最初结果">←</button> : null}
         <div>
           <strong>敌方攻击我方</strong>
-          <span>当前我方 HP：{value.targetHp > 0 ? value.targetHp : "-"}</span>
+          <span>当前我方 HP：{value.targetHp ?? "未识别"}{value.targetHp == null && value.maxHp > 0 ? `（最大 ${value.maxHp}）` : ""}</span>
         </div>
         <button onClick={onPickSkill}>选择技能计算</button>
         <button onClick={onClose} aria-label="关闭" title="关闭">×</button>
       </header>
       <div className="enemy-attack-groups">
         {value.groups.length ? value.groups.map((group) => {
-          // 手动选技的各分支各占一列，沿用原有攻击档位及结果数值。
-          const columns = group.skills.flatMap<{ skillName: string; caseLabel?: string; cells: Array<EnemyAttackSkillCell | null> }>((skillName, skillIndex) => {
-            const cells = group.rows.map((row) => row.skills[skillIndex]);
-            const variants = cells.flatMap((cell) => cell?.variants || []);
-            if (!variants.length) return [{ skillName, cells }];
-            const cases = variants.filter((variant, index) => variants.findIndex((candidate) => candidate.triggered === variant.triggered && candidate.caseLabel === variant.caseLabel) === index)
-              .sort((left, right) => Number(Boolean(right.triggered)) - Number(Boolean(left.triggered)));
-            return cases.map((variant) => ({
-              skillName,
-              caseLabel: variant.caseLabel || (variant.triggered ? "触发情况" : "非触发情况"),
-              cells: cells.map((cell) => cell?.variants?.find((candidate) => candidate.triggered === variant.triggered && candidate.caseLabel === variant.caseLabel) || null),
-            }));
-          });
-          const headings = columns.map((column) => column.cells.find((cell) => cell != null));
+          const rows = enemyAttackRows(group, value.targetHp, value.maxHp);
+          const tableHeight = 26 + rows.slice(0, 6).reduce((height, skill) => height + (skill.stackable ? 52 : 26) + 2, 0);
           return (
             <section className="enemy-attack-group" key={group.attackType}>
-              <h3>{group.attackType}</h3>
-              <div className="enemy-attack-grid" style={{ gridTemplateColumns: `72px repeat(${columns.length}, minmax(128px, 1fr))` }}>
-                <div className="enemy-attack-state enemy-attack-grid-heading">攻击状态</div>
-                {columns.map((column, index) => <div className="enemy-attack-grid-heading" key={`${column.skillName}-${index}`} style={headings[index] ? { backgroundColor: ELEMENT_RESULT_COLORS[headings[index].element || "普通"] || ELEMENT_RESULT_COLORS["普通"] } : undefined}>
-                  {column.caseLabel ? <small>{column.caseLabel}</small> : null}
-                  {headings[index] ? skillHeading(headings[index]) : <strong>{column.skillName}</strong>}
-                </div>)}
-                {group.rows.map((row, rowIndex) => <Fragment key={row.label}>
-                  <div className="enemy-attack-state">{row.label || "无后缀"}</div>
-                  {columns.map((column, index) => {
-                    const cell = column.cells[rowIndex];
-                    const heading = headings[index];
-                    return cell ? (
-                      <div
-                        className="enemy-attack-cell"
-                        key={`${cell.skillName}-${index}`}
-                        style={{ backgroundColor: ELEMENT_RESULT_COLORS[cell.element || "普通"] || ELEMENT_RESULT_COLORS["普通"] }}
-                      >
-                        {heading && (cell.displayName !== heading.displayName || powerText(cell) !== powerText(heading)) ? skillHeading(cell) : null}
-                        <span>伤害 {cell.hitSegments?.some((segment) => segment.combo > 1) ? hitExpression(cell, "damage") : cell.damage ?? "-"}</span>
-                      </div>
-                    ) : <div className="enemy-attack-cell is-empty" key={`empty-${index}`}>-</div>;
-                  })}
-                </Fragment>)}
+              <div className={`enemy-attack-table${rows.length > 6 ? " is-scrollable" : ""}`} role="table" aria-label={`${group.attackType}技能伤害`} style={{ "--enemy-attack-table-height": `${tableHeight}px` } as CSSProperties}>
+                <div className="enemy-attack-grid enemy-attack-grid-heading" role="row">
+                  {[group.attackType, "威力", "++", "+", "无"].map((label) => <strong role="columnheader" key={label}>{label}</strong>)}
+                </div>
+                {rows.map((skill) => {
+                  const backgroundColor = ELEMENT_RESULT_COLORS[skill.element] || ELEMENT_RESULT_COLORS["普通"];
+                  const skillName = `${skill.skillName}${skill.triggered ? "*" : ""}`;
+                  const description = [skillName, skill.description || "暂无描述"].join("\n");
+                  return <div className="enemy-attack-grid enemy-attack-row" role="row" key={`${skill.skillName}-${skill.caseLabel}`} style={{ "--enemy-attack-row-height": skill.stackable ? "52px" : "26px" } as CSSProperties}>
+                    <div className="enemy-attack-cell enemy-attack-skill-heading" role="cell" style={{ backgroundColor }} title={description}>
+                      <strong><EntityLabel kind="skill" value={skill.skillName} title={description}>{skillName}</EntityLabel></strong>
+                    </div>
+                    <div className="enemy-attack-cell enemy-attack-powers" role="cell" style={{ backgroundColor }}>
+                      {Array.from({ length: skill.stackable ? 3 : 1 }, (_, index) => <span key={index} title={skill.columns.map((column) => `${column.label || "无"}：${sampleTitle(column.samples[index])}`).join("\n")}>
+                        {enemyAttackPowerText(skill.columns.map((column) => column.samples[index].cell))}
+                      </span>)}
+                    </div>
+                    {skill.columns.map((column) => <div className="enemy-attack-cell" role="cell" key={column.label} style={{ backgroundColor }}>
+                      {column.samples.map((sample) => <div className="enemy-attack-sample" key={sample.kind} title={sampleTitle(sample)}>
+                        {skill.stackable && sample.cell ? <small>{sample.cell.stackValues.length > 1 ? sample.cell.stackValues.join("/") : sample.cell.stacks}层{sample.kind === "kill" && !sample.killed ? "未达" : ""}</small> : null}
+                        <span>{sample.cell?.damage ?? "-"}</span>
+                      </div>)}
+                    </div>)}
+                  </div>;
+                })}
               </div>
             </section>
           );
