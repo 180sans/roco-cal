@@ -7,6 +7,7 @@ import json
 import os
 import re
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +18,7 @@ if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
 API_STDOUT = sys.stdout
+COMMAND_TIMING: dict[str, float] = {}
 ONNX_OCR_ENGINE: Any | None = None
 IMAGE_CLASSIFIER: Any | None = None
 BASE_DIR = Path(__file__).resolve().parent
@@ -525,25 +527,42 @@ def calculate_quick_skills(payload: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(skills, list):
         skills = []
 
+    handler_started = time.perf_counter()
     seen: set[str] = set()
     items = []
+    started = time.perf_counter()
     defender_args = _defender_args(defender)
+    COMMAND_TIMING["defender_args_ms"] = COMMAND_TIMING.get("defender_args_ms", 0.0) + (time.perf_counter() - started) * 1000
     for raw_name in skills:
         skill_name = str(raw_name or "").strip()
         if not skill_name or skill_name in seen:
             continue
         seen.add(skill_name)
+        started = time.perf_counter()
         skill_data = skill_dataset.find_skill(skill_name)
+        COMMAND_TIMING["skill_lookup_ms"] = COMMAND_TIMING.get("skill_lookup_ms", 0.0) + (time.perf_counter() - started) * 1000
         if not isinstance(skill_data, dict) or skill_data.get("type") not in {"物攻", "魔攻"}:
             continue
+        started = time.perf_counter()
         attacker_args = _attacker_args({**attacker, "current_skill": skill_name})
-        results = battle_damage(**attacker_args, **defender_args, weather=weather)
+        COMMAND_TIMING["attacker_args_ms"] = COMMAND_TIMING.get("attacker_args_ms", 0.0) + (time.perf_counter() - started) * 1000
+        started = time.perf_counter()
+        results = battle_damage(
+            **attacker_args,
+            **defender_args,
+            weather=weather,
+            powers_only=bool(payload.get("powers_only", False)),
+        )
+        COMMAND_TIMING["battle_damage_ms"] = COMMAND_TIMING.get("battle_damage_ms", 0.0) + (time.perf_counter() - started) * 1000
+        COMMAND_TIMING["battle_damage_calls"] = COMMAND_TIMING.get("battle_damage_calls", 0.0) + 1
         items.append({
             "skillName": skill_name,
             # 技能卡显示的是计算后的威力，不是技能数据库里的原始威力。
             "displayPower": results[0].get("effective_power") if results else None,
             "results": results,
         })
+    COMMAND_TIMING["quick_skill_requests"] = COMMAND_TIMING.get("quick_skill_requests", 0.0) + 1
+    COMMAND_TIMING["quick_skill_handler_ms"] = COMMAND_TIMING.get("quick_skill_handler_ms", 0.0) + (time.perf_counter() - handler_started) * 1000
     return {"items": items}
 
 
@@ -552,7 +571,11 @@ def calculate_quick_skills_batch(payload: dict[str, Any]) -> dict[str, Any]:
     requests = payload.get("requests")
     if not isinstance(requests, list):
         raise ValueError("Quick skill requests must be a list")
-    return {"items": [calculate_quick_skills(request) for request in requests]}
+    started = time.perf_counter()
+    items = [calculate_quick_skills(request) for request in requests]
+    COMMAND_TIMING["batch_requests"] = float(len(requests))
+    COMMAND_TIMING["batch_handler_ms"] = (time.perf_counter() - started) * 1000
+    return {"items": items}
 
 
 def trait_power_candidates(payload: dict[str, Any]) -> dict[str, Any]:
@@ -562,7 +585,9 @@ def trait_power_candidates(payload: dict[str, Any]) -> dict[str, Any]:
 
     attacker = payload.get("attacker") or {}
     defender = payload.get("defender") or {}
+    started = time.perf_counter()
     runtime = _unit_trait_runtime({**attacker, "trait_stacks": 1})
+    COMMAND_TIMING["trait_runtime_ms"] = (time.perf_counter() - started) * 1000
     if not runtime.get("stackable"):
         raise ValueError("当前特性没有可修正的叠层，无法进行特性对齐")
 
@@ -570,6 +595,7 @@ def trait_power_candidates(payload: dict[str, Any]) -> dict[str, Any]:
     skill_names = (attacker.get("skills") or [])[:4]
     attack_skills = []
     non_stacking_skills = []
+    started = time.perf_counter()
     for index, name in enumerate(skill_names):
         skill = skill_dataset.find_skill(name) if name else None
         if isinstance(skill, dict) and skill.get("type") in {"物攻", "魔攻"}:
@@ -578,26 +604,54 @@ def trait_power_candidates(payload: dict[str, Any]) -> dict[str, Any]:
             options = [triggered] if isinstance(triggered, dict) else triggered if isinstance(triggered, list) else []
             if not any(isinstance(option, dict) and (option.get("multiple") or option.get("skill_power_by_count")) for option in options):
                 non_stacking_skills.append(index)
+    COMMAND_TIMING["trait_skill_lookup_ms"] = (time.perf_counter() - started) * 1000
     if not attack_skills:
         raise ValueError("我方当前技能中没有可用于特性对齐的攻击技能")
 
+    started = time.perf_counter()
     defender_args = _defender_args(defender)
+    COMMAND_TIMING["trait_defender_args_ms"] = (time.perf_counter() - started) * 1000
+    min_stacks = max(0, min(99, int(payload.get("min_stacks", 0))))
+    max_stacks = max(0, min(99, int(payload.get("max_stacks", 99))))
+    if min_stacks > max_stacks:
+        raise ValueError("特性层数搜索范围无效")
     candidates = []
-    # 与特性层数输入框一致，只穷举层数；技能叠层、buff、触发选择均保持原值。
-    for stacks in range(100):
+    attacker_args_ms = 0.0
+    battle_damage_ms = 0.0
+    battle_damage_calls = 0
+    # 与特性层数输入框一致，只穷举指定范围；技能叠层、buff、触发选择均保持原值。
+    for stacks in range(min_stacks, max_stacks + 1):
         powers = [[] for _ in range(4)]
         for index, name in attack_skills:
+            started = time.perf_counter()
+            attacker_args = _attacker_args({**attacker, "current_skill": name, "trait_stacks": stacks})
+            attacker_args_ms += (time.perf_counter() - started) * 1000
+            started = time.perf_counter()
             results = battle_damage(
-                **_attacker_args({**attacker, "current_skill": name, "trait_stacks": stacks}),
+                **attacker_args,
                 **defender_args,
                 weather=payload.get("weather") or "none",
+                powers_only=True,
             )
+            battle_damage_ms += (time.perf_counter() - started) * 1000
+            battle_damage_calls += 1
             powers[index] = sorted({
                 int(item["effective_power"])
                 for item in results
                 if isinstance(item.get("effective_power"), (int, float))
             })
         candidates.append({"stacks": stacks, "powers": powers})
+    COMMAND_TIMING["trait_attacker_args_ms"] = attacker_args_ms
+    COMMAND_TIMING["trait_battle_damage_ms"] = battle_damage_ms
+    COMMAND_TIMING["trait_battle_damage_calls"] = float(battle_damage_calls)
+    COMMAND_TIMING["trait_candidate_count"] = float(len(candidates))
+    COMMAND_TIMING["trait_total_ms"] = (
+        COMMAND_TIMING.get("trait_runtime_ms", 0.0)
+        + COMMAND_TIMING.get("trait_skill_lookup_ms", 0.0)
+        + COMMAND_TIMING.get("trait_defender_args_ms", 0.0)
+        + attacker_args_ms
+        + battle_damage_ms
+    )
 
     # 比较实际计算结果，覆盖技能属性转换、对方防御增减、逐次威力等间接影响。
     # 单纯增加连击/伤害、速度等不会改变显示威力，不能拿来反推特性层数。
@@ -605,7 +659,7 @@ def trait_power_candidates(payload: dict[str, Any]) -> dict[str, Any]:
         candidate["powers"][index] != candidates[0]["powers"][index]
         for candidate in candidates[1:]
     )]
-    if not affected:
+    if min_stacks == 0 and not affected:
         raise ValueError("当前特性叠层不影响所携技能的显示威力，无法进行特性对齐")
     return {"traitName": runtime.get("name") or "当前特性", "candidates": candidates, "affectedSkills": affected, "nonStackingSkills": non_stacking_skills}
 
@@ -736,6 +790,13 @@ def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
             # Stable case IDs keep a stacking base branch separate from real trigger branches.
             resolved = []
             for index, case in enumerate(cases):
+                # Some attack skills only gain power when a trigger applies (for
+                # example, a skill_power_plus branch with no base power). The
+                # untriggered case has no damage to calculate, and passing it to
+                # battle_damage raises "必须提供 skill_power 或 hp" for the
+                # entire Ctrl+K request. Keep any calculable trigger branches.
+                if case.get("skill_power") is None:
+                    continue
                 if index not in branches:
                     branches[index] = {
                         "skillName": skill_name,
@@ -747,6 +808,8 @@ def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
                         "columns": [{"label": suffix, "candidates": []} for suffix in suffix_order],
                     }
                 resolved.append({**case, "case_label": str(index)})
+            if not resolved:
+                continue
             results = battle_damage(
                 **{**attacker_args, "multiple": multiple}, **defender_args, weather=weather,
                 skill_data_override={**skill_data, "resolved_cases": resolved},
@@ -1578,6 +1641,29 @@ def classify_image_samples(payload: dict[str, Any]) -> dict[str, Any]:
     return {"items": results}
 
 
+def persistent_worker(handlers: dict[str, Any]) -> int:
+    """Serve repeated calculation requests over newline-delimited JSON."""
+    global COMMAND_TIMING
+    for line in sys.stdin:
+        timing: dict[str, float] = {}
+        try:
+            request = json.loads(line)
+            command = request.get("command")
+            if command not in {"trait-power-candidates", "calculate-quick-skills-batch"}:
+                raise ValueError("Unsupported persistent Python command")
+            COMMAND_TIMING = {}
+            with contextlib.redirect_stdout(sys.stderr):
+                handler_started = time.perf_counter()
+                payload = handlers[command](request.get("payload") or {})
+                handler_ms = (time.perf_counter() - handler_started) * 1000
+            timing = {"handler_ms": round(handler_ms, 2), **{key: round(value, 2) for key, value in COMMAND_TIMING.items()}}
+            _json_response({"ok": True, "data": payload, "timing": timing})
+        except Exception as exc:
+            timing = {"handler_ms": 0.0, **{key: round(value, 2) for key, value in COMMAND_TIMING.items()}}
+            _json_response({"ok": False, "error": str(exc), "timing": timing})
+    return 0
+
+
 def ocr_worker() -> int:
     for line in sys.stdin:
         try:
@@ -1610,18 +1696,31 @@ def main() -> int:
         "calculate-required-power": calculate_required_power,
     }
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=list(handlers))
+    parser.add_argument("command", choices=[*handlers, "persistent-worker"])
     parser.add_argument("--payload", default="")
     parser.add_argument("--payload-stdin", action="store_true")
     args = parser.parse_args()
+    if args.command == "persistent-worker":
+        return persistent_worker(handlers)
+    global COMMAND_TIMING
+    COMMAND_TIMING = {}
+    handler_ms = 0.0
     try:
         with contextlib.redirect_stdout(sys.stderr):
             payload_arg = _payload_from_text(sys.stdin.read() if args.payload_stdin else args.payload)
+            handler_started = time.perf_counter()
             payload = handlers[args.command](payload_arg)
-        _json_response({"ok": True, "data": payload})
+            handler_ms = (time.perf_counter() - handler_started) * 1000
+        timing = None
+        if args.command in {"trait-power-candidates", "calculate-quick-skills-batch"}:
+            timing = {"handler_ms": round(handler_ms, 2), **{key: round(value, 2) for key, value in COMMAND_TIMING.items()}}
+        _json_response({"ok": True, "data": payload, "timing": timing})
         return 0
     except Exception as exc:
-        _json_response({"ok": False, "error": str(exc)})
+        timing = None
+        if args.command in {"trait-power-candidates", "calculate-quick-skills-batch"}:
+            timing = {"handler_ms": round(handler_ms, 2), **{key: round(value, 2) for key, value in COMMAND_TIMING.items()}}
+        _json_response({"ok": False, "error": str(exc), "timing": timing})
         return 1
 
 

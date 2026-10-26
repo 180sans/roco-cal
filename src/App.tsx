@@ -5,7 +5,7 @@ import { cursorPosition, getCurrentWindow, LogicalSize } from "@tauri-apps/api/w
 import { createPortal, flushSync } from "react-dom";
 import { createContext, Fragment, type CSSProperties, type PointerEvent as ReactPointerEvent, type PointerEventHandler as ReactPointerEventHandler, type ReactNode, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { prepareNumericImage, type NumericOcrMode } from "./numericOcr";
-import { matchTraitStacks, type TraitPowerCandidates } from "./traitAlignment";
+import { findTraitStackMatches, matchTraitStacks, type TraitPowerCandidates } from "./traitAlignment";
 import { beginPluginLongPressDrag, pluginResizeEdges } from "./pluginLongPressDrag";
 import { enemyAttackPowerText, enemyAttackRows, parseEnemyAttackHealth, type EnemyAttackSample, type EnemyAttackSkillCell, type EnemyAttackSkillResponse } from "./enemyAttack";
 import { WATCH_RULE_OPTIONS, groupWatchedSkills, readWatchConfiguration, watchConfigurationValues, watchSkillMatchesSearch, type WatchConfiguration, type WatchGroup, type WatchRule } from "./watchSkills";
@@ -2176,8 +2176,7 @@ function savedPluginVisibility(configs: PickerConfigs): PluginVisibility {
 }
 type DetectionRegion = { x: number; y: number; width: number; height: number };
 type DetectionRegions = Record<string, DetectionRegion>;
-type CaptureClientArea = { x: number; y: number; width: number; height: number };
-type TargetCapture = { canvas: HTMLCanvasElement; targetClient: CaptureClientArea; overlayClient: CaptureClientArea };
+type TargetCapture = { regions: Record<string, string> };
 type RecognitionStatus = { label: string; detail: string; progress: string };
 const REPLAY_SETTINGS_KEY = "rocodatebase.replay.settings.v1";
 const BATTLE_START_IMAGE_KEYS = ["battleStartImage1", "battleStartImage2", "battleStartImage3", "battleStartImage4", "battleStartImage5", "battleStartImage6"] as const;
@@ -2533,6 +2532,12 @@ function TeamBattlePage({
   const activeBuffSkillName = activeBuffUnit?.current_skill || activeBuffUnit?.skills?.[0] || "";
 
   useEffect(() => {
+    quickSkillRequestRef.current += 1;
+    setQuickSkillResults(null);
+    setQuickCalculationActive(false);
+  }, [rightIndex, rightSlots[rightIndex]]);
+
+  useEffect(() => {
     if (!error) return;
     const timer = window.setTimeout(() => setError(""), 4500);
     return () => window.clearTimeout(timer);
@@ -2711,6 +2716,9 @@ function TeamBattlePage({
 
   function petForRecognition(label: string) {
     const normalized = label.trim();
+    if (normalized === "361加油蟹" || normalized === "加油蟹") {
+      return pets.find((pet) => [pet.label, pet.name, `${pet.id}${pet.name}`].includes("加油蟹（单只海葵的样子）"));
+    }
     return pets.find((pet) => [pet.label, pet.name, `${pet.id}${pet.name}`].includes(normalized));
   }
 
@@ -2757,50 +2765,50 @@ function TeamBattlePage({
     return recognized.length || (selected >= 0 ? 1 : 0);
   }
 
+  function logRecognitionTiming(message: string) {
+    void invoke("record_recognition_timing", { message }).catch(() => undefined);
+  }
+
+  function invokeRecognitionTimed<T>(command: string, args: Record<string, unknown>, stage: string) {
+    const started = performance.now();
+    return invoke<T>(command, args).then((result) => {
+      logRecognitionTiming(`${stage} command round-trip ${(performance.now() - started).toFixed(1)} ms`);
+      return result;
+    });
+  }
+
   async function targetCanvas() {
-    const captured = await invoke<{ imageDataUrl: string; width: number; height: number; targetClient: CaptureClientArea; overlayClient: CaptureClientArea }>("capture_overlay_target");
-    const image = new Image();
-    await new Promise<void>((resolve, reject) => { image.onload = () => resolve(); image.onerror = () => reject(new Error("截图无法读取")); image.src = captured.imageDataUrl; });
-    const canvas = document.createElement("canvas");
-    canvas.width = captured.width; canvas.height = captured.height;
-    canvas.getContext("2d")?.drawImage(image, 0, 0);
-    return { canvas, targetClient: captured.targetClient, overlayClient: captured.overlayClient } satisfies TargetCapture;
+    const captureStarted = performance.now();
+    const regions = Object.entries(detectionRoiRefs.current).flatMap(([key, element]) => {
+      const bounds = element?.getBoundingClientRect();
+      if (!bounds || window.innerWidth <= 0 || window.innerHeight <= 0) return [];
+      return [{ key, x: bounds.left / window.innerWidth, y: bounds.top / window.innerHeight, right: bounds.right / window.innerWidth, bottom: bounds.bottom / window.innerHeight }];
+    });
+    const captured = await invoke<{ regions: Record<string, string> }>("capture_overlay_target", {
+      regions,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+    });
+    const payloadChars = Object.values(captured.regions).reduce((total, value) => total + value.length, 0);
+    logRecognitionTiming(`ROI capture command round-trip ${(performance.now() - captureStarted).toFixed(1)} ms; ${regions.length} regions; ${payloadChars} data URL chars`);
+    return captured;
   }
 
   function cropDetection(capture: TargetCapture, key: string) {
-    const crop = document.createElement("canvas");
-    const roiBounds = detectionRoiRefs.current[key]?.getBoundingClientRect();
-    if (!roiBounds || capture.overlayClient.width <= 0 || capture.overlayClient.height <= 0 || window.innerWidth <= 0 || window.innerHeight <= 0) {
-      throw new Error("检测框的实际屏幕边界不可用");
-    }
-    // The rectangle comes from the element currently drawn on screen. Windows
-    // supplies both client-area origins, so an overlay title bar/DPI offset
-    // cannot shift the crop vertically.
-    const xScale = capture.overlayClient.width / window.innerWidth;
-    const yScale = capture.overlayClient.height / window.innerHeight;
-    const left = Math.round(capture.overlayClient.x + roiBounds.left * xScale - capture.targetClient.x);
-    const top = Math.round(capture.overlayClient.y + roiBounds.top * yScale - capture.targetClient.y);
-    const right = Math.round(capture.overlayClient.x + roiBounds.right * xScale - capture.targetClient.x);
-    const bottom = Math.round(capture.overlayClient.y + roiBounds.bottom * yScale - capture.targetClient.y);
-    const sourceWidth = Math.max(1, right - left);
-    const sourceHeight = Math.max(1, bottom - top);
-    crop.width = sourceWidth;
-    crop.height = sourceHeight;
-    const context = crop.getContext("2d");
-    if (!context) return crop.toDataURL("image/png");
-    context.drawImage(capture.canvas, left, top, sourceWidth, sourceHeight, 0, 0, crop.width, crop.height);
-    return crop.toDataURL("image/png");
+    const imageDataUrl = capture.regions[key];
+    if (!imageDataUrl) throw new Error(`截图没有包含识别区域：${key}`);
+    return imageDataUrl;
   }
 
   async function recognizeNumericImages(images: Array<{ key: string; imageDataUrl: string; mode: NumericOcrMode }>) {
+    const preprocessingStarted = performance.now();
     const preparedImages = await Promise.all(images.map(async (image) => ({
       ...image,
       imageDataUrl: await prepareNumericImage(image.imageDataUrl),
     })));
-    const [, result] = await Promise.all([
-      saveOcrDebugImages("numeric", preparedImages),
-      invoke<{ items: Array<{ text: string }> }>("recognize_images", { images: preparedImages }),
-    ]);
+    logRecognitionTiming(`numeric image decode + resize/grayscale/PNG ${(performance.now() - preprocessingStarted).toFixed(1)} ms; images ${preparedImages.length}`);
+    const inferencePromise = invokeRecognitionTimed<{ items: Array<{ text: string }> }>("recognize_images", { images: preparedImages }, `numeric inference (${preparedImages.length} images)`);
+    const [, result] = await Promise.all([saveOcrDebugImages("numeric", preparedImages), inferencePromise]);
     return result;
   }
 
@@ -2831,7 +2839,7 @@ function TeamBattlePage({
         const imageKeys = kind === "battleStart" ? BATTLE_START_IMAGE_KEYS : BATTLE_LIVE_IMAGE_KEYS;
         tasks.push({ keys: imageKeys, run: async () => {
           const images = imageKeys.map((key) => ({ key, imageDataUrl: cropDetection(capture, key) }));
-          const result = await invoke<{ items: Array<{ label: string }> }>("classify_image_samples", { payload: { images } });
+          const result = await invokeRecognitionTimed<{ items: Array<{ label: string }> }>("classify_image_samples", { payload: { images } }, "calibration classifier");
           imageKeys.forEach((key, index) => {
             const label = result.items[index]?.label?.trim();
             setItem(key, label || "识别失败：没有结果", Boolean(label));
@@ -2925,6 +2933,7 @@ function TeamBattlePage({
       setDetectionMessage(`${label}：${detail}`);
     };
     updateStatus(group === "battleStart" ? "战斗开始识别" : "战斗内识别", "正在截取目标窗口", "准备中");
+    const recognitionStarted = performance.now();
     try {
         const capture = await targetCanvas();
       if (group === "battleStart") {
@@ -2932,7 +2941,7 @@ function TeamBattlePage({
         const images = BATTLE_START_IMAGE_KEYS.map((key) => ({ key, imageDataUrl: cropDetection(capture, key) }));
         const [, result] = await Promise.all([
           saveOcrDebugImages("battle-start", images),
-          invoke<{ items: Array<{ label: string }> }>("classify_image_samples", { payload: { images } }),
+          invokeRecognitionTimed<{ items: Array<{ label: string }> }>("classify_image_samples", { payload: { images } }, "battle-start classifier"),
         ]);
         const count = applyRecognizedPets("right", result.items);
         notifyDetection(`战斗开始识别完成：识别 ${count} 只，已导入敌方队伍`);
@@ -2947,7 +2956,7 @@ function TeamBattlePage({
           (async () => {
             const [, result] = await Promise.all([
               saveOcrDebugImages("battle-live-pets", images),
-              invoke<{ items: Array<{ label: string }> }>("classify_image_samples", { payload: { images } }),
+              invokeRecognitionTimed<{ items: Array<{ label: string }> }>("classify_image_samples", { payload: { images } }, "battle-live classifier"),
             ]);
             return result;
           })(),
@@ -2968,6 +2977,7 @@ function TeamBattlePage({
       }
     } catch (error) { notifyDetection(`识别失败：${asError(error)}`); }
     finally {
+      logRecognitionTiming(`${group} end-to-end ${(performance.now() - recognitionStarted).toFixed(1)} ms`);
       recognitionBusyRef.current = false;
       setRecognitionStatus(null);
     }
@@ -2983,6 +2993,7 @@ function TeamBattlePage({
     if (!targetAttached) { notifyDetection("请先绑定目标窗口"); return; }
     if (recognitionBusyRef.current) return;
     recognitionBusyRef.current = true;
+    const recognitionStarted = performance.now();
     setRecognitionStatus({ label: "技能威力识别", detail: "正在识别 4 个技能威力框", progress: "进行中" });
     try {
       const capture = await targetCanvas();
@@ -2995,6 +3006,7 @@ function TeamBattlePage({
       notifyDetection(calibrated ? "技能威力 OCR 识别完成，已自动修正叠层" : "技能威力 OCR 识别完成，未匹配到唯一叠层修正");
     } catch (error) { notifyDetection(`技能威力识别失败：${asError(error)}`); }
     finally {
+      logRecognitionTiming(`skill powers end-to-end ${(performance.now() - recognitionStarted).toFixed(1)} ms`);
       recognitionBusyRef.current = false;
       setRecognitionStatus(null);
     }
@@ -3007,6 +3019,7 @@ function TeamBattlePage({
     if (!targetAttached) { notify("请先绑定目标窗口"); return; }
     if (recognitionBusyRef.current) { notify("正在识别，请等待完成后再进行特性对齐"); return; }
     const snapshot = traitAlignmentSnapshotRef.current;
+    const recognitionStarted = performance.now();
     const checkSnapshot = () => {
       if (snapshot !== traitAlignmentSnapshotRef.current) throw new Error("对齐期间精灵、加成或识别配置已变化，请重新按 Ctrl+T");
     };
@@ -3015,21 +3028,48 @@ function TeamBattlePage({
     setRecognitionStatus({ label: "特性对齐", detail: "正在检查特性层数是否影响显示威力", progress: "准备中" });
     try {
       // OCR 框对应我方技能，与伤害计算方向无关；Ctrl+T 只修正我方特性层数。
-      const data = await invoke<TraitPowerCandidates>("trait_power_candidates", { payload: {
+      const candidatePayload = {
         attacker: { ...leftSlots[leftIndex], other_bonuses: leftOtherBonuses },
         defender: { ...rightSlots[rightIndex], other_bonuses: rightOtherBonuses },
         weather,
-      } });
+        min_stacks: 0,
+        max_stacks: 10,
+      };
+      const candidatesPromise = invokeRecognitionTimed<TraitPowerCandidates>("trait_power_candidates", { payload: candidatePayload }, "trait alignment candidate calculation (0-10)").then(
+        (data) => ({ data }),
+        (error: unknown) => ({ error }),
+      );
       checkSnapshot();
       setRecognitionStatus({ label: "特性对齐", detail: "正在识别我方技能威力", progress: "OCR 识别中" });
       const capture = await targetCanvas();
-      const response = await recognizeNumericImages(
+      const ocrPromise = recognizeNumericImages(
         (["skill1", "skill2", "skill3", "skill4"] as const).map((key) => ({ key, imageDataUrl: cropDetection(capture, key), mode: "power" })),
       );
+      const [candidateResult, response] = await Promise.all([candidatesPromise, ocrPromise]);
+      if ("error" in candidateResult) throw candidateResult.error;
+      const { data } = candidateResult;
       checkSnapshot();
       const powers = Array.from({ length: 4 }, (_, index) => response.items[index]?.text?.trim() || "识别失败");
       setDetectedSkillPowers(powers);
-      const stacks = matchTraitStacks(data, powers);
+      const initialMatchStarted = performance.now();
+      let matchingStacks = findTraitStackMatches(data, powers);
+      logRecognitionTiming(`trait alignment initial candidate matching ${(performance.now() - initialMatchStarted).toFixed(1)} ms`);
+      let allCandidates = data;
+      if (!data.affectedSkills.length || matchingStacks.length !== 1) {
+        const extended = await invokeRecognitionTimed<TraitPowerCandidates>("trait_power_candidates", {
+          payload: { ...candidatePayload, min_stacks: 11, max_stacks: 99 },
+        }, "trait alignment fallback candidate calculation (11-99)");
+        allCandidates = {
+          ...data,
+          affectedSkills: data.affectedSkills.length ? data.affectedSkills : extended.affectedSkills,
+          candidates: [...data.candidates, ...extended.candidates],
+        };
+        if (!allCandidates.affectedSkills.length) throw new Error("当前特性叠层不影响所携技能的显示威力");
+        matchingStacks = findTraitStackMatches(allCandidates, powers);
+      }
+      const finalMatchStarted = performance.now();
+      const stacks = matchTraitStacks(allCandidates, powers);
+      logRecognitionTiming(`trait alignment final candidate check ${(performance.now() - finalMatchStarted).toFixed(1)} ms`);
       patchSlot("left", leftIndex, { trait_stacks: stacks });
       notify(`特性对齐完成：${data.traitName}已修正为 ${stacks} 层`);
     } catch (error) {
@@ -3037,6 +3077,7 @@ function TeamBattlePage({
       setError(message);
       notify(message);
     } finally {
+      logRecognitionTiming(`trait alignment end-to-end ${(performance.now() - recognitionStarted).toFixed(1)} ms`);
       recognitionBusyRef.current = false;
       setRecognitionStatus(null);
     }
@@ -3050,13 +3091,24 @@ function TeamBattlePage({
     const nextStacks = { ...attacker.skill_trigger_stacks };
     const trials: Array<{ slot: number; skillName: string; observed: number; trigger: number; count: number; payload: Record<string, unknown> }> = [];
     let applied = false;
+    const triggerInfoStarted = performance.now();
+    const skillNames = powerTexts.map((rawPower, index) => {
+      if (!rawPower.replace(/\D/g, "")) return null;
+      const skillName = skillCardSlots(attacker.skills, teamSkillCardCount)[index];
+      return skillName || null;
+    });
+    const triggerInfos = await Promise.all(skillNames.map((skillName) =>
+      skillName ? cachedSkillTriggerInfo(skillName) : Promise.resolve(null),
+    ));
+    logRecognitionTiming(`power stack trigger info lookup ${(performance.now() - triggerInfoStarted).toFixed(1)} ms; skills ${skillNames.filter(Boolean).length}`);
     for (const [index, rawPower] of powerTexts.entries()) {
       const digits = rawPower.replace(/\D/g, "");
       if (!digits) continue;
       const observed = Number(digits);
-      const skillName = skillCardSlots(attacker.skills, teamSkillCardCount)[index];
+      const skillName = skillNames[index];
       if (!Number.isFinite(observed) || !skillName) continue;
-      const info = await cachedSkillTriggerInfo(skillName);
+      const info = triggerInfos[index];
+      if (!info) continue;
       for (const trigger of info.stackable) {
         if (!trigger.affects_power) continue;
         for (let count = 0; count <= (trigger.max ?? 10); count += 1) {
@@ -3070,7 +3122,7 @@ function TeamBattlePage({
       }
     }
     if (!trials.length) return false;
-    const batch = await invoke<{ items: Array<{ items: QuickSkillResult[] }> }>("calculate_quick_skills_batch", { payload: { requests: trials.map((trial) => trial.payload) } });
+    const batch = await invokeRecognitionTimed<{ items: Array<{ items: QuickSkillResult[] }> }>("calculate_quick_skills_batch", { payload: { requests: trials.map((trial) => ({ ...trial.payload, powers_only: true })) } }, `power stack trial batch (${trials.length} trials)`);
     const matches = new Map<number, { skillName: string; candidates: Array<{ trigger: number; count: number }> }>();
     trials.forEach((trial, index) => {
       if (batch.items[index]?.items[0]?.results.some((result) => Math.round(result.effective_power) === trial.observed)) {

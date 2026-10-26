@@ -186,6 +186,12 @@ select {
   padding: 0 8px;
 }
 
+/* 插件叠加层运行时，应用页面导航会固定压在目标窗口顶部；
+   选择器和快捷计算打开时这些导航按钮仍露在叠加层外沿。 */
+.app-shell.overlay-attached:has(> .battle-view:not([hidden]) > .battle-page.plugin-mode) > .app-header .tabs {
+  display: none;
+}
+
 .overlay-attached .app-header .weather-panel {
   display: none;
 }
@@ -6090,6 +6096,25 @@ button.trigger-button > img {
   border-color: #8fdcb8 !important;
   color: #fff !important;
   font-weight: 700;
+}
+
+.skill-picker-backdrop .picker-modal :is(.picker-element-grid, .picker-skill-type-grid) button:not(.active):not([aria-pressed="true"]),
+.skill-picker-backdrop .picker-modal :is(.picker-element-grid, .picker-skill-type-grid) button:not(.active):not([aria-pressed="true"]):hover {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.skill-picker-backdrop .picker-modal :is(.picker-element-grid, .picker-skill-type-grid) button:focus,
+.skill-picker-backdrop .picker-modal :is(.picker-element-grid, .picker-skill-type-grid) button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.skill-picker-backdrop .picker-modal .picker-type-icon.skill-type-icon {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
 }
 
 /* 左右阵营用一条描边区分，是叠加层里唯一的方位信息，

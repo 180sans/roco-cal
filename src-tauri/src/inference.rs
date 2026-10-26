@@ -207,12 +207,18 @@ impl Inference {
         Ok(json!({"items":items}))
     }
     pub fn classify(&self, payload: &Value) -> Result<Value> {
+        let runtime_started = std::time::Instant::now();
+        initialize(&self.resources)?;
+        let runtime_init_ms = runtime_started.elapsed().as_secs_f64() * 1000.0;
+        let mut model_init_ms = 0.0;
         let images = payload["images"]
             .as_array()
             .ok_or("Classifier images must be a list")?;
-        initialize(&self.resources)?;
+        let lock_started = std::time::Instant::now();
         let mut guard = self.classifier.lock().map_err(err)?;
+        let lock_wait_ms = lock_started.elapsed().as_secs_f64() * 1000.0;
         if guard.is_none() {
+            let init_started = std::time::Instant::now();
             let dir = self.resources.join("image-classifier");
             let metadata: Value = serde_json::from_slice(
                 &std::fs::read(dir.join("legacy_558.onnx.json")).map_err(err)?,
@@ -227,18 +233,31 @@ impl Inference {
                 session: session(&dir.join("legacy_558.onnx"))?,
                 classes,
             });
+            model_init_ms = init_started.elapsed().as_secs_f64() * 1000.0;
         }
         let model = guard.as_ref().unwrap();
         let mut items = vec![];
+        let (mut decode_ms, mut tensor_ms, mut session_run_ms, mut postprocess_ms) =
+            (0.0, 0.0, 0.0, 0.0);
+        let mut max_session_run_ms: f64 = 0.0;
         for image in images {
+            let stage_started = std::time::Instant::now();
             let source = decode(image)?.to_rgba8();
+            decode_ms += stage_started.elapsed().as_secs_f64() * 1000.0;
+            let stage_started = std::time::Instant::now();
             let tensor = classifier_tensor(&source);
             let input =
                 Tensor::from_array(([1, 3, 86, 76], tensor.into_boxed_slice())).map_err(err)?;
+            tensor_ms += stage_started.elapsed().as_secs_f64() * 1000.0;
+            let stage_started = std::time::Instant::now();
             let prediction = model
                 .session
                 .run(ort::inputs!["images"=>input].map_err(err)?)
                 .map_err(err)?;
+            let run_ms = stage_started.elapsed().as_secs_f64() * 1000.0;
+            session_run_ms += run_ms;
+            max_session_run_ms = max_session_run_ms.max(run_ms);
+            let stage_started = std::time::Instant::now();
             let (_, scores) = prediction["logits"]
                 .try_extract_raw_tensor::<f32>()
                 .map_err(err)?;
@@ -258,8 +277,22 @@ impl Inference {
             items.push(
                 json!({"label":top[0]["label"],"confidence":top[0]["confidence"],"topK":top}),
             );
+            postprocess_ms += stage_started.elapsed().as_secs_f64() * 1000.0;
         }
-        Ok(json!({"items":items}))
+        Ok(json!({
+            "items":items,
+            "_timing": {
+                "modelInitMs": model_init_ms,
+                "runtimeInitMs": runtime_init_ms,
+                "classifierLockWaitMs": lock_wait_ms,
+                "decodeMs": decode_ms,
+                "tensorMs": tensor_ms,
+                "sessionRunMs": session_run_ms,
+                "maxSessionRunMs": max_session_run_ms,
+                "postprocessMs": postprocess_ms,
+                "images": images.len(),
+            }
+        }))
     }
 }
 fn argmax(scores: &[f32]) -> usize {

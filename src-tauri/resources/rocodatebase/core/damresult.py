@@ -881,6 +881,7 @@ def battle_damage(
     hp=None,
     skill_data_override=None,
     light_power_multiplier=0,
+    powers_only=False,
 ):
     """
     对战伤害封装函数
@@ -1147,6 +1148,53 @@ def battle_damage(
         )
 
         type_bonus = 0.25 if skill_element in attacker_elements else 0.0
+
+        if powers_only:
+            # Recognition and stack alignment only need the displayed power.
+            # It does not depend on attacker/defender stat scenarios or damage,
+            # so avoid repeating the full damage calculation for each scenario.
+            effective_power = None
+            if skill_power is not None:
+                usage_count = int(usage_time or 1)
+                if (usage_mode_effects or thunderstorm_unregistered_burst) and usage_count > 1:
+                    for usage_index in range(usage_count):
+                        usage_skill_power = skill_power
+                        usage_power_bonus = power_bonus_with_traits
+                        if thunderstorm_unregistered_burst and usage_index > 0:
+                            usage_skill_power = (usage_skill_power or 0) + thunderstorm_burst_effect_count * 10
+                            usage_power_bonus += thunderstorm_burst_power_bonus
+                        for effect in usage_mode_effects:
+                            for key, raw_value in effect.items():
+                                if key in {"multiple", "condition", "mode", "override"}:
+                                    continue
+                                value = _normalize_runtime_value(key, raw_value)
+                                if key == "skill_power_plus":
+                                    usage_skill_power = (usage_skill_power or 0) + value * usage_index
+                                elif key == "skill_power_mul":
+                                    usage_skill_power = (usage_skill_power or 0) * (value ** usage_index)
+                        effective_power_value = calc_effective_skill_power(
+                            skill_power=usage_skill_power,
+                            power_multiplier=power_multipliers,
+                            power_bonus=usage_power_bonus,
+                            atk_buff=active_atk_buff_with_traits,
+                            enemy_def_buff=active_def_buff_with_traits,
+                            type_bonus=type_bonus,
+                            advantage=advantage,
+                        )
+                        effective_power = math.floor(effective_power_value)
+                else:
+                    effective_power_value = calc_effective_skill_power(
+                        skill_power=skill_power,
+                        power_multiplier=power_multipliers,
+                        power_bonus=power_bonus_with_traits,
+                        atk_buff=active_atk_buff_with_traits,
+                        enemy_def_buff=active_def_buff_with_traits,
+                        type_bonus=type_bonus,
+                        advantage=advantage,
+                    )
+                    effective_power = math.floor(effective_power_value)
+            results.append({"effective_power": effective_power})
+            continue
 
         is_active_trigger = (
             bool(skill_info.get("is_triggered"))

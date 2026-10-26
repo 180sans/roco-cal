@@ -5,19 +5,76 @@ use serde::Deserialize;
 use serde_json::Value;
 #[cfg(windows)]
 use std::ffi::{c_void, OsString};
-use std::io::Write;
+use std::io::{BufRead, BufReader, Write};
 #[cfg(windows)]
 use std::os::windows::ffi::OsStringExt;
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 #[cfg(windows)]
 use std::time::Instant;
 use tauri::{Emitter, Manager};
+
+const RECOGNITION_LOG_MAX_BYTES: usize = 1024 * 1024;
+static RECOGNITION_LOG_LOCK: Mutex<()> = Mutex::new(());
+
+fn log_recognition_timing(app: &tauri::AppHandle, message: &str) {
+    let Ok(_guard) = RECOGNITION_LOG_LOCK.lock() else {
+        return;
+    };
+    let path = app_data_dir(app).join("recognition-timing.log");
+    let Ok(()) = std::fs::create_dir_all(
+        path.parent()
+            .unwrap_or_else(|| std::path::Path::new(".")),
+    ) else {
+        return;
+    };
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_millis())
+        .unwrap_or_default();
+    let mut line = format!("{timestamp} {message}\n").into_bytes();
+    if line.len() > RECOGNITION_LOG_MAX_BYTES {
+        let start = line.len() - RECOGNITION_LOG_MAX_BYTES;
+        line.drain(..start);
+    }
+    let Ok(mut file) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+    else {
+        return;
+    };
+    if std::io::Write::write_all(&mut file, &line).is_err() {
+        return;
+    }
+    let Ok(length) = file.metadata().map(|metadata| metadata.len() as usize) else {
+        return;
+    };
+    if length > RECOGNITION_LOG_MAX_BYTES {
+        drop(file);
+        let Ok(mut contents) = std::fs::read(&path) else {
+            return;
+        };
+        let start = contents.len().saturating_sub(RECOGNITION_LOG_MAX_BYTES);
+        let boundary = contents[start..]
+            .iter()
+            .position(|byte| *byte == b'\n')
+            .map(|offset| start + offset + 1)
+            .unwrap_or(contents.len());
+        contents.drain(..boundary);
+        let _ = std::fs::write(path, contents);
+    }
+}
+
+#[tauri::command]
+fn record_recognition_timing(app: tauri::AppHandle, message: String) {
+    log_recognition_timing(&app, &format!("frontend {message}"));
+}
 #[cfg(windows)]
 use windows::{
     core::{factory, Interface},
@@ -27,7 +84,7 @@ use windows::{
         DirectX::{Direct3D11::IDirect3DDevice, DirectXPixelFormat},
     },
     Win32::{
-        Foundation::{HMODULE, HWND, RPC_E_CHANGED_MODE},
+        Foundation::{HMODULE, HWND},
         Graphics::{
             Direct3D::{D3D_DRIVER_TYPE, D3D_DRIVER_TYPE_HARDWARE, D3D_DRIVER_TYPE_WARP},
             Direct3D11::{
@@ -41,7 +98,6 @@ use windows::{
         System::WinRT::{
             Direct3D11::{CreateDirect3D11DeviceFromDXGIDevice, IDirect3DDxgiInterfaceAccess},
             Graphics::Capture::IGraphicsCaptureItemInterop,
-            RoInitialize, RoUninitialize, RO_INIT_MULTITHREADED,
         },
     },
 };
@@ -54,7 +110,16 @@ struct PythonEnvelope {
     ok: bool,
     data: Option<Value>,
     error: Option<String>,
+    timing: Option<Value>,
 }
+
+struct PersistentPythonWorker {
+    child: Child,
+    stdin: ChildStdin,
+    stdout: BufReader<ChildStdout>,
+}
+
+static PERSISTENT_PYTHON_WORKER: OnceLock<Mutex<Option<PersistentPythonWorker>>> = OnceLock::new();
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 struct OverlayTargetBinding {
@@ -341,6 +406,7 @@ fn run_python_with_input(
     args: &[&str],
     input: Option<&str>,
 ) -> Result<Value, String> {
+    let command_started = std::time::Instant::now();
     let root = resource_root(&app)?;
     let script = root.join("desktop_api.py");
     let python = embedded_python(&app)?;
@@ -393,6 +459,28 @@ fn run_python_with_input(
         )
     })?;
 
+    let command_name = args.first().copied().unwrap_or("python");
+    if command_name == "trait-power-candidates" || command_name == "calculate-quick-skills-batch" {
+        log_recognition_timing(
+            &app,
+            &format!(
+                "{} python process round-trip: {:.1} ms",
+                command_name,
+                command_started.elapsed().as_secs_f64() * 1000.0
+            ),
+        );
+        if let Some(timing) = envelope.timing.as_ref() {
+            log_recognition_timing(
+                &app,
+                &format!(
+                    "{} python internal timing: {}",
+                    command_name,
+                    timing
+                ),
+            );
+        }
+    }
+
     if !output.status.success() || !envelope.ok {
         return Err(envelope.error.unwrap_or_else(|| stderr.trim().to_string()));
     }
@@ -426,6 +514,102 @@ fn embedded_python(app: &tauri::AppHandle) -> Result<PathBuf, String> {
         })
 }
 
+fn start_persistent_python_worker(app: &tauri::AppHandle) -> Result<PersistentPythonWorker, String> {
+    let root = resource_root(app)?;
+    let script = root.join("desktop_api.py");
+    let python = embedded_python(app)?;
+    let user_data_dir = app_data_dir(app);
+    std::fs::create_dir_all(&user_data_dir)
+        .map_err(|error| format!("Cannot create app data dir: {error}"))?;
+    let mut command = Command::new(&python);
+    command
+        .arg("-B")
+        .arg(&script)
+        .arg("persistent-worker")
+        .env("PYTHONUTF8", "1")
+        .env("PYTHONIOENCODING", "utf-8")
+        .env("ROCODATABASE_USER_DATA_DIR", &user_data_dir)
+        .current_dir(&root)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null());
+    #[cfg(windows)]
+    command.creation_flags(CREATE_NO_WINDOW);
+    let mut child = command.spawn().map_err(|error| {
+        format!(
+            "Cannot start persistent embedded Python: {error}. executable={}, cwd={}, script={}",
+            python.display(), root.display(), script.display()
+        )
+    })?;
+    let stdin = child.stdin.take().ok_or("Cannot open Python worker stdin")?;
+    let stdout = child.stdout.take().ok_or("Cannot open Python worker stdout")?;
+    Ok(PersistentPythonWorker { child, stdin, stdout: BufReader::new(stdout) })
+}
+
+fn persistent_python_payload(app: &tauri::AppHandle, command: &str, payload: &Value) -> Result<Value, String> {
+    let started = std::time::Instant::now();
+    let request = serde_json::json!({ "command": command, "payload": payload });
+    let request = serde_json::to_vec(&request)
+        .map_err(|error| format!("Cannot serialize persistent Python request: {error}"))?;
+    let worker_lock = PERSISTENT_PYTHON_WORKER.get_or_init(|| Mutex::new(None));
+    let mut guard = worker_lock.lock().map_err(|error| error.to_string())?;
+    let mut last_error = String::new();
+
+    for attempt in 0..2 {
+        if guard.is_none() {
+            *guard = Some(start_persistent_python_worker(app)?);
+        }
+        let worker = guard.as_mut().expect("worker initialized");
+        let result = (|| -> Result<PythonEnvelope, String> {
+            worker.stdin.write_all(&request).map_err(|error| format!("Cannot send request to Python worker: {error}"))?;
+            worker.stdin.write_all(b"\n").map_err(|error| format!("Cannot delimit Python worker request: {error}"))?;
+            worker.stdin.flush().map_err(|error| format!("Cannot flush Python worker request: {error}"))?;
+            let mut response = String::new();
+            let bytes = worker.stdout.read_line(&mut response).map_err(|error| format!("Cannot read Python worker response: {error}"))?;
+            if bytes == 0 {
+                return Err("Persistent Python worker exited without a response".to_string());
+            }
+            serde_json::from_str(response.trim()).map_err(|error| format!("Python worker returned invalid JSON: {error}; response={}", response.trim()))
+        })();
+        match result {
+            Ok(envelope) => {
+                log_recognition_timing(
+                    app,
+                    &format!("{command} persistent Python round-trip: {:.1} ms; attempt {}", started.elapsed().as_secs_f64() * 1000.0, attempt + 1),
+                );
+                if let Some(timing) = envelope.timing.as_ref() {
+                    log_recognition_timing(app, &format!("{command} python internal timing: {timing}"));
+                }
+                if !envelope.ok {
+                    return Err(envelope.error.unwrap_or_else(|| "Persistent Python request failed".to_string()));
+                }
+                return envelope.data.ok_or_else(|| "Python worker response is missing data".to_string());
+            }
+            Err(error) => {
+                last_error = error;
+                if let Some(mut dead_worker) = guard.take() {
+                    let _ = dead_worker.child.kill();
+                    let _ = dead_worker.child.wait();
+                }
+                if attempt == 1 {
+                    break;
+                }
+            }
+        }
+    }
+    Err(last_error)
+}
+
+fn stop_persistent_python_worker() {
+    let Some(worker_lock) = PERSISTENT_PYTHON_WORKER.get() else { return; };
+    if let Ok(mut guard) = worker_lock.lock() {
+        if let Some(mut worker) = guard.take() {
+            let _ = worker.child.kill();
+            let _ = worker.child.wait();
+        }
+    }
+}
+
 async fn run_python_async(app: tauri::AppHandle, args: Vec<String>) -> Result<Value, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let arg_refs = args.iter().map(String::as_str).collect::<Vec<_>>();
@@ -444,16 +628,17 @@ async fn run_python_payload_async(
         .map_err(|error| format!("Cannot serialize payload: {error}"))?;
     let command = command.to_string();
     tauri::async_runtime::spawn_blocking(move || {
-        let started = std::time::Instant::now();
-        let result = run_python_with_input(
-            app,
-            &[command.as_str(), "--payload-stdin"],
-            Some(&payload_text),
-        );
-        if command == "calculate-quick-skills-batch" {
-            eprintln!("[recognition] power stack trials (Python startup + calculation): {:.1} ms", started.elapsed().as_secs_f64() * 1000.0);
+        if command == "trait-power-candidates" || command == "calculate-quick-skills-batch" {
+            let payload: Value = serde_json::from_str(&payload_text)
+                .map_err(|error| format!("Cannot decode serialized Python payload: {error}"))?;
+            persistent_python_payload(&app, &command, &payload)
+        } else {
+            run_python_with_input(
+                app,
+                &[command.as_str(), "--payload-stdin"],
+                Some(&payload_text),
+            )
         }
-        result
     })
     .await
     .map_err(|error| format!("Python task failed: {error}"))?
@@ -475,10 +660,41 @@ async fn run_native_inference(app: tauri::AppHandle, payload: Value, classify: b
     let state = app.state::<NativeInference>().inner().clone();
     let resources = resource_root(&app)?.parent().ok_or("Invalid resources directory")?.to_path_buf();
     tauri::async_runtime::spawn_blocking(move || {
+        let init_started = std::time::Instant::now();
         let engine = state.0.get_or_init(|| inference::Inference::new(resources));
+        let init_elapsed = init_started.elapsed().as_secs_f64() * 1000.0;
         let started = std::time::Instant::now();
-        let result = if classify { engine.classify(&payload) } else { engine.recognize(&payload) };
-        eprintln!("[recognition] {} inference: {:.1} ms", if classify { "pet" } else { "number" }, started.elapsed().as_secs_f64() * 1000.0);
+        let mut result = if classify { engine.classify(&payload) } else { engine.recognize(&payload) };
+        if classify {
+            if let Ok(value) = &mut result {
+                if let Some(timing) = value.as_object_mut().and_then(|object| object.remove("_timing")) {
+                    log_recognition_timing(
+                        &app,
+                        &format!(
+                            "pet classifier stages: runtime init {:.1} ms; model init {:.1} ms; session lock wait {:.1} ms; decode {:.1} ms; tensor {:.1} ms; ONNX run {:.1} ms (max/image {:.1} ms); postprocess {:.1} ms; images {}",
+                            timing["runtimeInitMs"].as_f64().unwrap_or_default(),
+                            timing["modelInitMs"].as_f64().unwrap_or_default(),
+                            timing["classifierLockWaitMs"].as_f64().unwrap_or_default(),
+                            timing["decodeMs"].as_f64().unwrap_or_default(),
+                            timing["tensorMs"].as_f64().unwrap_or_default(),
+                            timing["sessionRunMs"].as_f64().unwrap_or_default(),
+                            timing["maxSessionRunMs"].as_f64().unwrap_or_default(),
+                            timing["postprocessMs"].as_f64().unwrap_or_default(),
+                            timing["images"].as_u64().unwrap_or_default(),
+                        ),
+                    );
+                }
+            }
+        }
+        log_recognition_timing(
+            &app,
+            &format!(
+                "{} model init: {:.1} ms; inference: {:.1} ms",
+                if classify { "pet" } else { "number" },
+                init_elapsed,
+                started.elapsed().as_secs_f64() * 1000.0,
+            ),
+        );
         result
     }).await.map_err(|e| format!("Native inference task failed: {e}"))?
 }
@@ -1183,18 +1399,6 @@ fn detach_overlay_target(
 }
 
 #[cfg(windows)]
-struct WinRtApartmentGuard(bool);
-
-#[cfg(windows)]
-impl Drop for WinRtApartmentGuard {
-    fn drop(&mut self) {
-        if self.0 {
-            unsafe { RoUninitialize() };
-        }
-    }
-}
-
-#[cfg(windows)]
 struct CaptureGeometry {
     origin: WinPoint,
     width: i32,
@@ -1204,13 +1408,27 @@ struct CaptureGeometry {
 }
 
 #[cfg(windows)]
-struct CapturedClientFrame {
-    bmp: Vec<u8>,
-    width: i32,
-    height: i32,
-    origin: WinPoint,
+struct CapturedClientRegions {
+    regions: Vec<Vec<u8>>,
     has_content: bool,
+    readback_time: Duration,
+    pixel_and_bmp_time: Duration,
 }
+
+#[cfg(windows)]
+struct WgcCaptureSession {
+    hwnd: usize,
+    device: ID3D11Device,
+    context: ID3D11DeviceContext,
+    pool: Direct3D11CaptureFramePool,
+    session: GraphicsCaptureSession,
+    token: i64,
+    frame_receiver: std::sync::mpsc::Receiver<Direct3D11CaptureFrame>,
+    staging: Option<ID3D11Texture2D>,
+}
+
+#[cfg(windows)]
+static WGC_CAPTURE_SESSION: OnceLock<Mutex<Option<WgcCaptureSession>>> = OnceLock::new();
 
 #[cfg(windows)]
 fn read_capture_geometry(hwnd: *mut c_void) -> Result<CaptureGeometry, String> {
@@ -1332,109 +1550,7 @@ fn select_client_crop(
 }
 
 #[cfg(windows)]
-fn copy_wgc_frame_to_bmp(
-    frame: &Direct3D11CaptureFrame,
-    device: &ID3D11Device,
-    context: &ID3D11DeviceContext,
-    hwnd: *mut c_void,
-) -> Result<CapturedClientFrame, String> {
-    let content_size = frame.ContentSize().map_err(|error| format!("Cannot read WGC frame size: {error}"))?;
-    if content_size.Width <= 0 || content_size.Height <= 0 {
-        return Err("Windows Graphics Capture returned an empty frame".to_string());
-    }
-    let surface = frame.Surface().map_err(|error| format!("Cannot read WGC frame surface: {error}"))?;
-    let access: IDirect3DDxgiInterfaceAccess = surface
-        .cast()
-        .map_err(|error| format!("Cannot access WGC DXGI surface: {error}"))?;
-    let texture: ID3D11Texture2D = unsafe { access.GetInterface() }
-        .map_err(|error| format!("Cannot access WGC D3D11 texture: {error}"))?;
-    let mut texture_desc = D3D11_TEXTURE2D_DESC::default();
-    unsafe { texture.GetDesc(&mut texture_desc) };
-    let frame_width = (content_size.Width as u32).min(texture_desc.Width);
-    let frame_height = (content_size.Height as u32).min(texture_desc.Height);
-    let geometry = read_capture_geometry(hwnd)?;
-    let (crop_x, crop_y) = select_client_crop(&geometry, frame_width, frame_height)?;
-
-    let mut staging_desc = texture_desc;
-    staging_desc.Usage = D3D11_USAGE_STAGING;
-    staging_desc.BindFlags = 0;
-    staging_desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ.0 as u32;
-    staging_desc.MiscFlags = 0;
-    let mut staging = None;
-    unsafe { device.CreateTexture2D(&staging_desc, None, Some(&mut staging)) }
-        .map_err(|error| format!("Cannot create WGC staging texture: {error}"))?;
-    let staging = staging.ok_or_else(|| "WGC staging texture is unavailable".to_string())?;
-    unsafe { context.CopyResource(&staging, &texture) };
-
-    let mut mapped = D3D11_MAPPED_SUBRESOURCE::default();
-    unsafe { context.Map(&staging, 0, D3D11_MAP_READ, 0, Some(&mut mapped)) }
-        .map_err(|error| format!("Cannot map WGC frame for OCR: {error}"))?;
-    let width = geometry.width as usize;
-    let height = geometry.height as usize;
-    let bmp_stride = (width * 3 + 3) & !3;
-    let mut pixels = vec![0u8; bmp_stride * height];
-    let source_len = mapped.RowPitch as usize * texture_desc.Height as usize;
-    let source = unsafe { std::slice::from_raw_parts(mapped.pData.cast::<u8>(), source_len) };
-    let mut has_content = false;
-    for output_y in 0..height {
-        let source_y = crop_y as usize + (height - 1 - output_y);
-        let source_row = source_y * mapped.RowPitch as usize + crop_x as usize * 4;
-        let output_row = output_y * bmp_stride;
-        for x in 0..width {
-            let source_pixel = source_row + x * 4;
-            let output_pixel = output_row + x * 3;
-            let b = source[source_pixel];
-            let g = source[source_pixel + 1];
-            let r = source[source_pixel + 2];
-            pixels[output_pixel] = b;
-            pixels[output_pixel + 1] = g;
-            pixels[output_pixel + 2] = r;
-            has_content |= b != 0 || g != 0 || r != 0;
-        }
-    }
-    unsafe { context.Unmap(&staging, 0) };
-
-    let file_size = 14usize + 40 + pixels.len();
-    let file_size_u32 = u32::try_from(file_size).map_err(|_| "WGC screenshot is too large".to_string())?;
-    let image_size_u32 = u32::try_from(pixels.len()).map_err(|_| "WGC screenshot is too large".to_string())?;
-    let mut bmp = Vec::with_capacity(file_size);
-    bmp.extend_from_slice(b"BM");
-    bmp.extend_from_slice(&file_size_u32.to_le_bytes());
-    bmp.extend_from_slice(&[0; 4]);
-    bmp.extend_from_slice(&(54u32).to_le_bytes());
-    bmp.extend_from_slice(&40u32.to_le_bytes());
-    bmp.extend_from_slice(&geometry.width.to_le_bytes());
-    bmp.extend_from_slice(&geometry.height.to_le_bytes());
-    bmp.extend_from_slice(&1u16.to_le_bytes());
-    bmp.extend_from_slice(&24u16.to_le_bytes());
-    bmp.extend_from_slice(&0u32.to_le_bytes());
-    bmp.extend_from_slice(&image_size_u32.to_le_bytes());
-    bmp.extend_from_slice(&[0; 16]);
-    bmp.extend_from_slice(&pixels);
-    Ok(CapturedClientFrame {
-        bmp,
-        width: geometry.width,
-        height: geometry.height,
-        origin: geometry.origin,
-        has_content,
-    })
-}
-
-#[cfg(windows)]
-fn capture_window_client_wgc(hwnd_value: usize) -> Result<CapturedClientFrame, String> {
-    let started = Instant::now();
-    let apartment_initialized = match unsafe { RoInitialize(RO_INIT_MULTITHREADED) } {
-        Ok(()) => true,
-        Err(error) if error.code() == RPC_E_CHANGED_MODE => false,
-        Err(error) => return Err(format!("Cannot initialize Windows Graphics Capture: {error}")),
-    };
-    let _apartment = WinRtApartmentGuard(apartment_initialized);
-    if !GraphicsCaptureSession::IsSupported()
-        .map_err(|error| format!("Cannot query Windows Graphics Capture support: {error}"))?
-    {
-        return Err("Windows Graphics Capture is not supported on this Windows version".to_string());
-    }
-
+fn create_wgc_capture_session(hwnd_value: usize) -> Result<WgcCaptureSession, String> {
     let (device, context) = create_d3d11_capture_device(D3D_DRIVER_TYPE_HARDWARE)
         .or_else(|_| create_d3d11_capture_device(D3D_DRIVER_TYPE_WARP))?;
     let dxgi_device: IDXGIDevice = device
@@ -1463,8 +1579,7 @@ fn capture_window_client_wgc(hwnd_value: usize) -> Result<CapturedClientFrame, S
         .map_err(|error| format!("Cannot create WGC capture session: {error}"))?;
     let _ = session.SetIsCursorCaptureEnabled(false);
     let _ = session.SetIsBorderRequired(false);
-
-    let (frame_sender, frame_receiver) = std::sync::mpsc::sync_channel(2);
+    let (frame_sender, frame_receiver) = std::sync::mpsc::sync_channel(3);
     let handler = TypedEventHandler::<Direct3D11CaptureFramePool, windows::core::IInspectable>::new(
         move |sender, _| {
             if let Some(pool) = sender.as_ref() {
@@ -1478,36 +1593,204 @@ fn capture_window_client_wgc(hwnd_value: usize) -> Result<CapturedClientFrame, S
     let token = pool
         .FrameArrived(&handler)
         .map_err(|error| format!("Cannot subscribe to WGC frames: {error}"))?;
-    let prepared = Instant::now();
-    let result = (|| {
-        session.StartCapture().map_err(|error| format!("Cannot start WGC capture: {error}"))?;
-        let deadline = Instant::now() + Duration::from_secs(2);
-        for _ in 0..4 {
-            let remaining = deadline.saturating_duration_since(Instant::now());
-            if remaining.is_zero() {
-                break;
-            }
-            let frame = frame_receiver
-                .recv_timeout(remaining)
-                .map_err(|_| "Timed out waiting for a Windows Graphics Capture frame".to_string())?;
-            let captured = copy_wgc_frame_to_bmp(&frame, &device, &context, hwnd);
-            let _ = frame.Close();
-            let captured = captured?;
-            if captured.has_content {
-                return Ok(captured);
+    session
+        .StartCapture()
+        .map_err(|error| format!("Cannot start WGC capture: {error}"))?;
+    Ok(WgcCaptureSession { hwnd: hwnd_value, device, context, pool, session, token, frame_receiver, staging: None })
+}
+
+#[cfg(windows)]
+fn copy_wgc_frame_regions(
+    frame: &Direct3D11CaptureFrame,
+    device: &ID3D11Device,
+    context: &ID3D11DeviceContext,
+    staging_cache: &mut Option<ID3D11Texture2D>,
+    hwnd: *mut c_void,
+    regions: &[(i32, i32, i32, i32)],
+) -> Result<CapturedClientRegions, String> {
+    let content_size = frame.ContentSize().map_err(|error| format!("Cannot read WGC frame size: {error}"))?;
+    if content_size.Width <= 0 || content_size.Height <= 0 {
+        return Err("Windows Graphics Capture returned an empty frame".to_string());
+    }
+    let surface = frame.Surface().map_err(|error| format!("Cannot read WGC frame surface: {error}"))?;
+    let access: IDirect3DDxgiInterfaceAccess = surface
+        .cast()
+        .map_err(|error| format!("Cannot access WGC DXGI surface: {error}"))?;
+    let texture: ID3D11Texture2D = unsafe { access.GetInterface() }
+        .map_err(|error| format!("Cannot access WGC D3D11 texture: {error}"))?;
+    let mut texture_desc = D3D11_TEXTURE2D_DESC::default();
+    unsafe { texture.GetDesc(&mut texture_desc) };
+    let frame_width = (content_size.Width as u32).min(texture_desc.Width);
+    let frame_height = (content_size.Height as u32).min(texture_desc.Height);
+    let geometry = read_capture_geometry(hwnd)?;
+    let (crop_x, crop_y) = select_client_crop(&geometry, frame_width, frame_height)?;
+
+    let mut staging_desc = texture_desc;
+    staging_desc.Usage = D3D11_USAGE_STAGING;
+    staging_desc.BindFlags = 0;
+    staging_desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ.0 as u32;
+    staging_desc.MiscFlags = 0;
+    let staging_matches = staging_cache.as_ref().is_some_and(|staging| {
+        let mut cached_desc = D3D11_TEXTURE2D_DESC::default();
+        unsafe { staging.GetDesc(&mut cached_desc) };
+        cached_desc.Width == staging_desc.Width
+            && cached_desc.Height == staging_desc.Height
+            && cached_desc.Format == staging_desc.Format
+    });
+    if !staging_matches {
+        let mut staging = None;
+        unsafe { device.CreateTexture2D(&staging_desc, None, Some(&mut staging)) }
+            .map_err(|error| format!("Cannot create WGC staging texture: {error}"))?;
+        *staging_cache = Some(staging.ok_or_else(|| "WGC staging texture is unavailable".to_string())?);
+    }
+    let staging = staging_cache.as_ref().unwrap();
+    let readback_started = Instant::now();
+    unsafe { context.CopyResource(staging, &texture) };
+
+    let mut mapped = D3D11_MAPPED_SUBRESOURCE::default();
+    unsafe { context.Map(staging, 0, D3D11_MAP_READ, 0, Some(&mut mapped)) }
+        .map_err(|error| format!("Cannot map WGC frame for OCR: {error}"))?;
+    let readback_time = readback_started.elapsed();
+    let pixel_and_bmp_started = Instant::now();
+    let source_len = mapped.RowPitch as usize * texture_desc.Height as usize;
+    let source = unsafe { std::slice::from_raw_parts(mapped.pData.cast::<u8>(), source_len) };
+    let mut has_content = false;
+    let frame_width_u = frame_width as usize;
+    let frame_height_u = frame_height as usize;
+    let mut region_bitmaps: Vec<Vec<u8>> = Vec::with_capacity(regions.len());
+    for region in regions {
+        let region_left = (region.0 - geometry.origin.x).max(0) as usize;
+        let region_top = (region.1 - geometry.origin.y).max(0) as usize;
+        let region_left = region_left.min(frame_width_u.saturating_sub(1));
+        let region_top = region_top.min(frame_height_u.saturating_sub(1));
+        let region_width = (region.2 as usize).clamp(1, frame_width_u - region_left);
+        let region_height = (region.3 as usize).clamp(1, frame_height_u - region_top);
+        let bmp_stride = (region_width * 3 + 3) & !3;
+        let mut pixels = vec![0u8; bmp_stride * region_height];
+        for output_y in 0..region_height {
+            let source_y = crop_y as usize + region_top + (region_height - 1 - output_y);
+            let source_row = source_y * mapped.RowPitch as usize + (crop_x as usize + region_left) * 4;
+            let output_row = output_y * bmp_stride;
+            for x in 0..region_width {
+                let source_pixel = source_row + x * 4;
+                let output_pixel = output_row + x * 3;
+                let b = source[source_pixel];
+                let g = source[source_pixel + 1];
+                let r = source[source_pixel + 2];
+                pixels[output_pixel] = b;
+                pixels[output_pixel + 1] = g;
+                pixels[output_pixel + 2] = r;
+                has_content |= b != 0 || g != 0 || r != 0;
             }
         }
-        Err("Windows Graphics Capture returned only blank frames".to_string())
-    })();
-    let _ = pool.RemoveFrameArrived(token);
-    let _ = session.Close();
-    let _ = pool.Close();
-    eprintln!("[recognition] WGC capture: setup {:.1} ms, frame/readback/cleanup {:.1} ms", prepared.duration_since(started).as_secs_f64() * 1000.0, prepared.elapsed().as_secs_f64() * 1000.0);
-    result
+        let file_size = 14usize + 40 + pixels.len();
+        let file_size_u32 = u32::try_from(file_size).map_err(|_| "WGC screenshot is too large".to_string())?;
+        let image_size_u32 = u32::try_from(pixels.len()).map_err(|_| "WGC screenshot is too large".to_string())?;
+        let mut bmp = Vec::with_capacity(file_size);
+        bmp.extend_from_slice(b"BM");
+        bmp.extend_from_slice(&file_size_u32.to_le_bytes());
+        bmp.extend_from_slice(&[0; 4]);
+        bmp.extend_from_slice(&(54u32).to_le_bytes());
+        bmp.extend_from_slice(&40u32.to_le_bytes());
+        bmp.extend_from_slice(&(region_width as i32).to_le_bytes());
+        bmp.extend_from_slice(&(region_height as i32).to_le_bytes());
+        bmp.extend_from_slice(&1u16.to_le_bytes());
+        bmp.extend_from_slice(&24u16.to_le_bytes());
+        bmp.extend_from_slice(&0u32.to_le_bytes());
+        bmp.extend_from_slice(&image_size_u32.to_le_bytes());
+        bmp.extend_from_slice(&[0; 16]);
+        bmp.extend_from_slice(&pixels);
+        region_bitmaps.push(bmp);
+    }
+    unsafe { context.Unmap(staging, 0) };
+    Ok(CapturedClientRegions {
+        regions: region_bitmaps,
+        has_content,
+        readback_time,
+        pixel_and_bmp_time: pixel_and_bmp_started.elapsed(),
+    })
+}
+
+#[cfg(windows)]
+fn capture_cached_wgc_regions(
+    app: &tauri::AppHandle,
+    cached: &mut WgcCaptureSession,
+    regions: &[(i32, i32, i32, i32)],
+) -> Result<CapturedClientRegions, String> {
+    let started = Instant::now();
+    let mut frame_wait_time = Duration::ZERO;
+    let mut readback_time = Duration::ZERO;
+    let mut pixel_and_bmp_time = Duration::ZERO;
+    // Frames already in the channel were produced before this recognition request.
+    // Close them before waiting so this capture is based on a post-trigger frame.
+    let mut stale_frames_discarded = 0usize;
+    while let Ok(frame) = cached.frame_receiver.try_recv() {
+        let _ = frame.Close();
+        stale_frames_discarded += 1;
+    }
+    let deadline = Instant::now() + Duration::from_secs(2);
+    for _ in 0..4 {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() { break; }
+        let wait_started = Instant::now();
+        let frame = cached.frame_receiver.recv_timeout(remaining)
+            .map_err(|_| "Timed out waiting for a Windows Graphics Capture frame".to_string())?;
+        frame_wait_time += wait_started.elapsed();
+        let captured = copy_wgc_frame_regions(&frame, &cached.device, &cached.context, &mut cached.staging, cached.hwnd as *mut c_void, regions);
+        let _ = frame.Close();
+        let captured = captured?;
+        readback_time += captured.readback_time;
+        pixel_and_bmp_time += captured.pixel_and_bmp_time;
+        if captured.has_content {
+            log_recognition_timing(app, &format!("WGC fresh-frame capture: queued frames discarded {}; frame wait {:.1} ms; GPU readback {:.1} ms; ROI pixel + BMP {:.1} ms; total {:.1} ms", stale_frames_discarded, frame_wait_time.as_secs_f64() * 1000.0, readback_time.as_secs_f64() * 1000.0, pixel_and_bmp_time.as_secs_f64() * 1000.0, started.elapsed().as_secs_f64() * 1000.0));
+            return Ok(captured);
+        }
+    }
+    Err("Windows Graphics Capture returned only blank frames".to_string())
+}
+
+#[cfg(windows)]
+fn capture_window_client_regions(
+    app: &tauri::AppHandle,
+    hwnd_value: usize,
+    region_rects: &[(i32, i32, i32, i32)],
+) -> Result<CapturedClientRegions, String> {
+    let cache = WGC_CAPTURE_SESSION.get_or_init(|| Mutex::new(None));
+    let mut cache = cache.lock().map_err(|error| error.to_string())?;
+    if let Some(cached) = cache.as_mut().filter(|capture| capture.hwnd == hwnd_value) {
+        let cached_started = Instant::now();
+        let result = capture_cached_wgc_regions(app, cached, region_rects);
+        log_recognition_timing(app, &format!("WGC cached session capture total: {:.1} ms", cached_started.elapsed().as_secs_f64() * 1000.0));
+        return result;
+    }
+    if let Some(previous) = cache.take() {
+        let _ = previous.pool.RemoveFrameArrived(previous.token);
+        let _ = previous.session.Close();
+        let _ = previous.pool.Close();
+    }
+    let setup_started = Instant::now();
+    if !GraphicsCaptureSession::IsSupported()
+        .map_err(|error| format!("Cannot query Windows Graphics Capture support: {error}"))?
+    {
+        return Err("Windows Graphics Capture is not supported on this Windows version".to_string());
+    }
+    let session = create_wgc_capture_session(hwnd_value)?;
+    *cache = Some(session);
+    log_recognition_timing(
+        app,
+        &format!("WGC persistent session initialized: {:.1} ms", setup_started.elapsed().as_secs_f64() * 1000.0),
+    );
+    capture_cached_wgc_regions(app, cache.as_mut().unwrap(), region_rects)
 }
 
 #[tauri::command]
-fn capture_overlay_target(target_state: tauri::State<'_, OverlayTargetState>) -> Result<Value, String> {
+fn capture_overlay_target(
+    app: tauri::AppHandle,
+    target_state: tauri::State<'_, OverlayTargetState>,
+    regions: Value,
+    viewport_width: f64,
+    viewport_height: f64,
+) -> Result<Value, String> {
     let binding = target_state
         .binding
         .lock()
@@ -1517,7 +1800,6 @@ fn capture_overlay_target(target_state: tauri::State<'_, OverlayTargetState>) ->
     #[cfg(windows)]
     {
         let started = Instant::now();
-        let captured = capture_window_client_wgc(binding.target_hwnd)?;
         let overlay = binding.overlay_hwnd as *mut c_void;
         let mut overlay_rect = WinRect { left: 0, top: 0, right: 0, bottom: 0 };
         let mut overlay_origin = WinPoint { x: 0, y: 0 };
@@ -1528,14 +1810,51 @@ fn capture_overlay_target(target_state: tauri::State<'_, OverlayTargetState>) ->
         }
         let overlay_width = (overlay_rect.right - overlay_rect.left).max(1);
         let overlay_height = (overlay_rect.bottom - overlay_rect.top).max(1);
-        let response = serde_json::json!({
-            "imageDataUrl": format!("data:image/bmp;base64,{}", base64_encode(&captured.bmp)),
-            "width": captured.width,
-            "height": captured.height,
-            "targetClient": { "x": captured.origin.x, "y": captured.origin.y, "width": captured.width, "height": captured.height },
-            "overlayClient": { "x": overlay_origin.x, "y": overlay_origin.y, "width": overlay_width, "height": overlay_height },
-        });
-        eprintln!("[recognition] screenshot + BMP/base64 transport preparation: {:.1} ms ({}x{})", started.elapsed().as_secs_f64() * 1000.0, captured.width, captured.height);
+        if viewport_width <= 0.0 || viewport_height <= 0.0 {
+            return Err("Overlay viewport dimensions are unavailable".to_string());
+        }
+        let region_specs = regions.as_array().ok_or("Screenshot regions must be a list")?;
+        let mut region_rects: Vec<(i32, i32, i32, i32)> = Vec::with_capacity(region_specs.len());
+        let mut region_keys: Vec<String> = Vec::with_capacity(region_specs.len());
+        for region in region_specs {
+            let key = region.get("key").and_then(Value::as_str).ok_or("Screenshot region key is missing")?;
+            let x = region.get("x").and_then(Value::as_f64).ok_or("Screenshot region x is missing")?;
+            let y = region.get("y").and_then(Value::as_f64).ok_or("Screenshot region y is missing")?;
+            let right = region.get("right").and_then(Value::as_f64).ok_or("Screenshot region right is missing")?;
+            let bottom = region.get("bottom").and_then(Value::as_f64).ok_or("Screenshot region bottom is missing")?;
+            let left = (overlay_origin.x as f64 + x * overlay_width as f64).round() as i32;
+            let top = (overlay_origin.y as f64 + y * overlay_height as f64).round() as i32;
+            let region_right = (overlay_origin.x as f64 + right * overlay_width as f64).round() as i32;
+            let region_bottom = (overlay_origin.y as f64 + bottom * overlay_height as f64).round() as i32;
+            region_rects.push((left, top, (region_right - left).max(1), (region_bottom - top).max(1)));
+            region_keys.push(key.to_string());
+        }
+        let captured = capture_window_client_regions(&app, binding.target_hwnd, &region_rects)?;
+        let base64_started = Instant::now();
+        let mut region_images = serde_json::Map::new();
+        for (index, bmp) in captured.regions.iter().enumerate() {
+            region_images.insert(
+                region_keys[index].clone(),
+                Value::String(format!("data:image/bmp;base64,{}", base64_encode(bmp))),
+            );
+        }
+        let base64_time = base64_started.elapsed();
+        let json_started = Instant::now();
+        let response = serde_json::json!({ "regions": region_images });
+        let response_bytes = response.to_string().len();
+        let json_time = json_started.elapsed();
+        let native_total_time = started.elapsed();
+        log_recognition_timing(
+            &app,
+            &format!(
+                "capture command native: {:.1} ms; base64 {:.1} ms; response JSON sizing {:.1} ms; ROI count {}; response bytes {}",
+                native_total_time.as_secs_f64() * 1000.0,
+                base64_time.as_secs_f64() * 1000.0,
+                json_time.as_secs_f64() * 1000.0,
+                region_keys.len(),
+                response_bytes,
+            ),
+        );
         return Ok(response);
     }
     #[cfg(not(windows))]
@@ -1685,12 +2004,13 @@ async fn save_ocr_debug_images(app: tauri::AppHandle, category: String, images: 
         let mut saved = 0usize;
         for (index, image) in image_items.iter().enumerate() {
             let data_url = image.get("imageDataUrl").and_then(Value::as_str).ok_or_else(|| "OCR debug image is missing imageDataUrl".to_string())?;
-            let (_, encoded) = data_url.split_once(',').ok_or_else(|| "OCR debug image must be a data URL".to_string())?;
+            let (metadata, encoded) = data_url.split_once(',').ok_or_else(|| "OCR debug image must be a data URL".to_string())?;
+            let extension = if metadata.starts_with("data:image/bmp") { "bmp" } else { "png" };
             let key = image.get("key").and_then(Value::as_str).unwrap_or("image").chars()
                 .filter(|character| character.is_ascii_alphanumeric() || matches!(character, '-' | '_'))
                 .collect::<String>();
             let name = if key.is_empty() { "image" } else { &key };
-            std::fs::write(directory.join(format!("{stamp}-{index}-{name}.png")), decode_base64(encoded)?)
+            std::fs::write(directory.join(format!("{stamp}-{index}-{name}.{extension}")), decode_base64(encoded)?)
                 .map_err(|error| format!("Cannot save OCR debug image: {error}"))?;
             saved += 1;
         }
@@ -2097,6 +2417,7 @@ pub fn run() {
             classify_image_samples,
             recognize_images,
             save_ocr_debug_images,
+            record_recognition_timing,
             capture_overlay_target,
             attach_overlay_target,
             detach_overlay_target,
@@ -2109,5 +2430,9 @@ pub fn run() {
     create_main_window(&app).unwrap_or_else(|error| {
         panic!("[startup] Cannot initialize main window: {error} ({error:?})");
     });
-    app.run(|_, _| {});
+    app.run(|_, event| {
+        if matches!(event, tauri::RunEvent::Exit) {
+            stop_persistent_python_worker();
+        }
+    });
 }
