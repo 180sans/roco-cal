@@ -12,8 +12,8 @@
             "timing": "turn_start"
           },
           "stack": {
-            "enabled": false,
-            "input": false,
+            "enabled": true,
+            "input": true,
             "permanent": false,
             "hint": ""
           },

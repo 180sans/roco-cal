@@ -19,6 +19,23 @@
       ]
     },
     {
+      "id": "wind_mark",
+      "label": "风起印记",
+      "description": "先手攻击时技能威力+20%。",
+      "enabled_field": "wind_mark_triggered",
+      "conditions": [
+        {
+          "mode": "first_attack"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "power_multiplier",
+          "value": 0.2
+        }
+      ]
+    },
+    {
       "id": "attack_mark",
       "label": "攻击印记",
       "stack_field": "attack_mark_stacks",

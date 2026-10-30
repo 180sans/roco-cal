@@ -5,6 +5,44 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 pub type Result<T> = std::result::Result<T, String>;
+
+/// User sections override one level; nested objects are replaced, not deep-merged.
+pub fn merge_config_sections(defaults: &mut Value, user: &Map<String, Value>) {
+    for (key, value) in user {
+        if let (Some(target), Some(values)) = (defaults[key].as_object_mut(), value.as_object()) {
+            target.extend(values.clone());
+        } else {
+            defaults[key] = value.clone();
+        }
+    }
+}
+
+#[cfg(test)]
+mod config_merge_tests {
+    use super::*;
+
+    #[test]
+    fn preserves_defaults_and_unknown_keys() {
+        let mut defaults = json!({"replay": {"a": 1, "b": 2}, "unknown": true});
+        merge_config_sections(&mut defaults, json!({"replay": {"b": 3, "extra": 4}}).as_object().unwrap());
+        assert_eq!(defaults, json!({"replay": {"a": 1, "b": 3, "extra": 4}, "unknown": true}));
+    }
+
+    #[test]
+    fn replaces_nested_objects_without_deep_merge() {
+        let mut defaults = json!({"ui_tokens": {"nested": {"x": 1}}});
+        merge_config_sections(&mut defaults, json!({"ui_tokens": {"nested": {"y": 2}}}).as_object().unwrap());
+        assert_eq!(defaults, json!({"ui_tokens": {"nested": {"y": 2}}}));
+    }
+
+    #[test]
+    fn preserves_scalar_and_null_overrides() {
+        let mut defaults = json!({"scalar": 1, "section": {"a": 1}});
+        merge_config_sections(&mut defaults, json!({"scalar": {"b": false}, "section": null, "new": 0}).as_object().unwrap());
+        assert_eq!(defaults, json!({"scalar": {"b": false}, "section": null, "new": 0}));
+    }
+}
+
 pub fn text(v: &Value) -> &str {
     v.as_str().unwrap_or("")
 }
@@ -389,13 +427,7 @@ impl DesktopData {
     fn configs(&self) -> Result<Value> {
         let mut defaults = load(&self.data().join("configs.json"), json!({}))?;
         let user = load(&self.user.join("configs.json"), json!({}))?;
-        for (k, v) in user.as_object().ok_or("Invalid configs")? {
-            if let (Some(target), Some(values)) = (defaults[k].as_object_mut(), v.as_object()) {
-                target.extend(values.clone());
-            } else {
-                defaults[k] = v.clone();
-            }
-        }
+        merge_config_sections(&mut defaults, user.as_object().ok_or("Invalid configs")?);
         Ok(defaults)
     }
     fn summary(&self) -> Result<Value> {
@@ -425,6 +457,13 @@ impl DesktopData {
             }
             items.push(json!({"id":format!("skill:{}",text(&s["name"])),"kind":"skill","name":text(&s["name"]),
                 "cost":s["cost"],"element":text(&s["element"]),"type":text(&s["type"]),"skill_power":s["skill_power"],"description":text(&s["description"])}));
+        }
+        if !items.iter().any(|item| text(&item["id"]) == "skill:天旋地转") {
+            let skill = self.skills.iter().find(|skill| text(&skill["name"]) == "天旋地转");
+            items.push(json!({"id":"skill:天旋地转","kind":"skill","name":"天旋地转",
+                "cost":skill.map(|skill| &skill["cost"]),"element":skill.map_or("", |skill| text(&skill["element"])),
+                "type":skill.map_or("", |skill| text(&skill["type"])),"skill_power":skill.map(|skill| &skill["skill_power"]),
+                "description":"迸发：技能威力+30。"}));
         }
         for name in ["生物电", "电流刺激"] {
             let t = self
@@ -563,6 +602,30 @@ impl DesktopData {
                     })
                     .collect();
                 Ok(json!({"petSkills":by_pet,"allSkills":all}))
+            }
+            "list-buff-skills" => {
+                let pet_query = text(&payload["petQuery"]).trim();
+                let pet_names: std::collections::HashSet<String> = self
+                    .find(pet_query)
+                    .map(|pet| array(&pet["skills"]).iter().map(|skill| text(&skill["skill_name"]).to_owned()).collect())
+                    .unwrap_or_default();
+                let mut items = vec![];
+                for skill in &self.skills {
+                    let name = text(&skill["name"]);
+                    if name.is_empty() { continue; }
+                    let options = buff_options(skill)?;
+                    if options.is_empty() { continue; }
+                    items.push(json!({
+                        "name": name,
+                        "options": options,
+                        "currentPet": pet_names.contains(name),
+                        "element": skill.get("element").unwrap_or(&json!("")),
+                        "type": skill.get("type").unwrap_or(&json!("")),
+                        "description": text(&skill["description"]),
+                    }));
+                }
+                items.sort_by_key(|item| (!truth(&item["currentPet"]), text(&item["name"]).to_owned()));
+                Ok(json!({"items": items}))
             }
             "list-burst-effects" => self.burst_effects(),
             "save-preset" => self.save_preset(payload),

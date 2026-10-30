@@ -4,6 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "check:regression": "node scripts/check-regression.mjs",
+    "generate:ui-tokens": "node scripts/generate-ui-tokens.mjs",
     "prepare:python": "powershell -ExecutionPolicy Bypass -File scripts/prepare-python-runtime.ps1",
     "dev": "vite --host 127.0.0.1 --port 1420",
     "build": "tsc && vite build",

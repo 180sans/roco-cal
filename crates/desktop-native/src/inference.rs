@@ -16,17 +16,16 @@ fn initialize(resources: &Path) -> Result<()> {
             let dll = resources.join("inference/onnxruntime.dll");
             if !dll.is_file() {
                 return Err(format!(
-                    "ONNX Runtime is missing: {}. Run prepare:python.",
+                    "ONNX Runtime is missing: {}. Run scripts/prepare-inference-runtime.ps1.",
                     dll.display()
                 ));
             }
-            // The embedded Python distribution already ships Microsoft's C++
-            // runtime. Load it by absolute path so a clean Windows installation
-            // does not need a separate Visual C++ redistributable for ONNX.
+            // Native inference ships its own C++ runtime, including in replay
+            // installations that do not contain a Python interpreter.
             let mut dependencies = Vec::new();
             #[cfg(windows)]
             for name in ["vcruntime140.dll", "vcruntime140_1.dll"] {
-                let path = resources.join("python").join(name);
+                let path = resources.join("inference").join(name);
                 // Keep the handles alive for the lifetime of the ONNX runtime.
                 dependencies.push(unsafe { libloading::Library::new(&path) }.map_err(err)?);
             }

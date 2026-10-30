@@ -249,6 +249,7 @@
     "type": "魔攻",
     "description": "造成魔伤，1连击，若敌方有中毒效果，本次技能连击数+2。",
     "skill_power": 35,
+    "combo": 1,
     "cost": 3,
     "triggered": {
       "mode": "poison_effect",

@@ -704,6 +704,94 @@ def _collect_trait_modifiers(
     return modifiers
 
 
+def _trait_manual_modes(runtime):
+    if (
+        not runtime
+        or not runtime.get("triggerable", runtime.get("template") == "special_condition")
+        or not runtime.get("triggered")
+    ):
+        return set()
+    return {
+        condition["mode"]
+        for condition in runtime.get("conditions", [])
+        if isinstance(condition, dict) and isinstance(condition.get("mode"), str)
+    }
+
+
+def _skill_trigger_modes(resolved_cases):
+    return {
+        mode
+        for case in resolved_cases
+        for mode in case.get("_trigger_modes", [])
+        if isinstance(mode, str)
+    }
+
+
+def _collect_branch_modifiers(
+    attacker_trait_runtime, defender_trait_runtime, *,
+    skill_name, skill_element, current_skill_type, skill_effect, active_modes,
+    attacker_manual_modes, defender_manual_modes, skill_trigger_modes,
+    attacker_elements, defender_elements, advantage, weather, attacker_mark_state,
+    mark_resolver,
+):
+    attacker_modifiers = _collect_trait_modifiers(
+        attacker_trait_runtime,
+        owner_side="attacker",
+        current_skill_name=skill_name,
+        current_skill_element=skill_element,
+        current_skill_type=current_skill_type,
+        current_skill_effect=skill_effect,
+        active_modes=active_modes,
+        manual_modes=attacker_manual_modes,
+        skill_trigger_modes=skill_trigger_modes,
+        owner_elements=attacker_elements,
+        current_advantage=advantage,
+        weather=weather,
+    )
+    defender_modifiers = _collect_trait_modifiers(
+        defender_trait_runtime,
+        owner_side="defender",
+        current_skill_name=skill_name,
+        current_skill_element=skill_element,
+        current_skill_type=current_skill_type,
+        current_skill_effect=skill_effect,
+        active_modes=active_modes,
+        manual_modes=defender_manual_modes,
+        skill_trigger_modes=skill_trigger_modes,
+        owner_elements=defender_elements,
+        current_advantage=advantage,
+        weather=weather,
+    )
+    mark_modifiers = mark_resolver(
+        attacker_mark_state or {},
+        skill_name,
+        manual_modes=attacker_manual_modes,
+        active_skill_modes=active_modes,
+        skill_trigger_modes=skill_trigger_modes,
+    )
+    return attacker_modifiers, defender_modifiers, mark_modifiers
+
+
+def _fixed_combo(attacker_modifiers, defender_modifiers):
+    return max(
+        (attacker_modifiers, defender_modifiers),
+        key=lambda modifiers: modifiers["combo_fix_priority"],
+    )["combo_fixed"]
+
+
+def _combo_adjustments(combo_plus, combo_mul, attacker_modifiers, defender_modifiers, mark_modifiers):
+    total_plus = combo_plus + attacker_modifiers["combo_plus"] + defender_modifiers["combo_plus"] + mark_modifiers["combo_plus"]
+    total_mul = combo_mul + attacker_modifiers["combo_mul_delta"] + defender_modifiers["combo_mul_delta"] + mark_modifiers["combo_mul_delta"]
+    return total_plus, total_mul
+
+
+def _resolve_combo_count(base_combo, combo_fix, total_plus, total_mul):
+    # A fixed count constrains an existing combo source; it never creates one.
+    if combo_fix is not None and (base_combo is not None or total_plus or total_mul != 1):
+        return normalize_count(combo_fix), True
+    return normalize_count(((base_combo if base_combo is not None else 1) + total_plus) * total_mul), False
+
+
 def resolve_effective_skill_combos(
     skill_name,
     *,
@@ -740,29 +828,11 @@ def resolve_effective_skill_combos(
     base_skill_type_raw = resolved_cases[0].get("type")
     skill_effect = skill_data.get("effect")
 
-    def trait_manual_modes(runtime):
-        if (
-            not runtime
-            or not runtime.get("triggerable", runtime.get("template") == "special_condition")
-            or not runtime.get("triggered")
-        ):
-            return set()
-        return {
-            condition["mode"]
-            for condition in runtime.get("conditions", [])
-            if isinstance(condition, dict) and isinstance(condition.get("mode"), str)
-        }
-
     from core.will_power import manual_mark_modes, resolve_mark_modifiers
 
-    skill_trigger_modes = {
-        mode
-        for case in resolved_cases
-        for mode in case.get("_trigger_modes", [])
-        if isinstance(mode, str)
-    }
-    attacker_manual_modes = manual_mark_modes(attacker_mark_state or {}) | trait_manual_modes(attacker_trait_runtime)
-    defender_manual_modes = trait_manual_modes(defender_trait_runtime)
+    skill_trigger_modes = _skill_trigger_modes(resolved_cases)
+    attacker_manual_modes = manual_mark_modes(attacker_mark_state or {}) | _trait_manual_modes(attacker_trait_runtime)
+    defender_manual_modes = _trait_manual_modes(defender_trait_runtime)
     combos = []
     for skill_info in resolved_cases:
         active_modes = set(skill_info.get("_trigger_modes", []))
@@ -779,55 +849,49 @@ def resolve_effective_skill_combos(
         mini_advantage = skill_info.get("mini_advantage")
         if mini_advantage is not None:
             advantage = max(advantage, float(mini_advantage))
-        attacker_modifiers = _collect_trait_modifiers(
-            attacker_trait_runtime,
-            owner_side="attacker",
-            current_skill_name=skill_name,
-            current_skill_element=skill_element,
-            current_skill_type=current_skill_type,
-            current_skill_effect=skill_effect,
-            active_modes=active_modes,
-            manual_modes=attacker_manual_modes,
-            skill_trigger_modes=skill_trigger_modes,
-            owner_elements=attacker_elements,
-            current_advantage=advantage,
-            weather=weather,
-        )
-        defender_modifiers = _collect_trait_modifiers(
-            defender_trait_runtime,
-            owner_side="defender",
-            current_skill_name=skill_name,
-            current_skill_element=skill_element,
-            current_skill_type=current_skill_type,
-            current_skill_effect=skill_effect,
-            active_modes=active_modes,
-            manual_modes=defender_manual_modes,
-            skill_trigger_modes=skill_trigger_modes,
-            owner_elements=defender_elements,
-            current_advantage=advantage,
-            weather=weather,
-        )
-        mark_modifiers = resolve_mark_modifiers(
-            attacker_mark_state or {},
-            skill_name,
-            manual_modes=attacker_manual_modes,
-            active_skill_modes=active_modes,
-            skill_trigger_modes=skill_trigger_modes,
+        attacker_modifiers, defender_modifiers, mark_modifiers = _collect_branch_modifiers(
+            attacker_trait_runtime, defender_trait_runtime,
+            skill_name=skill_name, skill_element=skill_element,
+            current_skill_type=current_skill_type, skill_effect=skill_effect,
+            active_modes=active_modes, attacker_manual_modes=attacker_manual_modes,
+            defender_manual_modes=defender_manual_modes, skill_trigger_modes=skill_trigger_modes,
+            attacker_elements=attacker_elements, defender_elements=defender_elements,
+            advantage=advantage, weather=weather, attacker_mark_state=attacker_mark_state,
+            mark_resolver=resolve_mark_modifiers,
         )
         base_combo = normalize_count(skill_info.get("combo"))
-        combo_fix = max(
-            (attacker_modifiers, defender_modifiers),
-            key=lambda modifiers: modifiers["combo_fix_priority"],
-        )["combo_fixed"]
-        total_plus = combo_plus + attacker_modifiers["combo_plus"] + defender_modifiers["combo_plus"] + mark_modifiers["combo_plus"]
-        total_mul = combo_mul + attacker_modifiers["combo_mul_delta"] + defender_modifiers["combo_mul_delta"] + mark_modifiers["combo_mul_delta"]
-        # 固定连击只约束已有连击来源，不给普通单次技能新增连击。
-        if combo_fix is not None and (base_combo is not None or total_plus or total_mul != 1):
-            combo = normalize_count(combo_fix)
-        else:
-            combo = normalize_count(((base_combo if base_combo is not None else 1) + total_plus) * total_mul)
+        combo_fix = _fixed_combo(attacker_modifiers, defender_modifiers)
+        total_plus, total_mul = _combo_adjustments(
+            combo_plus, combo_mul, attacker_modifiers, defender_modifiers, mark_modifiers,
+        )
+        combo, _ = _resolve_combo_count(base_combo, combo_fix, total_plus, total_mul)
         combos.append(combo if combo is not None else 1)
     return combos
+
+
+def _resolve_usage_values(
+    skill_power, combo, power_bonus, usage_index, effects,
+    thunderstorm_unregistered_burst, thunderstorm_burst_effect_count,
+    thunderstorm_burst_power_bonus, *, powers_only=False,
+):
+    """Apply ordered per-use effects; power-only still normalizes every original key."""
+    if thunderstorm_unregistered_burst and usage_index > 0:
+        skill_power = (skill_power or 0) + thunderstorm_burst_effect_count * 10
+        power_bonus += thunderstorm_burst_power_bonus
+    for effect in effects:
+        for key, raw_value in effect.items():
+            if key in {"multiple", "condition", "mode", "override"}:
+                continue
+            value = _normalize_runtime_value(key, raw_value)
+            if key == "skill_power_plus":
+                skill_power = (skill_power or 0) + value * usage_index
+            elif key == "combo_plus" and not powers_only:
+                combo = (combo or 1) + value * usage_index
+            elif key == "skill_power_mul":
+                skill_power = (skill_power or 0) * (value ** usage_index)
+            elif key == "combo_mul" and not powers_only:
+                combo = (combo or 1) * (value ** usage_index)
+    return skill_power, combo, power_bonus
 
 
 def battle_damage(
@@ -985,27 +1049,9 @@ def battle_damage(
     # ========== 5. 按技能情况与 (atk, def) 场景计算伤害 ==========
     from core.will_power import manual_mark_modes, resolve_mark_modifiers
 
-    def trait_manual_modes(runtime):
-        if (
-            not runtime
-            or not runtime.get("triggerable", runtime.get("template") == "special_condition")
-            or not runtime.get("triggered")
-        ):
-            return set()
-        return {
-            condition["mode"]
-            for condition in runtime.get("conditions", [])
-            if isinstance(condition, dict) and isinstance(condition.get("mode"), str)
-        }
-
-    skill_trigger_modes = {
-        mode
-        for case in resolved_cases
-        for mode in case.get("_trigger_modes", [])
-        if isinstance(mode, str)
-    }
-    attacker_manual_modes = manual_mark_modes(attacker_mark_state or {}) | trait_manual_modes(attacker_trait_runtime)
-    defender_manual_modes = trait_manual_modes(defender_trait_runtime)
+    skill_trigger_modes = _skill_trigger_modes(resolved_cases)
+    attacker_manual_modes = manual_mark_modes(attacker_mark_state or {}) | _trait_manual_modes(attacker_trait_runtime)
+    defender_manual_modes = _trait_manual_modes(defender_trait_runtime)
     results = []
     for skill_info in resolved_cases:
         active_modes = set(skill_info.get("_trigger_modes", []))
@@ -1030,53 +1076,19 @@ def battle_damage(
         if mini_advantage is not None:
             advantage = max(advantage, float(mini_advantage))
 
-        attacker_trait_modifiers = _collect_trait_modifiers(
-            attacker_trait_runtime,
-            owner_side="attacker",
-            current_skill_name=skill_name,
-            current_skill_element=skill_element,
-            current_skill_type=current_skill_type_raw,
-            current_skill_effect=skill_effect,
-            active_modes=active_modes,
-            manual_modes=attacker_manual_modes,
-            skill_trigger_modes=skill_trigger_modes,
-            owner_elements=attacker_elements,
-            current_advantage=advantage,
-            weather=weather,
-        )
-        defender_trait_modifiers = _collect_trait_modifiers(
-            defender_trait_runtime,
-            owner_side="defender",
-            current_skill_name=skill_name,
-            current_skill_element=skill_element,
-            current_skill_type=current_skill_type_raw,
-            current_skill_effect=skill_effect,
-            active_modes=active_modes,
-            manual_modes=defender_manual_modes,
-            skill_trigger_modes=skill_trigger_modes,
-            owner_elements=defender_elements,
-            current_advantage=advantage,
-            weather=weather,
-        )
-        attacker_mark_modifiers = resolve_mark_modifiers(
-            attacker_mark_state or {},
-            skill_name,
-            manual_modes=attacker_manual_modes,
-            active_skill_modes=active_modes,
-            skill_trigger_modes=skill_trigger_modes,
+        attacker_trait_modifiers, defender_trait_modifiers, attacker_mark_modifiers = _collect_branch_modifiers(
+            attacker_trait_runtime, defender_trait_runtime,
+            skill_name=skill_name, skill_element=skill_element,
+            current_skill_type=current_skill_type_raw, skill_effect=skill_effect,
+            active_modes=active_modes, attacker_manual_modes=attacker_manual_modes,
+            defender_manual_modes=defender_manual_modes, skill_trigger_modes=skill_trigger_modes,
+            attacker_elements=attacker_elements, defender_elements=defender_elements,
+            advantage=advantage, weather=weather, attacker_mark_state=attacker_mark_state,
+            mark_resolver=resolve_mark_modifiers,
         )
 
-        combined_combo_plus = (
-            combo_plus
-            + attacker_trait_modifiers["combo_plus"]
-            + defender_trait_modifiers["combo_plus"]
-            + attacker_mark_modifiers["combo_plus"]
-        )
-        combined_combo_mul = (
-            combo_mul
-            + attacker_trait_modifiers["combo_mul_delta"]
-            + defender_trait_modifiers["combo_mul_delta"]
-            + attacker_mark_modifiers["combo_mul_delta"]
+        combined_combo_plus, combined_combo_mul = _combo_adjustments(
+            combo_plus, combo_mul, attacker_trait_modifiers, defender_trait_modifiers, attacker_mark_modifiers,
         )
         combined_usage_time_plus = (
             usage_time_plus
@@ -1084,17 +1096,11 @@ def battle_damage(
             + defender_trait_modifiers["usage_time_plus"]
         )
 
-        combo_fix = max(
-            (attacker_trait_modifiers, defender_trait_modifiers),
-            key=lambda modifiers: modifiers["combo_fix_priority"],
-        )["combo_fixed"]
-        # 固定连击只约束已有连击来源，不给普通单次技能新增连击。
-        if combo_fix is not None and (combo is not None or combined_combo_plus or combined_combo_mul != 1):
-            combo = normalize_count(combo_fix)
-        elif combo is not None or combined_combo_plus or combined_combo_mul != 1:
-            base_combo = combo if combo is not None else 1
-            combo = normalize_count((base_combo + combined_combo_plus) * combined_combo_mul)
-            if combo == 1:
+        combo_fix = _fixed_combo(attacker_trait_modifiers, defender_trait_modifiers)
+        if combo is not None or combined_combo_plus or combined_combo_mul != 1:
+            combo, fixed_applied = _resolve_combo_count(combo, combo_fix, combined_combo_plus, combined_combo_mul)
+            # Damage rows retain None for an unfixed single hit; fixed 1 stays 1.
+            if not fixed_applied and combo == 1:
                 combo = None
 
         if usage_time is not None or combined_usage_time_plus:
@@ -1158,20 +1164,11 @@ def battle_damage(
                 usage_count = int(usage_time or 1)
                 if (usage_mode_effects or thunderstorm_unregistered_burst) and usage_count > 1:
                     for usage_index in range(usage_count):
-                        usage_skill_power = skill_power
-                        usage_power_bonus = power_bonus_with_traits
-                        if thunderstorm_unregistered_burst and usage_index > 0:
-                            usage_skill_power = (usage_skill_power or 0) + thunderstorm_burst_effect_count * 10
-                            usage_power_bonus += thunderstorm_burst_power_bonus
-                        for effect in usage_mode_effects:
-                            for key, raw_value in effect.items():
-                                if key in {"multiple", "condition", "mode", "override"}:
-                                    continue
-                                value = _normalize_runtime_value(key, raw_value)
-                                if key == "skill_power_plus":
-                                    usage_skill_power = (usage_skill_power or 0) + value * usage_index
-                                elif key == "skill_power_mul":
-                                    usage_skill_power = (usage_skill_power or 0) * (value ** usage_index)
+                        usage_skill_power, _, usage_power_bonus = _resolve_usage_values(
+                            skill_power, combo, power_bonus_with_traits, usage_index, usage_mode_effects,
+                            thunderstorm_unregistered_burst, thunderstorm_burst_effect_count,
+                            thunderstorm_burst_power_bonus, powers_only=True,
+                        )
                         effective_power_value = calc_effective_skill_power(
                             skill_power=usage_skill_power,
                             power_multiplier=power_multipliers,
@@ -1230,25 +1227,11 @@ def battle_damage(
                 usage_results = []
                 effective_power = None
                 for usage_index in range(usage_count):
-                    usage_skill_power = skill_power
-                    usage_combo = combo
-                    usage_power_bonus = power_bonus_with_traits
-                    if thunderstorm_unregistered_burst and usage_index > 0:
-                        usage_skill_power = (usage_skill_power or 0) + thunderstorm_burst_effect_count * 10
-                        usage_power_bonus += thunderstorm_burst_power_bonus
-                    for effect in usage_mode_effects:
-                        for key, raw_value in effect.items():
-                            if key in {"multiple", "condition", "mode", "override"}:
-                                continue
-                            value = _normalize_runtime_value(key, raw_value)
-                            if key == "skill_power_plus":
-                                usage_skill_power = (usage_skill_power or 0) + value * usage_index
-                            elif key == "combo_plus":
-                                usage_combo = (usage_combo or 1) + value * usage_index
-                            elif key == "skill_power_mul":
-                                usage_skill_power = (usage_skill_power or 0) * (value ** usage_index)
-                            elif key == "combo_mul":
-                                usage_combo = (usage_combo or 1) * (value ** usage_index)
+                    usage_skill_power, usage_combo, usage_power_bonus = _resolve_usage_values(
+                        skill_power, combo, power_bonus_with_traits, usage_index, usage_mode_effects,
+                        thunderstorm_unregistered_burst, thunderstorm_burst_effect_count,
+                        thunderstorm_burst_power_bonus,
+                    )
 
                     current_damage, _, current_effective_power = calculate_damage(
                         atk=atk,

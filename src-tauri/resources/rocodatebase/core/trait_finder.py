@@ -1,40 +1,8 @@
-import json
-import os
 from copy import deepcopy
 from typing import Any
 
 from core.find_pets import pets_dataset
-from core.trait_library import resolve_trait_data_for_pet
-
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-trait_dir = os.path.join(BASE_DIR, "data", "pets_trait_json")
-
-
-def _build_trait_filename(pet_data: dict[str, Any]) -> str | None:
-    pet_id = pet_data.get("id")
-    pet_name = pet_data.get("name")
-    if not pet_id or not pet_name:
-        return None
-    return f"{pet_id}{pet_name}.json"
-
-
-def _load_trait_data_for_pet(pet_data: dict[str, Any]) -> dict[str, Any] | None:
-    trait_data = resolve_trait_data_for_pet(pet_data)
-    if trait_data:
-        return trait_data
-
-    filename = _build_trait_filename(pet_data)
-    if filename:
-        filepath = os.path.join(trait_dir, filename)
-        if os.path.exists(filepath):
-            with open(filepath, "r", encoding="utf-8") as file:
-                return json.load(file)
-
-    trait_summary = pet_data.get("特性")
-    if isinstance(trait_summary, dict):
-        return {"特性": deepcopy(trait_summary)}
-    return None
+from core.trait_library import load_battle_trait_data_for_pet as _load_trait_data_for_pet
 
 
 def _get_battle_effect(trait_data: dict[str, Any] | None) -> dict[str, Any]:

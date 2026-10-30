@@ -138,7 +138,8 @@ select {
   width: 100%;
 }
 
-.overlay-attached .team-layout {
+.overlay-attached .team-layout,
+.overlay-attached .battle-page.plugin-mode {
   inset: 0;
   position: fixed;
 }
@@ -149,6 +150,9 @@ select {
   position: fixed;
   top: 44px;
   z-index: 25;
+  border-radius: 8px;
+  color: #fff;
+  gap: 6px;
 }
 
 .overlay-attached .app-header {
@@ -188,19 +192,15 @@ select {
 
 /* 插件叠加层运行时，应用页面导航会固定压在目标窗口顶部；
    选择器和快捷计算打开时这些导航按钮仍露在叠加层外沿。 */
-.app-shell.overlay-attached:has(> .battle-view:not([hidden]) > .battle-page.plugin-mode) > .app-header .tabs {
+.app-shell.overlay-attached:has(> .battle-view:not([hidden]) > .battle-page.plugin-mode) > .app-header .tabs,
+.overlay-attached .app-header .weather-panel,
+.overlay-attached .team-layout-actions-more summary::-webkit-details-marker,
+body:has(.battle-page.mixed-active) .app-header,
+.battle-page.mixed-active:not(.toolbar-open) .team-layout-actions,
+.battle-page.plugin-mode .floating-team-panel:has(.trait-expanded-content)::after,
+.battle-page.plugin-mode .team-buff-panel[open]::after,
+.team-layout-actions-more summary::-webkit-details-marker {
   display: none;
-}
-
-.overlay-attached .app-header .weather-panel {
-  display: none;
-}
-
-.overlay-attached .overlay-header-toggle {
-  left: auto;
-  position: static;
-  top: auto;
-  transform: none;
 }
 
 .overlay-attached .team-layout-actions {
@@ -208,22 +208,22 @@ select {
   background: rgba(18, 24, 31, 0.74);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
-  color: #fff;
   display: grid;
-  gap: 6px;
   padding: 8px 10px;
 }
 
 .overlay-attached .team-layout-actions-main,
-.overlay-attached .team-layout-actions-more-grid {
+.overlay-attached .team-layout-actions-more-grid,
+.app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions .team-layout-actions-main,
+.app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions .team-layout-actions-more-grid {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.overlay-attached .team-layout-actions-more {
+.overlay-attached .team-layout-actions-more,
+.team-layout-actions-more {
   min-width: 0;
 }
 
@@ -235,26 +235,12 @@ select {
   user-select: none;
 }
 
-.overlay-attached .team-layout-actions-more summary::-webkit-details-marker {
-  display: none;
-}
-
 .overlay-attached .team-layout-actions-more-grid {
   margin-top: 6px;
 }
 
 .overlay-attached .team-layout-actions :is(button, input, select, summary, label, span) {
   color: inherit;
-}
-
-.overlay-attached .battle-page.plugin-mode {
-  inset: 0;
-  position: fixed;
-}
-
-body:has(.battle-page.mixed-active) .app-header,
-.battle-page.mixed-active:not(.toolbar-open) .team-layout-actions {
-  display: none;
 }
 
 /* F. 运行态召回把手：工具条里的解绑窗口 / 天气 / 保存布局都没有热键，必须留一个入口。 */
@@ -329,22 +315,12 @@ body:has(.battle-page.mixed-active) .app-header,
   padding: 8px 10px;
   position: relative;
   z-index: 25;
-}
-
-/* 未绑定时也使用和绑定态相同的网格排版；操作栏自身换行后，
-   普通文档流会把下方的插件布局整体推到操作栏底部。 */
-.app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions {
   display: grid;
   gap: 6px;
 }
 
-.app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions .team-layout-actions-main,
-.app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions .team-layout-actions-more-grid {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
+/* 未绑定时也使用和绑定态相同的网格排版；操作栏自身换行后，
+   普通文档流会把下方的插件布局整体推到操作栏底部。 */
 
 .app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions :is(button, input, select) {
   background: var(--ov-field) !important;
@@ -352,12 +328,17 @@ body:has(.battle-page.mixed-active) .app-header,
   color: var(--ov-field-text) !important;
 }
 
-.app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions :is(summary, label, span) {
+.app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions :is(summary, label, span),
+.battle-page.immersive-mode.plugin-mode :is(.battle-health-readout, .battle-power-readout) span {
   color: var(--ov-text) !important;
 }
 
 .app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions button.active,
-.app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions .mode-switch button.active {
+.app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions .mode-switch button.active,
+.battle-page.immersive-mode.plugin-mode .team-action-shortcuts button[aria-pressed="true"],
+.battle-page.immersive-mode.plugin-mode .team-action-shortcuts button[aria-pressed="true"]:hover,
+.battle-page.immersive-mode.plugin-mode .team-bonus-toolbar .bonus-tool-button[aria-pressed="true"],
+.battle-page.immersive-mode.plugin-mode .team-bonus-toolbar .bonus-tool-button[aria-pressed="true"]:hover {
   background: var(--ov-accent-bg) !important;
   border-color: var(--ov-accent-border) !important;
   color: #f0fff8 !important;
@@ -369,15 +350,9 @@ body:has(.battle-page.mixed-active) .app-header,
   position: relative;
 }
 
-.battle-page.plugin-mode.plugin-unattached :is(
-  .team-action-floating,
-  .floating-team-panel,
-  .skill-card-floating,
-  .bonus-tool-floating,
-  .result-floating,
-  .required-power-panel,
-  .recognition-status-panel
-) {
+.battle-page.plugin-mode.plugin-unattached :is( .team-action-floating, .floating-team-panel, .skill-card-floating, .bonus-tool-floating, .result-floating, .required-power-panel, .recognition-status-panel ),
+.battle-page.plugin-mode.plugin-unattached .calibration-results,
+.battle-page.plugin-mode.plugin-unattached .plugin-readout-layer {
   position: absolute;
 }
 
@@ -419,27 +394,21 @@ body:has(.battle-page.mixed-active) .app-header,
 
 /* 悬停宿主面板时浮回来，否则无法点空位选精灵 / 选技能。 */
 .battle-page.plugin-mode.mixed-active [data-panel-state]:hover .slot.is-empty,
-.battle-page.plugin-mode.mixed-active [data-panel-state]:focus-within .slot.is-empty {
+.battle-page.plugin-mode.mixed-active [data-panel-state]:focus-within .slot.is-empty,
+.plugin-mode .roster:hover,
+.plugin-mode .roster:focus-within {
   opacity: 1;
 }
 
-/* ===========================================================================
-   P1/P2 展开浮层
-   特性说明与 buff 输入网格展开后不再原地撑开，而是脱离宿主面板的固定尺寸
-   （FloatingTeamPanel 内联 height、team-buff-panel 的 --*-buff-height）浮出成独立层。
-   仅插件模式生效；常规模式与预设页保持原地展开。
-   =========================================================================== */
-
 /* 展开时解除宿主面板的裁剪，并抬到其他面板之上。 */
-.battle-page.plugin-mode .floating-team-panel:has(.trait-expanded-content) {
+.battle-page.plugin-mode .floating-team-panel:has(.trait-expanded-content),
+.battle-page.plugin-mode .roster .slot:has(.family-form-select-compact) {
   overflow: visible;
-  z-index: 40;
 }
 
 .battle-page.plugin-mode .team-buff-panel[open] {
   overflow: visible;
   min-height: 0 !important;
-  z-index: 40;
 }
 
 .battle-page.plugin-mode .trait-expanded-content,
@@ -466,6 +435,12 @@ body:has(.battle-page.mixed-active) .app-header,
   width: max-content;
 }
 
+.battle-page.plugin-mode .trait-expanded-name {
+  display: block;
+  font-size: 12px;
+  margin: 0 0 4px;
+}
+
 .battle-page.plugin-mode .team-buff-grid {
   background: rgba(20, 28, 39, 0.94);
   border: 1px solid var(--ov-panel-border);
@@ -483,13 +458,11 @@ body:has(.battle-page.mixed-active) .app-header,
   left: calc(100% + 8px);
 }
 
-.battle-page.plugin-mode .team-right-buff .team-buff-grid {
-  right: calc(100% + 8px);
-}
-
 /* 右侧面板反向对齐，避免贴边溢出屏幕。 */
 .battle-page.plugin-mode .team-right-trait .trait-expanded-content,
-.battle-page.plugin-mode .team-right-buff .team-buff-grid {
+.battle-page.plugin-mode .team-right-buff .team-buff-grid,
+.battle-page.plugin-mode .team-buff-panel[data-popup-side="left"] .team-buff-grid,
+.battle-page.plugin-mode .team-slot-section[data-popup-side="left"] .trait-expanded-content {
   left: auto;
   right: calc(100% + 8px);
 }
@@ -503,19 +476,6 @@ body:has(.battle-page.mixed-active) .app-header,
 .battle-page.plugin-mode .team-slot-section[data-popup-flip="up"] .trait-expanded-content {
   bottom: calc(100% + 7px);
   top: auto;
-}
-
-.battle-page.plugin-mode .team-buff-panel[data-popup-side="left"] .team-buff-grid,
-.battle-page.plugin-mode .team-slot-section[data-popup-side="left"] .trait-expanded-content {
-  left: auto;
-  right: calc(100% + 8px);
-}
-
-/* 指回宿主面板的小箭头。画在宿主上而不是浮层上，
-   否则会被浮层自身的 overflow: auto 裁掉。 */
-.battle-page.plugin-mode .floating-team-panel:has(.trait-expanded-content)::after,
-.battle-page.plugin-mode .team-buff-panel[open]::after {
-  display: none;
 }
 
 /* 浮层内正文放宽，展开后不再是十几行的窄条。 */
@@ -556,6 +516,21 @@ body:has(.battle-page.mixed-active) .app-header,
 /* 收起态一行只有三个格子；间距收窄，值列允许收缩，窄面板不再被内容顶出去。 */
 .battle-page.plugin-mode .team-buff-panel summary {
   gap: 6px;
+}
+
+.battle-page.plugin-mode .team-buff-panel summary .team-buff-summary-title {
+  flex: 0 0 18px;
+  justify-content: center;
+}
+
+.battle-page.plugin-mode .team-buff-panel summary .buff-reset-button,
+.battle-page.plugin-mode .floating-team-panel .trait-reset-button {
+  flex-basis: 20px !important;
+  height: 20px;
+  max-width: 20px !important;
+  min-width: 20px !important;
+  padding: 2px !important;
+  width: 20px !important;
 }
 
 .battle-page.plugin-mode .buff-summary-values,
@@ -608,21 +583,21 @@ body:has(.battle-page.mixed-active) .app-header,
   align-items: flex-start;
   display: flex;
   flex-direction: row;
-  gap: 6px;
+  gap: 3px;
   height: auto;
   min-height: var(--trait-row-height);
 }
 
 .battle-page.plugin-mode .floating-team-panel:is(.team-left-trait, .team-right-trait) .trait-summary-button.compact {
   box-sizing: border-box;
-  flex: 0 0 38px;
+  flex: 0 0 18px;
   height: var(--trait-row-height);
   margin-bottom: 0;
   min-height: var(--trait-row-height);
-  max-width: 38px;
-  min-width: 38px;
+  max-width: 18px;
+  min-width: 18px;
   overflow: hidden;
-  width: 38px;
+  width: 18px;
 }
 
 .battle-page.plugin-mode .floating-team-panel:is(.team-left-trait, .team-right-trait) .trait-summary-button strong {
@@ -668,21 +643,19 @@ body:has(.preset-shell) {
 
 .app-header.overlay-header button,
 .app-header.overlay-header input,
-.app-header.overlay-header select {
+.app-header.overlay-header select,
+.team-layout > .roster button,
+.team-layout > .roster input,
+.team-layout > .roster select,
+.team-layout > .team-bonus-toolbar button,
+.team-layout > .team-buff-panel button,
+.team-layout > .team-buff-panel input,
+.team-layout > .team-buff-panel select,
+.team-layout > .team-skill-panel button,
+.team-layout > .team-skill-panel input,
+.team-layout > .team-skill-panel select,
+.team-layout > .team-skill-panel summary {
   cursor: pointer;
-}
-
-.overlay-toggle.active {
-  background: #b44b28;
-  border-color: #8e381e;
-  color: #fff;
-}
-
-.overlay-header-toggle {
-  left: 124px;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
 }
 
 .app-header .weather-panel {
@@ -749,18 +722,10 @@ body:has(.preset-shell) {
   gap: 6px;
 }
 
-.team-layout-actions-more {
-  min-width: 0;
-}
-
 .team-layout-actions-more summary {
   cursor: pointer;
   list-style: none;
   user-select: none;
-}
-
-.team-layout-actions-more summary::-webkit-details-marker {
-  display: none;
 }
 
 .team-layout-actions-more-grid {
@@ -791,456 +756,10 @@ body:has(.preset-shell) {
   width: 118px;
 }
 
-.battle-view[hidden] {
+.battle-view[hidden],
+.normal-mode .team-layout > .team-weather,
+body:has(.plugin-mode) .app-header .weather-panel {
   display: none;
-}
-
-.replay-page {
-  margin: 0;
-  max-width: 1360px;
-}
-
-.replay-header,
-.replay-events header {
-  align-items: center;
-  display: flex;
-  gap: 12px;
-  justify-content: space-between;
-}
-
-.replay-header {
-  margin-bottom: 12px;
-}
-
-.replay-header h2,
-.replay-sidebar h3,
-.replay-events h3 {
-  font-size: 16px;
-  margin: 0;
-}
-
-.replay-header p,
-.replay-sidebar p,
-.replay-events > p {
-  color: #667789;
-  font-size: 12px;
-  margin: 5px 0 0;
-}
-
-.replay-file-button {
-  align-items: center;
-  background: #246b58;
-  border: 1px solid #1e5b4b;
-  border-radius: 6px;
-  color: #fff;
-  cursor: pointer;
-  display: inline-flex;
-  font-size: 13px;
-  font-weight: 700;
-  height: 30px;
-  padding: 0 10px;
-  white-space: nowrap;
-}
-
-.replay-file-button input {
-  display: none;
-}
-
-.replay-layout {
-  align-items: start;
-  display: grid;
-  gap: 12px;
-  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.36fr);
-}
-
-.replay-workspace,
-.replay-sidebar section,
-.replay-events {
-  background: #fff;
-  border: 1px solid #d8e0e8;
-  border-radius: 8px;
-}
-
-.video-stage {
-  aspect-ratio: 16 / 9;
-  background: #18232c;
-  overflow: hidden;
-  position: relative;
-  user-select: none;
-}
-
-.video-stage video {
-  display: block;
-  height: 100%;
-  object-fit: contain;
-  pointer-events: none;
-  width: 100%;
-}
-
-.video-empty {
-  align-items: center;
-  color: #b6c4cf;
-  display: flex;
-  font-size: 13px;
-  height: 100%;
-  justify-content: center;
-}
-
-.roi {
-  background: rgba(43, 127, 213, 0.14);
-  border: 2px solid #75b1ed;
-  border-radius: 2px;
-  cursor: grab;
-  height: auto;
-  padding: 0;
-  position: absolute;
-}
-
-.roi.active {
-  background: rgba(36, 107, 88, 0.2);
-  border-color: #42c397;
-}
-
-.roi span {
-  background: #1f536f;
-  color: #fff;
-  font-size: 11px;
-  left: -2px;
-  line-height: 18px;
-  padding: 0 4px;
-  position: absolute;
-  top: -20px;
-  white-space: nowrap;
-}
-
-.roi.active span {
-  background: #246b58;
-}
-
-.replay-controls {
-  align-items: center;
-  border-top: 1px solid #d8e0e8;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px;
-}
-
-.replay-progress {
-  align-items: center;
-  border-top: 1px solid #edf1f4;
-  display: grid;
-  gap: 8px;
-  grid-template-columns: 40px minmax(0, 1fr) 40px;
-  padding: 0 10px 9px;
-}
-
-.replay-progress span {
-  color: #667789;
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-}
-
-.replay-progress input,
-.region-size-control input {
-  accent-color: #246b58;
-  cursor: pointer;
-  height: 18px;
-  padding: 0;
-  width: 100%;
-}
-
-.replay-controls button.active,
-.replay-sidebar button.active {
-  background: #246b58;
-  border-color: #1e5b4b;
-  color: #fff;
-}
-
-.replay-controls span {
-  color: #667789;
-  font-size: 12px;
-  margin-left: auto;
-  max-width: 230px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.replay-sidebar {
-  align-content: start;
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.replay-sidebar section {
-  padding: 10px;
-}
-
-.replay-sidebar section:first-child {
-  display: grid;
-  gap: 6px;
-}
-
-.replay-region-panel > button {
-  width: 100%;
-}
-
-.replay-flow dl {
-  margin: 0;
-}
-
-.replay-flow dl div {
-  align-items: start;
-  border-top: 1px solid #edf1f4;
-  display: grid;
-  gap: 8px;
-  grid-template-columns: 46px minmax(0, 1fr);
-  padding: 6px 0;
-}
-
-.replay-flow dt,
-.replay-flow dd {
-  font-size: 12px;
-  margin: 0;
-}
-
-.replay-flow dt {
-  color: #667789;
-}
-
-.replay-flow dd {
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-.region-size-control {
-  color: #526374;
-  display: grid;
-  font-size: 12px;
-  gap: 2px;
-  margin-top: 3px;
-}
-
-.replay-settings-actions {
-  display: grid;
-  gap: 6px;
-  grid-template-columns: 1fr 1fr;
-  margin-top: 4px;
-}
-
-.replay-sidebar h3 {
-  margin-bottom: 8px;
-}
-
-.replay-sidebar dl {
-  margin: 0;
-}
-
-.replay-sidebar dl div {
-  border-top: 1px solid #edf1f4;
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-}
-
-.replay-sidebar dt,
-.replay-sidebar dd {
-  font-size: 12px;
-  margin: 0;
-}
-
-.replay-sidebar dt {
-  color: #667789;
-}
-
-.replay-sidebar dd {
-  font-weight: 700;
-}
-
-.replay-result-columns,
-.replay-number-results dl div {
-  align-items: center;
-  display: grid;
-  gap: 4px;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 0.72fr) minmax(0, 0.72fr);
-}
-
-.replay-result-columns {
-  color: #667789;
-  font-size: 11px;
-  padding-bottom: 3px;
-  text-align: right;
-}
-
-.replay-number-results dd {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  text-align: right;
-}
-
-.replay-number-results dl .replay-analysis-row {
-  grid-template-columns: minmax(0, 1fr) auto;
-}
-
-.replay-number-actions {
-  align-items: center;
-  display: grid;
-  gap: 6px;
-  grid-template-columns: minmax(0, 1fr) auto;
-  margin-bottom: 7px;
-}
-
-.replay-number-actions label {
-  align-items: center;
-  color: #526374;
-  display: inline-flex;
-  font-size: 12px;
-  gap: 4px;
-  white-space: nowrap;
-}
-
-.replay-number-actions input {
-  margin: 0;
-}
-
-.numeric-sample-panel {
-  border-top: 1px solid #d8e0e8;
-  display: grid;
-  gap: 6px;
-  margin-top: 8px;
-  padding-top: 8px;
-}
-
-.numeric-sample-panel h4 {
-  font-size: 12px;
-  margin: 0;
-}
-
-.numeric-sample-row {
-  align-items: center;
-  display: grid;
-  gap: 4px;
-  grid-template-columns: 48px minmax(0, 1fr) auto;
-}
-
-.numeric-sample-row label,
-.numeric-sample-row input,
-.numeric-sample-row button {
-  font-size: 11px;
-  min-width: 0;
-}
-
-.numeric-sample-row input {
-  width: 100%;
-}
-
-.numeric-sample-row button {
-  padding-left: 6px;
-  padding-right: 6px;
-}
-
-.ocr-debug {
-  border-top: 1px solid #edf1f4;
-  display: grid;
-  font-size: 12px;
-  gap: 4px;
-  margin-top: 6px;
-  padding-top: 7px;
-}
-
-.ocr-debug code {
-  background: #f4f7f9;
-  border: 1px solid #d8e0e8;
-  border-radius: 4px;
-  display: block;
-  min-height: 24px;
-  overflow-wrap: anywhere;
-  padding: 4px 5px;
-}
-
-.ocr-sample-panel {
-  border-top: 1px solid #d8e0e8;
-  display: grid;
-  gap: 6px;
-  grid-column: 1 / -1;
-  padding: 8px 10px 9px;
-}
-
-.ocr-sample-panel h3 {
-  font-size: 16px;
-  margin: 0 0 6px;
-}
-
-.ocr-sample-panel p {
-  color: #667789;
-  font-size: 12px;
-  margin: 0;
-}
-
-.ocr-sample-panel input {
-  width: 100%;
-}
-
-.ocr-sample-panel button {
-  justify-self: start;
-}
-
-.image-sample-grid {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.image-sample-entry {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-
-.image-sample-entry > div {
-  display: grid;
-  gap: 6px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.image-sample-entry > p {
-  margin: 0;
-}
-
-.sample-message {
-  overflow-wrap: anywhere;
-}
-
-.replay-events {
-  margin-top: 12px;
-  padding: 10px;
-}
-
-.replay-events ol {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-}
-
-.replay-events li {
-  align-items: center;
-  border-top: 1px solid #edf1f4;
-  display: grid;
-  font-size: 12px;
-  gap: 8px;
-  grid-template-columns: 42px 44px 1fr;
-  padding: 7px 0;
-}
-
-.replay-events time {
-  color: #667789;
-  font-variant-numeric: tabular-nums;
-}
-
-.replay-events strong {
-  color: #246b58;
 }
 
 .settings-page {
@@ -1554,12 +1073,7 @@ body:has(.preset-shell) {
 }
 
 .battle-page.plugin-mode.calibration-active .team-layout > :not(.detection-calibration, .calibration-results, .detection-toast),
-.battle-page.plugin-mode.calibration-active .team-layout > :not(.detection-calibration, .calibration-results, .detection-toast) * {
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
-/* 隐藏面板时保留几何尺寸，恢复显示继续使用已保存的布局。 */
+.battle-page.plugin-mode.calibration-active .team-layout > :not(.detection-calibration, .calibration-results, .detection-toast) *,
 .battle-page.plugin-mode[data-plugin-hidden~="weather"] :is(.team-weather, .team-weather *),
 .battle-page.plugin-mode[data-plugin-hidden~="left-buff"] :is(.team-left-buff, .team-left-buff *),
 .battle-page.plugin-mode[data-plugin-hidden~="right-buff"] :is(.team-right-buff, .team-right-buff *),
@@ -1579,6 +1093,8 @@ body:has(.preset-shell) {
   visibility: hidden !important;
   pointer-events: none !important;
 }
+
+/* 隐藏面板时保留几何尺寸，恢复显示继续使用已保存的布局。 */
 
 .battle-page.plugin-mode[data-plugin-hidden~="left-willpower"] .team-left-bonus-toolbar .willpower,
 .battle-page.plugin-mode[data-plugin-hidden~="right-willpower"] .team-right-bonus-toolbar .willpower,
@@ -1606,8 +1122,6 @@ body:has(.preset-shell) {
   width: min(440px, 85vw);
   z-index: 1100;
 }
-
-.battle-page.plugin-mode.plugin-unattached .calibration-results { position: absolute; }
 .calibration-results header { align-items: center; display: flex; gap: 12px; justify-content: space-between; }
 .calibration-results p { font-size: 12px; margin: 8px 0; }
 .calibration-result-grid { display: grid; gap: 6px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1667,10 +1181,6 @@ body:has(.preset-shell) {
   z-index: 1500;
 }
 
-.battle-page.plugin-mode.plugin-unattached .plugin-readout-layer {
-  position: absolute;
-}
-
 .plugin-readout-layer .draggable-readout {
   opacity: 1;
   pointer-events: auto;
@@ -1722,10 +1232,6 @@ body:has(.preset-shell) {
   box-shadow: var(--ov-panel-shadow);
   color: var(--ov-text) !important;
 }
-
-.battle-page.immersive-mode.plugin-mode :is(.battle-health-readout, .battle-power-readout) span {
-  color: var(--ov-text) !important;
-}
 .draggable-readout { cursor: move; touch-action: none; user-select: none; }
 
 .team-layout > .roster,
@@ -1734,6 +1240,8 @@ body:has(.preset-shell) {
 .team-layout > .team-skill-panel {
   position: absolute;
   margin: 0;
+  cursor: move;
+  touch-action: none;
 }
 
 .team-layout .team-left-roster { left: var(--left-roster-x); top: var(--left-roster-y); z-index: var(--left-roster-z); }
@@ -1783,33 +1291,11 @@ body:has(.preset-shell) {
 /* 常规模式：计算 / 应用 buff 栏优先显示（选精灵等弹窗和对战结果窗口仍在它之上）。 */
 .battle-page.normal-mode .normal-team-action { z-index: 19; }
 
-.team-layout > .roster,
-.team-layout > .team-bonus-toolbar,
-.team-layout > .team-buff-panel,
-.team-layout > .team-skill-panel {
-  cursor: move;
-  touch-action: none;
-}
-
 .team-layout > .team-weather {
   cursor: move;
   margin: 0;
   position: absolute;
   touch-action: none;
-}
-
-.team-layout > .roster button,
-.team-layout > .roster input,
-.team-layout > .roster select,
-.team-layout > .team-bonus-toolbar button,
-.team-layout > .team-buff-panel button,
-.team-layout > .team-buff-panel input,
-.team-layout > .team-buff-panel select,
-.team-layout > .team-skill-panel button,
-.team-layout > .team-skill-panel input,
-.team-layout > .team-skill-panel select,
-.team-layout > .team-skill-panel summary {
-  cursor: pointer;
 }
 
 .mode-switch {
@@ -1844,10 +1330,6 @@ body:has(.preset-shell) {
 .normal-mode .team-layout > .team-skill-panel {
   margin: 0;
   position: static;
-}
-
-.normal-mode .team-layout > .team-weather {
-  display: none;
 }
 
 .normal-team-action {
@@ -1914,14 +1396,6 @@ body:has(.preset-shell) {
   border-color: rgba(111, 173, 222, 0.86);
 }
 
-.plugin-mode [class*="team-right-skill-"] .team-skill-card {
-  border-color: rgba(224, 133, 142, 0.86);
-}
-
-.plugin-mode [class*="team-left-skill-"] .team-skill-card {
-  border-color: rgba(111, 173, 222, 0.86);
-}
-
 .plugin-mode .roster .slot-grid {
   grid-template-columns: minmax(0, max-content);
   justify-content: start;
@@ -1942,11 +1416,6 @@ body:has(.preset-shell) {
   font-size: 11px;
   height: 22px;
   width: 78px;
-}
-
-.plugin-mode .roster:hover,
-.plugin-mode .roster:focus-within {
-  opacity: 1;
 }
 
 /* 统一浮层布局只保留控件本体，避免容器和内容卡片重复占据游戏画面。 */
@@ -1983,6 +1452,7 @@ body:has(.preset-shell) {
 
 .battle-page.plugin-mode .result-floating {
   max-height: 365px;
+  width: 435px;
 }
 
 .battle-page.plugin-mode .bonus-tool-floating.dedication {
@@ -2000,28 +1470,17 @@ body:has(.preset-shell) {
   width: var(--thunderstorm-panel-width);
 }
 
-.battle-page.plugin-mode .result-floating {
-  width: 435px;
-}
-
 .battle-page.plugin-mode .required-power-panel {
   width: 390px;
 }
 
-.plugin-mode .team-layout > .team-left-roster { height: var(--left-roster-height); width: var(--left-roster-width); }
-.plugin-mode .team-layout > .team-right-roster { height: var(--right-roster-height); width: var(--right-roster-width); }
-.plugin-mode .team-layout > .team-left-bonus-toolbar { height: var(--left-bonus-height); width: var(--left-bonus-width); }
-.plugin-mode .team-layout > .team-right-bonus-toolbar { height: var(--right-bonus-height); width: var(--right-bonus-width); }
-.plugin-mode .team-layout > .team-left-buff { height: var(--left-buff-height); width: var(--left-buff-width); }
-.plugin-mode .team-layout > .team-right-buff { height: var(--right-buff-height); width: var(--right-buff-width); }
+.plugin-mode .team-layout > .team-left-roster { height: var(--left-roster-height); width: var(--left-roster-width); --plugin-content-x: var(--left-roster-content-x); --plugin-content-y: var(--left-roster-content-y); }
+.plugin-mode .team-layout > .team-right-roster { height: var(--right-roster-height); width: var(--right-roster-width); --plugin-content-x: var(--right-roster-content-x); --plugin-content-y: var(--right-roster-content-y); }
+.plugin-mode .team-layout > .team-left-bonus-toolbar { height: var(--left-bonus-height); width: var(--left-bonus-width); --plugin-content-x: var(--left-bonus-content-x); --plugin-content-y: var(--left-bonus-content-y); }
+.plugin-mode .team-layout > .team-right-bonus-toolbar { height: var(--right-bonus-height); width: var(--right-bonus-width); --plugin-content-x: var(--right-bonus-content-x); --plugin-content-y: var(--right-bonus-content-y); }
+.plugin-mode .team-layout > .team-left-buff { height: var(--left-buff-height); width: var(--left-buff-width); --plugin-content-x: var(--left-buff-content-x); --plugin-content-y: var(--left-buff-content-y); }
+.plugin-mode .team-layout > .team-right-buff { height: var(--right-buff-height); width: var(--right-buff-width); --plugin-content-x: var(--right-buff-content-x); --plugin-content-y: var(--right-buff-content-y); }
 .plugin-mode .team-layout > .team-weather { height: var(--weather-height); width: var(--weather-width); }
-
-.plugin-mode .team-layout > .team-left-roster { --plugin-content-x: var(--left-roster-content-x); --plugin-content-y: var(--left-roster-content-y); }
-.plugin-mode .team-layout > .team-right-roster { --plugin-content-x: var(--right-roster-content-x); --plugin-content-y: var(--right-roster-content-y); }
-.plugin-mode .team-layout > .team-left-bonus-toolbar { --plugin-content-x: var(--left-bonus-content-x); --plugin-content-y: var(--left-bonus-content-y); }
-.plugin-mode .team-layout > .team-right-bonus-toolbar { --plugin-content-x: var(--right-bonus-content-x); --plugin-content-y: var(--right-bonus-content-y); }
-.plugin-mode .team-layout > .team-left-buff { --plugin-content-x: var(--left-buff-content-x); --plugin-content-y: var(--left-buff-content-y); }
-.plugin-mode .team-layout > .team-right-buff { --plugin-content-x: var(--right-buff-content-x); --plugin-content-y: var(--right-buff-content-y); }
 .plugin-mode .team-layout > .team-left-skills { --plugin-content-x: var(--left-skills-content-x); --plugin-content-y: var(--left-skills-content-y); }
 .plugin-mode .team-layout > .team-right-skills { --plugin-content-x: var(--right-skills-content-x); --plugin-content-y: var(--right-skills-content-y); }
 .plugin-mode .team-layout > .team-weather { --plugin-content-x: var(--weather-content-x); --plugin-content-y: var(--weather-content-y); }
@@ -2042,10 +1501,7 @@ body:has(.preset-shell) {
 
 .plugin-mode .team-layout > [class*="team-left-"],
 .plugin-mode .floating-team-panel[class*="team-left-"],
-.plugin-mode [class*="team-left-skill-"] .team-skill-card {
-  border-color: transparent !important;
-}
-
+.plugin-mode [class*="team-left-skill-"] .team-skill-card,
 .plugin-mode .team-layout > [class*="team-right-"],
 .plugin-mode .floating-team-panel[class*="team-right-"],
 .plugin-mode [class*="team-right-skill-"] .team-skill-card {
@@ -2107,19 +1563,6 @@ body:has(.preset-shell) {
   gap: 3px;
 }
 
-.plugin-mode .floating-team-panel .slot-devolution-control .number-input-control {
-  width: 48px;
-}
-
-.plugin-mode .floating-team-panel .slot-devolution-control .num-input,
-.plugin-mode .floating-team-panel .slot-mega-control select {
-  height: 22px;
-}
-
-.plugin-mode .floating-team-panel .slot-mega-control select {
-  width: 58px;
-}
-
 .plugin-mode .speed-line {
   background: #fff;
   border: 1px solid #687686;
@@ -2132,7 +1575,9 @@ body:has(.preset-shell) {
 }
 
 .plugin-mode .speed-line,
-.plugin-mode .speed-line :is(strong, span, div) {
+.plugin-mode .speed-line :is(strong, span, div),
+.plugin-mode .slot-iv-popover :is(summary, label, span, .ui-field-title),
+.bonus-tool-fields .field-label {
   color: #111;
 }
 
@@ -2204,7 +1649,11 @@ body:has(.preset-shell) {
 }
 
 /* 速度 buff 控件优先接收点击，避免拖动条和缩放边缘覆盖箭头。 */
-.battle-page.plugin-mode .speed-buffs > .plugin-drag-zone {
+.battle-page.plugin-mode .speed-buffs > .plugin-drag-zone,
+.watch-skill-item > span,
+.compact-picker-card.picker-skill-card > *,
+.battle-page.plugin-mode [data-plugin-resizable]::before,
+.battle-page.plugin-mode [data-plugin-resizable] > .plugin-drag-zone {
   pointer-events: none;
 }
 
@@ -2281,25 +1730,10 @@ body:has(.preset-shell) {
 }
 
 /* 技能图标不覆盖所在行的完整描述提示。 */
-.watch-skill-item > span {
-  pointer-events: none;
-}
 
 .watch-skill-empty {
   font-size: 11px;
   opacity: 0.7;
-}
-
-.watch-skill-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-}
-
-.watch-skill-chip {
-  font-size: 10px;
-  height: 20px;
-  padding: 0 5px;
 }
 
 .slot-cell {
@@ -2317,10 +1751,6 @@ body:has(.preset-shell) {
   top: 0;
   width: 244px;
   z-index: 40;
-}
-
-.plugin-mode .slot-iv-popover :is(summary, label, span, .ui-field-title) {
-  color: #111;
 }
 
 .plugin-mode .team-right-roster .slot-iv-popover {
@@ -2351,17 +1781,6 @@ body:has(.preset-shell) {
 .plugin-mode .slot-iv-popover .iv-grid label,
 .plugin-mode .slot-iv-popover .personality-row {
   font-size: 10px;
-}
-
-body:has(.plugin-mode) .app-header .weather-panel {
-  display: none;
-}
-
-.team-toolbar {
-  align-items: center;
-  display: flex;
-  gap: 6px;
-  justify-content: center;
 }
 
 .team-action-floating {
@@ -2410,17 +1829,11 @@ body:has(.plugin-mode) .app-header .weather-panel {
   white-space: nowrap;
 }
 
-.team-action-shortcuts button[aria-pressed="true"] {
+.team-action-shortcuts button[aria-pressed="true"],
+.battle-page.plugin-mode .team-bonus-toolbar .bonus-tool-button[aria-pressed="true"] {
   background: #23785e;
   border-color: #1c614c;
   color: #fff;
-}
-
-.battle-page.immersive-mode.plugin-mode .team-action-shortcuts button[aria-pressed="true"],
-.battle-page.immersive-mode.plugin-mode .team-action-shortcuts button[aria-pressed="true"]:hover {
-  background: var(--ov-accent-bg) !important;
-  border-color: var(--ov-accent-border) !important;
-  color: #f0fff8 !important;
 }
 
 .team-action-floating .direction-button {
@@ -2491,6 +1904,9 @@ body:has(.plugin-mode) .app-header .weather-panel {
   min-height: var(--team-region-height);
   overflow: visible;
   width: var(--team-region-width);
+  background: #f7fbff;
+  border-color: #9fc7e8;
+  box-shadow: inset 0 0 0 1px #d7eaf9;
 }
 
 .team-layout .team-buff-panel {
@@ -2498,6 +1914,9 @@ body:has(.plugin-mode) .app-header .weather-panel {
   min-height: 0;
   overflow: visible;
   width: var(--buff-region-width);
+  background: #f8fdf9;
+  border-color: #9bd8b1;
+  box-shadow: inset 0 0 0 1px #d8f1df;
 }
 
 .team-layout details.team-buff-panel[open] {
@@ -2508,21 +1927,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
   height: var(--skill-region-height);
   overflow: auto;
   width: var(--skill-region-width);
-}
-
-.team-layout .roster {
-  background: #f7fbff;
-  border-color: #9fc7e8;
-  box-shadow: inset 0 0 0 1px #d7eaf9;
-}
-
-.team-layout .team-buff-panel {
-  background: #f8fdf9;
-  border-color: #9bd8b1;
-  box-shadow: inset 0 0 0 1px #d8f1df;
-}
-
-.team-layout .team-skill-panel {
   background: #fffaf3;
   border-color: #e7c38a;
   box-shadow: inset 0 0 0 1px #f5e4c8;
@@ -2676,14 +2080,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
   grid-area: right-skills;
 }
 
-.team-left-other-bonuses {
-  grid-area: left-other;
-}
-
-.team-right-other-bonuses {
-  grid-area: right-other;
-}
-
 .team-layout .team-other-bonuses {
   background: #fff7f0;
   border-color: #e4bc9d;
@@ -2729,7 +2125,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
 .bonus-tool-button.marks { font-size: var(--marks-button-font-size); height: var(--marks-button-height); width: var(--marks-button-width); }
 .bonus-tool-button.thunderstorm { font-size: var(--thunderstorm-button-font-size); height: var(--thunderstorm-button-height); width: var(--thunderstorm-button-width); }
 .bonus-tool-button.willpower { font-size: var(--dedication-button-font-size); height: var(--dedication-button-height); width: var(--dedication-button-width); }
-.team-action-floating .required-power-input { flex: 0 0 64px; font-size: 12px; height: var(--calc-button-height); min-width: 0; width: 64px; }
 .required-power-panel {
   background: #fff;
   border: 1px solid #d8e0e8;
@@ -2747,7 +2142,8 @@ body:has(.plugin-mode) .app-header .weather-panel {
 .required-power-table > div:nth-child(3n + 1) { border-left: 1px solid #d8e0e8; }
 .required-power-table > div:nth-child(-n + 3) { background: #edf5f0; border-top: 1px solid #d8e0e8; font-weight: 700; }
 
-.team-bonus-toolbar button.active {
+.team-bonus-toolbar button.active,
+.willpower-result-tabs button.active {
   background: #23785e;
   border-color: #1c614c;
   color: #fff;
@@ -2770,8 +2166,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
   padding: 4px;
   white-space: nowrap;
 }
-
-.willpower-result-tabs button.active { background: #23785e; border-color: #1c614c; color: #fff; }
 
 .result-floating.has-willpower { width: min(680px, calc(100vw - 32px)); }
 .battle-page.plugin-mode .result-floating.has-willpower { width: 680px; }
@@ -2825,15 +2219,23 @@ body:has(.plugin-mode) .app-header .weather-panel {
   justify-content: space-between;
 }
 
-.bonus-tool-fields .field-label {
-  color: #111;
-}
-
 .bonus-tool-fields .number-input-control {
   width: 62px;
 }
 
-.weather-panel label {
+.battle-page.plugin-mode .bonus-tool-floating.marks .bonus-tool-fields > div {
+  display: grid;
+  grid-template-columns: max-content var(--marks-input-width) 24px max-content;
+  justify-content: start;
+}
+
+.battle-page.plugin-mode .bonus-tool-floating.marks .bonus-tool-fields > div > button:last-child {
+  grid-column: 4;
+}
+
+.weather-panel label,
+.inline-row,
+.personality-row {
   align-items: center;
   display: flex;
   gap: 6px;
@@ -2854,36 +2256,9 @@ body:has(.plugin-mode) .app-header .weather-panel {
   width: calc(var(--weather-select-width) + 20px);
 }
 
-.preset-row-top,
-.inline-row,
-.split-row,
-.personality-row {
-  align-items: center;
-  display: flex;
-  gap: 6px;
-  min-width: 0;
-}
-
-.preset-row-top {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
-  margin-bottom: 8px;
-}
-
 .inline-row input,
-.inline-row select,
-.preset-row-top select {
+.inline-row select {
   flex: 1;
-}
-
-.split-row {
-  margin-top: 8px;
-}
-
-.split-row > div {
-  align-items: center;
-  display: flex;
-  gap: 6px;
 }
 
 .compact-button {
@@ -2892,23 +2267,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
   padding: 0 7px;
 }
 
-.control-group {
-  border: 1px solid #e0e7ee;
-  border-radius: 8px;
-  margin-top: 7px;
-  padding: 7px;
-  scroll-margin-bottom: 96px;
-}
-
-.control-group h3,
-.control-group summary {
-  color: #263442;
-  font-size: 14px;
-  font-weight: 700;
-  margin: 0 0 8px;
-}
-
-.control-title,
 .panel-title {
   align-items: center;
   display: flex;
@@ -2917,7 +2275,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
   margin-bottom: 8px;
 }
 
-.control-title h3,
 .panel-title h2 {
   margin: 0;
 }
@@ -2930,12 +2287,10 @@ body:has(.plugin-mode) .app-header .weather-panel {
 }
 
 .team-buff-panel summary,
-.team-iv-details summary,
-.team-iv-details .iv-editor-header {
+.team-iv-details summary {
   align-items: center;
   cursor: pointer;
   display: flex;
-  font-size: 14px;
   font-weight: 700;
   justify-content: space-between;
   list-style: none;
@@ -2983,7 +2338,9 @@ body:has(.plugin-mode) .app-header .weather-panel {
 }
 
 .team-buff-panel summary::-webkit-details-marker,
-.team-iv-details summary::-webkit-details-marker {
+.team-iv-details summary::-webkit-details-marker,
+.plugin-mode .skill-card-floating > h2,
+.battle-page.plugin-mode .skill-card-floating .plugin-panel-content > h2 {
   display: none;
 }
 
@@ -2992,15 +2349,13 @@ body:has(.plugin-mode) .app-header .weather-panel {
 }
 
 .team-layout .number-input-control,
-.buff-grid .number-input-control,
-.skill-number-row .number-input-control {
+.buff-grid .number-input-control {
   min-width: 0;
 }
 
 .team-layout h2,
 .team-buff-panel summary,
-.team-iv-details summary,
-.team-iv-details .iv-editor-header {
+.team-iv-details summary {
   font-size: var(--team-title-font-size);
 }
 
@@ -3093,27 +2448,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
   height: auto;
 }
 
-.pet-summary {
-  color: #536474;
-  display: flex;
-  flex-wrap: wrap;
-  font-size: 12px;
-  gap: 8px;
-  margin-top: 7px;
-}
-
-.skill-panel-header {
-  align-items: center;
-  display: flex;
-  gap: 8px;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.skill-panel-header h3 {
-  margin: 0;
-}
-
 .skill-card-grid {
   display: grid;
   gap: 6px;
@@ -3175,11 +2509,8 @@ body:has(.plugin-mode) .app-header .weather-panel {
   margin-top: 5px;
 }
 
-.skill-number-row {
-  justify-content: space-between;
-}
-
-.team-skill-panel h2 {
+.team-skill-panel h2,
+.preset-editor-panel .panel-title {
   margin-bottom: 6px;
 }
 
@@ -3214,10 +2545,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
   position: fixed;
   resize: none;
   z-index: 14;
-}
-
-.plugin-mode .skill-card-floating > h2 {
-  display: none;
 }
 
 .plugin-mode .skill-card-floating .skill-card-grid {
@@ -3381,6 +2708,25 @@ body:has(.plugin-mode) .app-header .weather-panel {
   min-height: 0;
 }
 
+.enemy-attack-group-heading {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  box-sizing: border-box;
+  display: flex;
+  flex: 0 0 24px;
+  gap: 6px;
+  margin-bottom: 2px;
+  padding: 0 5px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.enemy-attack-group-heading strong,
+.enemy-attack-skill-heading {
+  text-align: left;
+}
+
 .enemy-attack-table {
   min-height: 0;
   overflow-x: hidden;
@@ -3399,41 +2745,23 @@ body:has(.plugin-mode) .app-header .weather-panel {
 .enemy-attack-grid {
   display: grid;
   gap: 2px;
-  grid-template-columns: minmax(104px, 1.4fr) minmax(76px, 1fr) repeat(3, minmax(80px, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
-.enemy-attack-grid-heading {
-  align-items: center;
-  background: rgb(20, 28, 36);
-  box-sizing: border-box;
-  height: 26px;
-  margin-bottom: 2px;
-  position: sticky;
-  text-align: center;
-  top: 0;
-  z-index: 1;
+.enemy-attack-skill {
+  display: grid;
+  grid-template-rows: 23px 1fr;
+  min-height: 42px;
+  min-width: 0;
 }
 
-.enemy-attack-grid-heading strong {
-  font-size: 14px;
-}
-
-.enemy-attack-row {
-  height: var(--enemy-attack-row-height);
-  margin-bottom: 2px;
-}
-
-.enemy-attack-row:last-child {
-  margin-bottom: 0;
-}
-
-.enemy-attack-skill-heading {
-  text-align: left;
+.enemy-attack-skill.is-stackable {
+  min-height: 70px;
 }
 
 .enemy-attack-skill-heading strong {
-  font-size: 14px;
   overflow-wrap: anywhere;
+  font-size: 13px;
 }
 
 .enemy-attack-cell {
@@ -3450,7 +2778,16 @@ body:has(.plugin-mode) .app-header .weather-panel {
 }
 
 .enemy-attack-cell.enemy-attack-skill-heading {
+  align-content: center;
+  display: flex;
+  gap: 4px;
+  justify-content: space-between;
   text-align: left;
+}
+
+.enemy-attack-skill-heading > span {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .enemy-attack-cell :is(span, small) {
@@ -3459,18 +2796,23 @@ body:has(.plugin-mode) .app-header .weather-panel {
   overflow-wrap: anywhere;
 }
 
-.enemy-attack-sample {
-  align-items: baseline;
+.enemy-attack-values {
+  align-content: center;
   display: flex;
-  gap: 4px;
+  flex-direction: column;
   justify-content: center;
-  min-width: 0;
+  text-align: center;
 }
 
-.enemy-attack-sample small {
-  flex: 0 0 auto;
-  font-size: 11px;
-  opacity: 0.75;
+.enemy-attack-skill.is-stackable .enemy-attack-values {
+  justify-content: space-around;
+}
+
+.enemy-attack-sample {
+  font-size: 14px;
+  line-height: 16px;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .enemy-attack-empty {
@@ -3494,24 +2836,15 @@ body:has(.plugin-mode) .app-header .weather-panel {
   width: 100%;
 }
 
-.skill-card-runtime-actions {
-  margin-top: 0;
-}
-
 .team-skill-card .slot-action {
-  font-size: 11px;
   height: 22px;
   min-width: 0;
   padding: 0 3px;
   width: 100%;
+  font-size: var(--skill-card-font-size);
 }
 
-.team-skill-panel .skill-card.selected {
-  background: #fff2f2;
-  border: 2px solid #d14b4b;
-  box-shadow: none;
-}
-
+.team-skill-panel .skill-card.selected,
 .team-skill-card.selected {
   background: #fff2f2;
   border: 2px solid #d14b4b;
@@ -3551,41 +2884,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
   border-color: var(--ov-accent-border) !important;
 }
 
-.team-skill-card .slot-action {
-  font-size: var(--skill-card-font-size);
-}
-
-.skill-control-row {
-  display: grid;
-  gap: 6px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.skill-control-row > div {
-  align-items: center;
-  display: flex;
-  gap: 6px;
-}
-
-.team-skill-inline-controls {
-  align-items: center;
-  display: grid;
-  gap: 6px;
-  grid-template-columns: max-content max-content auto;
-  margin-top: 6px;
-}
-
-.team-skill-inline-controls > div {
-  align-items: center;
-  display: flex;
-  gap: 5px;
-  min-width: 0;
-}
-
-.team-skill-inline-controls .number-input-control {
-  width: 64px;
-}
-
 .team-other-bonuses {
   font-size: 12px;
 }
@@ -3596,7 +2894,8 @@ body:has(.plugin-mode) .app-header .weather-panel {
   font-weight: 700;
 }
 
-.other-bonus-category {
+.other-bonus-category,
+.watch-skill-tag-group + .watch-skill-tag-group {
   margin-top: 6px;
 }
 
@@ -3636,9 +2935,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
   padding: 6px;
 }
 
-.bonus-tool-floating .burst-trigger-checklist .check-row { background: #fafbfc; border-color: #bfc6cd; color: #111; }
-.bonus-tool-floating .burst-trigger-content strong { color: #111; }
-
 .bonus-tool-floating .burst-trigger-checklist {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -3654,11 +2950,9 @@ body:has(.plugin-mode) .app-header .weather-panel {
 
 .bonus-tool-floating .burst-trigger-checklist .check-row input { margin-top: 0; }
 
-.burst-trigger-checklist .check-row input { flex: 0 0 auto; margin-top: 3px; }
-.burst-trigger-content { display: grid; gap: 2px; min-width: 0; }
-.burst-trigger-content strong { color: #215947; font-size: inherit; }
-.burst-trigger-content small { color: #536474; font-size: 11px; line-height: 1.35; }
+.burst-trigger-checklist .burst-trait-start { grid-column: 1; }
 
+.burst-trigger-checklist .check-row input { flex: 0 0 auto; margin-top: 3px; }
 
 .skill-stack-control .number-input-control {
   width: var(--skill-stack-width);
@@ -3803,17 +3097,12 @@ body:has(.plugin-mode) .app-header .weather-panel {
   font-size: var(--preset-group-label-font-size);
 }
 
-.preset-group-row,
 .preset-create-row,
 .preset-pet-row,
 .preset-transfer-section {
   align-items: center;
   display: flex;
   gap: 6px;
-  min-width: 0;
-}
-
-.preset-group-row .preset-group-control {
   min-width: 0;
 }
 
@@ -3956,7 +3245,8 @@ body:has(.plugin-mode) .app-header .weather-panel {
   color: #8b3030;
 }
 
-.preset-watch-modal .watch-settings-delete:hover:not(:disabled) {
+.preset-watch-modal .watch-settings-delete:hover:not(:disabled),
+.preset-watch-modal .watch-settings-pick:hover {
   background: #fbd6d6;
 }
 
@@ -4046,18 +3336,10 @@ body:has(.plugin-mode) .app-header .weather-panel {
   color: #a52d2d;
 }
 
-.preset-watch-modal .watch-settings-pick:hover {
-  background: #fbd6d6;
-}
-
 .watch-skill-title select {
   font-size: 11px;
   max-width: 130px;
   padding: 0 3px;
-}
-
-.watch-skill-tag-group + .watch-skill-tag-group {
-  margin-top: 6px;
 }
 
 .watch-skill-tag {
@@ -4084,11 +3366,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
   position: relative;
   min-width: 0;
   width: 100%;
-}
-
-.preset-watch-modal .watch-skill-chip {
-  height: auto;
-  min-height: 28px;
 }
 
 .preset-runtime-section > .team-slot-section:has(> .trait-summary-button) {
@@ -4127,7 +3404,9 @@ body:has(.plugin-mode) .app-header .weather-panel {
   flex: 1 1 auto;
 }
 
-.preset-main-section .preset-pet-picker-button {
+.preset-main-section .preset-pet-picker-button,
+.preset-main-section label > .ui-field-title,
+.plugin-mode .roster .slot:has(.roster-pet-image[data-image-loaded="true"]) > strong {
   flex: 0 0 auto;
 }
 
@@ -4140,10 +3419,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
   min-width: 0;
 }
 
-.preset-main-section label > .ui-field-title {
-  flex: 0 0 auto;
-}
-
 .ui-field-title {
   font-family: inherit;
   font-weight: 700;
@@ -4154,23 +3429,8 @@ body:has(.plugin-mode) .app-header .weather-panel {
   flex-direction: row;
 }
 
-.preset-transfer-target,
-.preset-transfer-actions {
-  align-items: center;
-  display: flex;
-  gap: 6px;
-}
-
-.preset-transfer-target .preset-transfer-select {
-  flex: 0 1 var(--preset-transfer-select-width);
-}
-
 .preset-editor-panel .preset-editor-section {
   padding: 8px;
-}
-
-.preset-editor-panel .panel-title {
-  margin-bottom: 6px;
 }
 
 .preset-editor-panel .panel-title .preset-skills-title,
@@ -4319,6 +3579,51 @@ body:has(.plugin-mode) .app-header .weather-panel {
   justify-content: space-between;
 }
 
+.team-code-modal.plugin-skill-order-modal {
+  display: grid;
+  gap: 10px;
+  width: min(360px, calc(100vw - 24px));
+}
+
+.plugin-skill-order-list { position: relative; }
+
+.plugin-skill-order-row {
+  align-items: center;
+  background: var(--ov-field, #f7fbff);
+  border: 1px solid var(--ov-field-border, #d8e0e8);
+  border-radius: 6px;
+  color: var(--ov-field-text, #222);
+  cursor: grab;
+  display: flex;
+  gap: 8px;
+  box-sizing: border-box;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  padding: 6px 8px;
+  touch-action: none;
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 180ms ease;
+  user-select: none;
+}
+
+.plugin-skill-order-name { flex: 1; min-width: 0; overflow: hidden; }
+.plugin-skill-order-row .compact-button { flex-shrink: 0; }
+
+.plugin-skill-order-row.is-dragging {
+  background: var(--ov-accent-bg, #23785e);
+  border-color: var(--ov-accent-border, #1c614c);
+  color: #f0fff8;
+  cursor: grabbing;
+  box-shadow: 0 5px 14px rgba(20, 31, 43, 0.25);
+  transition: none;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plugin-skill-order-row { transition: none; }
+}
+
 .team-code-modal h2 {
   font-size: 17px;
   margin: 0;
@@ -4335,10 +3640,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-}
-
-.team-code-group-input {
-  flex: 1 1 140px;
 }
 
 .team-code-hint {
@@ -4374,11 +3675,7 @@ body:has(.plugin-mode) .app-header .weather-panel {
 .preset-runtime-section .trait-stack-control .num-input { font-size: var(--preset-trait-stack-number-font-size); height: var(--preset-trait-stack-height); }
 .preset-runtime-section .trait-select-button { font-size: var(--preset-trait-select-font-size); height: var(--preset-trait-select-height); width: var(--preset-trait-select-width); }
 .preset-runtime-section .trait-reset-button { font-size: var(--preset-trait-reset-font-size); height: var(--preset-trait-reset-height); width: var(--preset-trait-reset-width); }
-.preset-evolution-controls .slot-devolution-control .field-label { font-size: var(--preset-devolution-font-size); }
-.preset-evolution-controls .slot-devolution-control .number-input-control { width: var(--preset-devolution-width); }
-.preset-evolution-controls .slot-devolution-control .num-input { font-size: var(--preset-devolution-number-font-size); height: var(--preset-devolution-height); }
 .preset-evolution-controls .evolution-reset-button { font-size: var(--preset-evolution-reset-font-size); height: var(--preset-evolution-reset-height); width: var(--preset-evolution-reset-width); }
-.preset-evolution-controls .slot-mega-control select { font-size: var(--preset-mega-number-font-size); height: var(--preset-mega-height); width: var(--preset-mega-width); }
 .preset-transfer-select { font-size: var(--preset-transfer-select-font-size); height: var(--preset-transfer-select-height); width: var(--preset-transfer-select-width); }
 .preset-copy-button { font-size: var(--preset-copy-font-size); height: var(--preset-copy-height); width: var(--preset-copy-width); }
 .preset-move-button { font-size: var(--preset-move-font-size); height: var(--preset-move-height); width: var(--preset-move-width); }
@@ -4429,10 +3726,7 @@ body:has(.plugin-mode) .app-header .weather-panel {
   grid-template-columns: 1fr;
 }
 
-.trait-status-row {
-  justify-content: flex-start;
-}
-
+.trait-status-row,
 .trait-action-row {
   justify-content: flex-start;
 }
@@ -4526,10 +3820,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
   font-weight: 700;
 }
 
-.reset-row {
-  justify-content: flex-end;
-}
-
 .buff-grid {
   display: grid;
   gap: 6px;
@@ -4541,14 +3831,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
   display: grid;
   gap: 6px;
   grid-template-columns: 2em 1fr;
-}
-
-.buff-group-title {
-  color: #8494a5;
-  font-size: 11px;
-  letter-spacing: 1px;
-  line-height: 1.2;
-  text-align: right;
 }
 
 .buff-group-fields {
@@ -4585,9 +3867,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
 }
 
 /* 插件模式下浮层是深色底，高亮换成同色相的亮青绿。 */
-.battle-page.plugin-mode .buff-group-title {
-  color: var(--ov-text-muted);
-}
 
 .battle-page.plugin-mode .buff-field.is-active {
   background: rgba(143, 220, 184, 0.14);
@@ -4628,9 +3907,6 @@ body:has(.plugin-mode) .app-header .weather-panel {
   justify-content: space-between;
   min-width: 0;
   white-space: nowrap;
-}
-
-.iv-grid label {
   font-size: var(--iv-font-size);
 }
 
@@ -4835,28 +4111,10 @@ button.trigger-button > img {
   min-width: 0;
 }
 
-.slot-inline-controls select {
+.slot-inline-controls select,
+.family-form-select:has(.image-label[data-image-loaded="true"]),
+.family-form-options [role="option"]:has(.image-label[data-image-loaded="true"]) {
   min-width: 0;
-}
-
-.slot-devolution-control .number-input-control {
-  width: var(--devolution-width);
-}
-
-.slot-devolution-control .num-input {
-  font-size: var(--devolution-number-font-size);
-  height: var(--devolution-height);
-}
-
-.slot-devolution-control .field-label {
-  font-size: var(--devolution-font-size);
-}
-
-.slot-mega-control select {
-  flex: 0 0 auto;
-  font-size: var(--mega-font-size);
-  height: var(--mega-height);
-  width: var(--mega-width);
 }
 
 .evolution-reset-button {
@@ -4890,10 +4148,6 @@ button.trigger-button > img {
   font-size: var(--preset-mega-number-font-size);
 }
 
-.family-form-select:has(.image-label[data-image-loaded="true"]) {
-  min-width: 0;
-}
-
 .family-form-select .image-label .entity-icon.pet-icon,
 .family-form-options .image-label .entity-icon.pet-icon {
   height: 36px;
@@ -4922,7 +4176,14 @@ button.trigger-button > img {
   z-index: 2100;
 }
 
-.family-form-options > button {
+.family-form-options > [role="listbox"] {
+  display: grid;
+  gap: 3px;
+  max-height: inherit;
+  overflow-y: auto;
+}
+
+.family-form-options [role="option"] {
   align-items: center;
   display: flex;
   justify-content: center;
@@ -4934,11 +4195,7 @@ button.trigger-button > img {
   white-space: nowrap;
 }
 
-.family-form-options > button:has(.image-label[data-image-loaded="true"]) {
-  min-width: 0;
-}
-
-.family-form-options > button[aria-selected="true"] {
+.family-form-options [role="option"][aria-selected="true"] {
   background: #eaf3ff;
   border-color: #507ba8;
 }
@@ -4949,20 +4206,66 @@ button.trigger-button > img {
   color: #f2f7fd;
 }
 
-.family-form-options.overlay-form-options > button {
+.family-form-options.overlay-form-options [role="option"] {
   background: rgba(226, 238, 252, 0.13);
   border-color: rgba(196, 216, 238, 0.3);
   color: #f2f7fd;
 }
 
-.family-form-options.overlay-form-options > button:hover {
+.family-form-options.overlay-form-options [role="option"]:hover {
   background: rgba(226, 238, 252, 0.22);
 }
 
-.family-form-options.overlay-form-options > button[aria-selected="true"] {
+.family-form-options.overlay-form-options [role="option"][aria-selected="true"] {
   background: rgba(36, 107, 88, 0.82);
   border-color: #8fdcb8;
   color: #f0fff8;
+}
+
+.family-form-reset {
+  border-top: 1px solid rgba(154, 178, 202, 0.35) !important;
+  margin-top: 2px;
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+}
+
+.family-form-options.overlay-form-options .family-form-reset {
+  background: rgba(226, 238, 252, 0.13);
+  color: #f2f7fd;
+}
+
+.family-form-reset.refresh-button {
+  flex: 0 0 28px !important;
+  height: 28px;
+  justify-self: center;
+  max-width: 28px !important;
+  min-width: 28px !important;
+  width: 28px !important;
+}
+
+.battle-page.plugin-mode .roster .slot .family-form-select-compact {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(80, 96, 112, 0.55);
+  border-radius: 4px;
+  box-sizing: border-box;
+  display: inline-flex;
+  height: 16px;
+  justify-content: center;
+  min-width: 16px;
+  padding: 0;
+  position: absolute;
+  right: -18px;
+  top: calc(var(--team-pet-height) / 2);
+  transform: translateY(-50%);
+  width: 16px;
+  z-index: 1;
+}
+
+.battle-page.plugin-mode .roster .slot .family-form-select-compact > span[aria-hidden="true"] {
+  font-size: 10px;
+  line-height: 1;
 }
 
 .battle-page.immersive-mode.plugin-mode .slot-family-control .family-form-select {
@@ -5058,14 +4361,6 @@ button.trigger-button > img {
   white-space: nowrap;
 }
 
-.empty-result {
-  align-items: center;
-  color: #667789;
-  display: flex;
-  justify-content: center;
-  padding: 28px;
-}
-
 .result-section {
   margin-top: 8px;
 }
@@ -5146,14 +4441,20 @@ button.trigger-button > img {
 
 .result-matrix-corner,
 .result-matrix-header,
-.result-matrix-row-label {
+.result-matrix-row-label,
+.result-matrix-cell {
   appearance: none;
   border: 0 !important;
   border-bottom: 1px solid #111 !important;
   border-radius: 0;
   border-right: 1px solid #111 !important;
-  color: #47586a;
   font-weight: 700;
+}
+
+.result-matrix-corner,
+.result-matrix-header,
+.result-matrix-row-label {
+  color: #47586a;
 }
 
 .result-matrix-row-label {
@@ -5162,15 +4463,9 @@ button.trigger-button > img {
 }
 
 .result-matrix-cell {
-  appearance: none;
-  border: 0 !important;
-  border-bottom: 1px solid #111 !important;
-  border-radius: 0;
-  border-right: 1px solid #111 !important;
   color: #1f2933;
   height: 28px;
   margin: 0;
-  font-weight: 700;
   min-width: 0;
   white-space: nowrap;
 }
@@ -5407,16 +4702,12 @@ button.trigger-button > img {
 .plugin-mode .roster .slot:has(.roster-pet-image[data-image-loaded="true"]) {
   --roster-pet-image-max-width: calc(var(--team-pet-width) - 16px - var(--team-pet-font-size) * 2);
   max-width: min(100%, var(--team-pet-width));
-  min-width: calc(var(--team-pet-width) * 0.75);
-  width: 100%;
+  min-width: 0;
+  width: var(--team-pet-width);
 }
 
 .plugin-mode .roster .slot.active:has(.roster-pet-image[data-image-loaded="true"]) {
   --roster-pet-image-max-width: calc(var(--team-pet-width) - 18px - var(--team-pet-font-size) * 2);
-}
-
-.plugin-mode .roster .slot:has(.roster-pet-image[data-image-loaded="true"]) > strong {
-  flex: 0 0 auto;
 }
 
 .plugin-mode .roster .roster-pet-image[data-image-loaded="true"] {
@@ -5439,7 +4730,8 @@ button.trigger-button > img {
   width: 100%;
 }
 
-.plugin-mode .roster .roster-pet-image .entity-icon.pet-icon {
+.plugin-mode .roster .roster-pet-image .entity-icon.pet-icon,
+.preset-card-pet .entity-icon.pet-icon {
   flex: 0 1 auto;
   height: 100%;
   max-width: 100%;
@@ -5495,12 +4787,16 @@ button.trigger-button > img {
   height: 28px;
 }
 
-.compact-picker-grid {
-  align-content: start;
+.compact-picker-grid,
+.picker-list-row {
   display: grid;
   gap: 6px;
-  grid-auto-rows: 58px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.compact-picker-grid {
+  align-content: start;
+  grid-auto-rows: 58px;
   overflow-x: hidden;
   overflow-y: scroll;
   padding-right: 2px;
@@ -5519,9 +4815,6 @@ button.trigger-button > img {
 }
 
 .picker-list-row {
-  display: grid;
-  gap: 6px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   height: 58px;
   left: 0;
   position: absolute;
@@ -5605,13 +4898,6 @@ button.trigger-button > img {
   width: 100%;
 }
 
-.preset-card-pet .entity-icon.pet-icon {
-  flex: 0 1 auto;
-  height: 100%;
-  max-width: 100%;
-  width: auto;
-}
-
 .preset-list-item .preset-card-skills {
   align-items: center;
   display: grid;
@@ -5656,9 +4942,6 @@ button.trigger-button > img {
 }
 
 /* 技能卡片统一使用外层的完整描述提示，避免内部图标标题覆盖。 */
-.compact-picker-card.picker-skill-card > * {
-  pointer-events: none;
-}
 
 .compact-picker-card.picker-skill-card {
   align-content: center;
@@ -5713,12 +4996,6 @@ button.trigger-button > img {
   color: #fff;
 }
 
-.picker-hint {
-  color: #667789;
-  font-size: 12px;
-  margin: 0 0 8px;
-}
-
 .picker-tools input {
   flex: 1 1 260px;
   max-width: 420px;
@@ -5762,15 +5039,6 @@ button.trigger-button > img {
   font-weight: 700;
 }
 
-.picker-footer {
-  align-items: center;
-  border-top: 1px solid #e0e7ee;
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 10px;
-  padding-top: 10px;
-}
-
 .error-banner,
 .error-text {
   background: #fff1f0;
@@ -5786,8 +5054,7 @@ button.trigger-button > img {
 
 @media (max-width: 540px) {
   .team-layout,
-  .preset-manager-page,
-  .replay-layout {
+.preset-manager-page {
     grid-template-columns: 1fr;
   }
 
@@ -5801,18 +5068,6 @@ button.trigger-button > img {
       "right-bonus-tools"
       "right-buff"
       "right-skills";
-  }
-
-  .replay-sidebar {
-    grid-template-columns: 1fr;
-  }
-
-  .ocr-sample-panel {
-    grid-column: auto;
-  }
-
-  .image-sample-grid {
-    grid-template-columns: 1fr;
   }
 
 }
@@ -5831,7 +5086,8 @@ button.trigger-button > img {
   .required-power-panel,
   .floating-team-panel:not(.speed-line),
   .slot-iv-popover,
-  .skill-card-floating
+  .skill-card-floating,
+  .plugin-buff-shortcut-panel
 ) {
   backdrop-filter: var(--ov-veil);
   background: var(--ov-panel) !important;
@@ -5854,7 +5110,8 @@ button.trigger-button > img {
   .required-power-panel,
   .floating-team-panel:not(.speed-line),
   .slot-iv-popover,
-  .skill-card-floating
+  .skill-card-floating,
+  .plugin-buff-shortcut-panel
 ) :is(h2, h3, p, div, strong, summary, label, span, .field-label, .ui-field-title) {
   color: var(--ov-text) !important;
 }
@@ -5953,7 +5210,8 @@ button.trigger-button > img {
 }
 
 /* 原生下拉的弹出列表不继承祖先配色，必须单独给底色。 */
-.battle-page.immersive-mode.plugin-mode option {
+.battle-page.immersive-mode.plugin-mode option,
+.overlay-attached-picker.skill-picker-backdrop .picker-modal option {
   background: #16202c;
   color: var(--ov-field-text);
 }
@@ -6011,7 +5269,8 @@ button.trigger-button > img {
 }
 
 /* 精灵 / 技能选择器沿用同一套层级，只是底色更实。 */
-.battle-page.immersive-mode.plugin-mode .picker-modal {
+.battle-page.immersive-mode.plugin-mode .picker-modal,
+.overlay-attached-picker.skill-picker-backdrop .picker-modal {
   backdrop-filter: blur(10px) saturate(0.8) brightness(0.55);
   background: rgba(18, 26, 36, 0.88) !important;
   border: 1px solid var(--ov-panel-border) !important;
@@ -6019,17 +5278,20 @@ button.trigger-button > img {
   color: var(--ov-text) !important;
 }
 
-.battle-page.immersive-mode.plugin-mode .picker-modal :is(h2, .field-label, .ui-field-title, .picker-hint) {
+.battle-page.immersive-mode.plugin-mode .picker-modal :is(h2, .field-label, .ui-field-title, .picker-hint),
+.overlay-attached-picker.skill-picker-backdrop .picker-modal :is(h2, .field-label, .ui-field-title, .picker-hint) {
   color: var(--ov-text) !important;
 }
 
-.battle-page.immersive-mode.plugin-mode .picker-modal :is(button, input, select, .compact-picker-card) {
+.battle-page.immersive-mode.plugin-mode .picker-modal :is(button, input, select, .compact-picker-card),
+.overlay-attached-picker.skill-picker-backdrop .picker-modal :is(button, input, select, .compact-picker-card) {
   background: var(--ov-field) !important;
   border: 1px solid var(--ov-field-border) !important;
   color: var(--ov-field-text) !important;
 }
 
-.battle-page.immersive-mode.plugin-mode .picker-modal .compact-picker-card :is(strong, span, em) {
+.battle-page.immersive-mode.plugin-mode .picker-modal .compact-picker-card :is(strong, span, em),
+.overlay-attached-picker.skill-picker-backdrop .picker-modal .compact-picker-card :is(strong, span, em) {
   color: var(--ov-field-text) !important;
   opacity: 1;
 }
@@ -6052,36 +5314,8 @@ button.trigger-button > img {
   color: #fff !important;
 }
 
-.overlay-attached-picker.skill-picker-backdrop .picker-modal {
-  backdrop-filter: blur(10px) saturate(0.8) brightness(0.55);
-  background: rgba(18, 26, 36, 0.88) !important;
-  border: 1px solid var(--ov-panel-border) !important;
-  border-radius: 10px;
-  color: var(--ov-text) !important;
-}
-
-.overlay-attached-picker.skill-picker-backdrop .picker-modal :is(h2, .field-label, .ui-field-title, .picker-hint) {
-  color: var(--ov-text) !important;
-}
-
-.overlay-attached-picker.skill-picker-backdrop .picker-modal :is(button, input, select, .compact-picker-card) {
-  background: var(--ov-field) !important;
-  border: 1px solid var(--ov-field-border) !important;
-  color: var(--ov-field-text) !important;
-}
-
 .overlay-attached-picker.skill-picker-backdrop .picker-modal select {
   color-scheme: dark;
-}
-
-.overlay-attached-picker.skill-picker-backdrop .picker-modal option {
-  background: #16202c;
-  color: var(--ov-field-text);
-}
-
-.overlay-attached-picker.skill-picker-backdrop .picker-modal .compact-picker-card :is(strong, span, em) {
-  color: var(--ov-field-text) !important;
-  opacity: 1;
 }
 
 .overlay-attached-picker.skill-picker-backdrop .picker-modal :is(.segmented, .picker-element-grid, .picker-skill-type-grid) button.active {
@@ -6147,16 +5381,7 @@ button.trigger-button > img {
   padding: 0;
 }
 
-.battle-page.immersive-mode.plugin-mode :is(
-  .result-matrix-corner,
-  .result-matrix-header,
-  .result-matrix-row-label,
-  .result-matrix-cell
-) {
-  border: 0 !important;
-}
-
-/* 浮动特性 / 技能是透明定位容器，边框只保留在真正的卡片或控件上。 */
+.battle-page.immersive-mode.plugin-mode :is( .result-matrix-corner, .result-matrix-header, .result-matrix-row-label, .result-matrix-cell ),
 .battle-page.immersive-mode.plugin-mode :is(.floating-team-panel, .skill-card-floating) .team-slot-section,
 .battle-page.immersive-mode.plugin-mode :is(.floating-team-panel, .skill-card-floating) .trait-expanded-content,
 .battle-page.immersive-mode.plugin-mode .skill-card-floating .team-skill-card {
@@ -6187,7 +5412,8 @@ button.trigger-button > img {
   .skill-card-floating,
   .bonus-tool-floating,
   .result-floating,
-  .required-power-panel
+  .required-power-panel,
+  .plugin-buff-shortcut-panel
 ) {
   user-select: none;
   -webkit-user-select: none;
@@ -6207,12 +5433,7 @@ button.trigger-button > img {
 }
 
 /* 萌化控件保留可读字号，并用左右边框标识所属阵营。 */
-.battle-page.plugin-mode .floating-team-panel.team-left-evolution {
-  border: 1px solid transparent !important;
-  box-sizing: border-box;
-  padding: 10px 8px 2px !important;
-}
-
+.battle-page.plugin-mode .floating-team-panel.team-left-evolution,
 .battle-page.plugin-mode .floating-team-panel.team-right-evolution {
   border: 1px solid transparent !important;
   box-sizing: border-box;
@@ -6238,30 +5459,12 @@ button.trigger-button > img {
   align-items: center;
   gap: 8px;
   margin-top: 6px;
-}
-
-.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .slot-devolution-control {
-  position: relative;
+  grid-template-columns: max-content max-content max-content;
 }
 
 .battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .plugin-drag-zone {
   height: 0;
   pointer-events: none;
-}
-
-.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .slot-devolution-control .number-stepper {
-  bottom: 2px;
-  pointer-events: auto;
-  right: 0;
-  top: 2px;
-  width: 18px;
-  z-index: 12;
-}
-
-.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .slot-devolution-control .number-stepper button {
-  font-size: 8px !important;
-  min-height: 10px;
-  padding: 1px 0;
 }
 
 /*
@@ -6281,11 +5484,6 @@ button.trigger-button > img {
   border: 1px solid var(--ov-panel-border) !important;
   border-radius: 8px;
   box-shadow: var(--ov-panel-shadow);
-}
-
-/* 技能浮层按单技能显示，标题“技能 1/2...”只是重复信息，不占用布局空间。 */
-.battle-page.plugin-mode .skill-card-floating .plugin-panel-content > h2 {
-  display: none;
 }
 
 /* 萌化栏默认使用通用外框色，鼠标移入时才显示阵营色。 */
@@ -6328,6 +5526,221 @@ button.trigger-button > img {
   flex-wrap: nowrap;
 }
 
+.battle-page.plugin-mode .plugin-buff-shortcut-panel {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  height: min(320px, 72vh);
+  left: 50%;
+  max-height: calc(100vh - 24px);
+  max-width: calc(100vw - 24px);
+  padding: 10px;
+  position: fixed;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(480px, 86vw);
+  z-index: 1200;
+}
+
+.battle-page.plugin-mode .plugin-buff-shortcut-panel[data-tab="library"] {
+  height: min(440px, 72vh);
+}
+
+.plugin-buff-shortcut-panel header {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  touch-action: none;
+}
+
+.plugin-buff-shortcut-panel header strong {
+  font-size: 17px;
+}
+
+.battle-page.plugin-mode .plugin-buff-shortcut-panel :is(input, select, button) {
+  box-sizing: border-box;
+  font-size: 12px;
+  height: 28px;
+  min-height: 0;
+  padding: 2px 5px;
+}
+
+.plugin-buff-shortcut-panel header button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.plugin-buff-shortcut-tools {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.plugin-buff-shortcut-tabs {
+  flex: 0 0 auto;
+  gap: 3px;
+}
+
+.plugin-buff-shortcut-tabs button {
+  white-space: nowrap;
+}
+
+.battle-page.immersive-mode.plugin-mode .plugin-buff-shortcut-panel :is(
+  .plugin-buff-shortcut-tabs button[aria-selected="true"],
+  .plugin-buff-shortcut-filters button[aria-pressed="true"]
+) {
+  background: var(--ov-accent-bg) !important;
+  border-color: var(--ov-panel-border) !important;
+  color: var(--ov-text) !important;
+}
+
+.plugin-buff-shortcut-group {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.plugin-buff-shortcut-table {
+  align-content: start;
+  display: grid;
+  flex: 1;
+  gap: 3px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 3px;
+}
+
+.plugin-buff-shortcut-search {
+  flex: 1;
+  min-width: 0;
+  width: 0;
+}
+
+.plugin-buff-shortcut-panel .muted {
+  font-size: 12px;
+  margin: 6px 0;
+}
+
+.plugin-buff-shortcut-filters {
+  display: grid;
+  flex-shrink: 0;
+  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) 112px;
+  margin-bottom: 6px;
+}
+
+.plugin-buff-shortcut-filters :is(.picker-element-grid, .picker-skill-type-grid) {
+  border-color: var(--ov-field-border);
+}
+
+.battle-page.plugin-mode .plugin-buff-shortcut-filters button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  display: flex;
+  height: 20px;
+  justify-content: center;
+  min-width: 0;
+  padding: 0;
+}
+
+.plugin-buff-shortcut-columns {
+  color: var(--ov-text-muted);
+  display: grid;
+  flex-shrink: 0;
+  font-size: 11px;
+  gap: 6px;
+  grid-template-columns: minmax(160px, 1.1fr) minmax(120px, 1fr) 40px 40px;
+  padding: 0 6px 3px;
+}
+
+.plugin-buff-shortcut-actions-heading {
+  grid-column: span 2;
+}
+
+.plugin-buff-shortcut-entry {
+  align-items: center;
+  background: var(--ov-field);
+  border: 1px solid var(--ov-field-border);
+  border-radius: 4px;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: minmax(160px, 1.1fr) minmax(120px, 1fr) 40px 40px;
+  min-height: 58px;
+  padding: 6px;
+}
+
+.plugin-buff-shortcut-skill {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+}
+
+.plugin-buff-shortcut-skill > .image-label:first-child {
+  flex: 0 0 44px;
+  height: 44px;
+  width: 44px;
+}
+
+.plugin-buff-shortcut-skill > .image-label img {
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
+.plugin-buff-shortcut-skill strong {
+  flex: 0 1 auto;
+  font-size: 13px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-buff-shortcut-skill .image-label:has(.picker-type-icon) {
+  flex: 0 0 auto;
+  height: 18px;
+  width: 18px;
+}
+
+.plugin-buff-shortcut-entry select {
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .plugin-buff-shortcut-entry,
+  .plugin-buff-shortcut-columns {
+    gap: 6px;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) 40px 40px;
+  }
+
+  .plugin-buff-shortcut-skill .image-label:has(.picker-type-icon) {
+    display: none;
+  }
+}
+
+.plugin-buff-shortcut-table > .plugin-buff-shortcut-entry:first-child {
+  margin-top: 2px;
+}
+
+.plugin-buff-shortcut-entry .buff-button {
+  min-width: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
 .battle-page.immersive-mode.plugin-mode .floating-team-panel .plugin-panel-content :is(button, input, select, textarea) {
   border: 1px solid var(--ov-field-border) !important;
 }
@@ -6341,10 +5754,6 @@ button.trigger-button > img {
   width: max-content;
 }
 
-.battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution) .slot-evolution-row {
-  grid-template-columns: max-content max-content max-content;
-}
-
 .battle-page.plugin-mode .floating-team-panel:is(.team-left-evolution, .team-right-evolution):hover {
   outline: none !important;
   outline-offset: 0;
@@ -6354,8 +5763,6 @@ button.trigger-button > img {
 .battle-page.plugin-mode .skill-card-floating .skill-card-grid,
 .battle-page.plugin-mode .skill-card-floating .plugin-skill-controls {
   max-width: none;
-  min-width: max-content;
-  width: max-content;
 }
 
 .battle-page.plugin-mode .skill-card-floating .plugin-panel-content > .quick-skill-result {
@@ -6400,6 +5807,7 @@ button.trigger-button > img {
   width: 100%;
   box-sizing: border-box;
   z-index: 40;
+  flex-wrap: nowrap;
 }
 
 .battle-page.immersive-mode.plugin-mode .skill-card-floating .plugin-skill-controls {
@@ -6477,7 +5885,6 @@ button.trigger-button > img {
 .battle-page.plugin-mode .skill-card-floating .plugin-skill-controls {
   display: flex;
   /* 不换行：空间不足时压缩重置按钮，叠层数字框保持不动。 */
-  flex-wrap: nowrap;
   grid-template-columns: none;
   margin-top: 0;
 }
@@ -6496,10 +5903,6 @@ button.trigger-button > img {
 }
 
 /* 边框内外均为缩放热区；中心短按点击，长按后移动。 */
-.battle-page.plugin-mode [data-plugin-resizable]::before,
-.battle-page.plugin-mode [data-plugin-resizable] > .plugin-drag-zone {
-  pointer-events: none;
-}
 
 .battle-page.plugin-mode [data-plugin-dragging="true"],
 .battle-page.plugin-mode [data-plugin-dragging="true"] * {
@@ -6539,28 +5942,28 @@ button.trigger-button > img {
 }
 
 /* 其他工具、愿力及敌方攻击结果的缩放热区留在框内，避免撑出无内容的滚动条。 */
-.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating.has-willpower, .enemy-attack-panel) > .plugin-resize-edge.top {
+.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating.has-willpower, .enemy-attack-panel, .plugin-buff-shortcut-panel) > .plugin-resize-edge.top {
   height: 5px;
   left: 0;
   right: 0;
   top: 0;
 }
 
-.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating.has-willpower, .enemy-attack-panel) > .plugin-resize-edge.bottom {
+.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating.has-willpower, .enemy-attack-panel, .plugin-buff-shortcut-panel) > .plugin-resize-edge.bottom {
   height: 5px;
   left: 0;
   right: 0;
   bottom: 0;
 }
 
-.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating.has-willpower, .enemy-attack-panel) > .plugin-resize-edge.left {
+.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating.has-willpower, .enemy-attack-panel, .plugin-buff-shortcut-panel) > .plugin-resize-edge.left {
   width: 5px;
   top: 0;
   bottom: 0;
   left: 0;
 }
 
-.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating.has-willpower, .enemy-attack-panel) > .plugin-resize-edge.right {
+.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating.has-willpower, .enemy-attack-panel, .plugin-buff-shortcut-panel) > .plugin-resize-edge.right {
   width: 5px;
   top: 0;
   bottom: 0;

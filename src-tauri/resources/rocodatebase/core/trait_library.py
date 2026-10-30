@@ -72,6 +72,32 @@ def resolve_trait_data_for_pet(pet_data: dict[str, Any]) -> dict[str, Any] | Non
     return load_trait_data_by_name(trait_name)
 
 
+def _build_trait_filename(pet_data: dict[str, Any]) -> str | None:
+    pet_id = pet_data.get("id")
+    pet_name = pet_data.get("name")
+    if not pet_id or not pet_name:
+        return None
+    return f"{pet_id}{pet_name}.json"
+
+
+def load_battle_trait_data_for_pet(pet_data: dict[str, Any]) -> dict[str, Any] | None:
+    trait_data = resolve_trait_data_for_pet(pet_data)
+    if trait_data:
+        return trait_data
+
+    filename = _build_trait_filename(pet_data)
+    if filename:
+        filepath = os.path.join(TRAIT_DIR, filename)
+        if os.path.exists(filepath):
+            with open(filepath, "r", encoding="utf-8") as file:
+                return json.load(file)
+
+    trait_summary = pet_data.get("特性")
+    if isinstance(trait_summary, dict):
+        return {"特性": deepcopy(trait_summary)}
+    return None
+
+
 def resolve_trait_summary_for_pet(pet_data: dict[str, Any]) -> dict[str, Any] | None:
     trait_data = resolve_trait_data_for_pet(pet_data)
     if not trait_data:

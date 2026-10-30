@@ -93,13 +93,11 @@ def resolve_mark_modifiers(
             ):
                 continue
         stack_field = mark.get("stack_field")
-        if not isinstance(stack_field, str):
-            continue
         enabled_field = mark.get("enabled_field")
         if not modes and isinstance(enabled_field, str) and not bool(state.get(enabled_field, False)):
             continue
         try:
-            stacks = max(0, int(state.get(stack_field, 0) or 0))
+            stacks = max(0, int(state.get(stack_field, 0) or 0)) if isinstance(stack_field, str) else 1
         except (TypeError, ValueError):
             continue
         for effect in mark.get("effects", []):
@@ -110,7 +108,7 @@ def resolve_mark_modifiers(
             if names and skill_name not in names:
                 continue
             try:
-                value = float(effect.get("value_per_stack", 0)) * stacks
+                value = float(effect.get("value_per_stack", 0)) * stacks if isinstance(stack_field, str) else float(effect.get("value", 0))
             except (TypeError, ValueError):
                 continue
             if value == 0:
