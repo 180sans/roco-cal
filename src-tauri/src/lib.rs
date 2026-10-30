@@ -285,6 +285,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            commands::window::configure_plugin_shortcuts,
             commands::data::database_summary,
             commands::data::search_pets,
             commands::data::list_presets,

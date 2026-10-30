@@ -1,4 +1,5 @@
 import type * as React from "react";
+import { savedPluginShortcuts, type PluginShortcutBindings } from "../../shared/pluginShortcuts";
 import { type WEATHER_OPTIONS } from "../../domain/constants";
 import { type BattleSides, buildBattleUnits } from "../../domain/battleRequests";
 import { type Pet, type UnitState } from "../../services/desktopTypes";
@@ -11,6 +12,7 @@ import { asError } from "../../shared/errors";
 import { skillCardSlots } from "../../components/picker/skillPresentation";
 
 type BattleRecognitionDependencies = {
+  shortcuts?: PluginShortcutBindings;
   pets: Pet[];
   setLeftSlots: React.Dispatch<React.SetStateAction<UnitState[]>>;
   setRightSlots: React.Dispatch<React.SetStateAction<UnitState[]>>;
@@ -46,6 +48,7 @@ type BattleRecognitionDependencies = {
 
 // Recreate the original render closures; state, effects and refs remain in the page.
 function useBattleRecognition(dependencies: BattleRecognitionDependencies) {
+  const shortcuts = dependencies.shortcuts || savedPluginShortcuts({});
   const { pets, setLeftSlots, setRightSlots, setLeftIndex, setRightIndex, leftSlots, rightSlots, sameFamily, detectionRoiRefs, ocrTestMode, targetAttached, setDetectionToast, recognitionBusyRef, calibrationSessionRef, setCalibrationResults, cropDetection, setDetectionMessage, calibrationGroupRef, setRecognitionStatus, setDetectedHealth, setDetectedSkillPowers, displayMode, traitAlignmentSnapshotRef, setError, currentBattleSides, weather, patchSlot, leftIndex, teamSkillCardCount, leftAttacks, rightIndex } = dependencies;
 
   function petForRecognition(label: string) {
@@ -210,7 +213,7 @@ function useBattleRecognition(dependencies: BattleRecognitionDependencies) {
   async function recognizeDetection(group: DetectionGroup) {
     if (calibrationGroupRef.current) {
       if (calibrationGroupRef.current === group) await testCalibration(group);
-      else setDetectionToast(`请使用当前校对框的快捷键：${calibrationGroupRef.current === "battleStart" ? "Ctrl+B" : "Ctrl+U / Ctrl+P"}`);
+      else setDetectionToast(`请使用当前校对框的快捷键：${calibrationGroupRef.current === "battleStart" ? shortcuts["battle-start"] || "未绑定" : `${shortcuts["battle-live"] || "未绑定"} / ${shortcuts["skill-powers"] || "未绑定"}`}`);
       return;
     }
     const notifyDetection = (message: string) => { setDetectionMessage(message); setDetectionToast(message); };
@@ -275,7 +278,7 @@ function useBattleRecognition(dependencies: BattleRecognitionDependencies) {
   async function recognizeSkillPowers() {
     if (calibrationGroupRef.current) {
       if (calibrationGroupRef.current === "battleLive") await testCalibration("powers");
-      else setDetectionToast("战斗开始框请使用 Ctrl+B 测试");
+      else setDetectionToast(`战斗开始框请使用战斗初（${shortcuts["battle-start"] || "未绑定"}）测试`);
       return;
     }
     const notifyDetection = (message: string) => { setDetectionMessage(message); setDetectionToast(message); };
@@ -304,13 +307,13 @@ function useBattleRecognition(dependencies: BattleRecognitionDependencies) {
   async function alignTraitStacks() {
     if (displayMode !== "plugin") return;
     const notify = (message: string) => { setDetectionMessage(message); setDetectionToast(message); };
-    if (calibrationGroupRef.current) { notify("请先退出识别框校对，再使用 Ctrl+T 特性对齐"); return; }
+    if (calibrationGroupRef.current) { notify(`请先退出识别框校对，再使用校对特性（${shortcuts["trait-align"] || "未绑定"}）`); return; }
     if (!targetAttached) { notify("请先绑定目标窗口"); return; }
     if (recognitionBusyRef.current) { notify("正在识别，请等待完成后再进行特性对齐"); return; }
     const snapshot = traitAlignmentSnapshotRef.current;
     const recognitionStarted = performance.now();
     const checkSnapshot = () => {
-      if (snapshot !== traitAlignmentSnapshotRef.current) throw new Error("对齐期间精灵、加成或识别配置已变化，请重新按 Ctrl+T");
+      if (snapshot !== traitAlignmentSnapshotRef.current) throw new Error(`对齐期间精灵、加成或识别配置已变化，请重新校对特性（${shortcuts["trait-align"] || "未绑定"}）`);
     };
     recognitionBusyRef.current = true;
     setError("");

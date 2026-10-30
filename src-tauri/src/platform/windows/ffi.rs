@@ -65,6 +65,8 @@ unsafe extern "system" {
     pub(crate) fn RegisterHotKey(hwnd: *mut c_void, id: i32, modifiers: u32, virtual_key: u32) -> i32;
     pub(crate) fn UnregisterHotKey(hwnd: *mut c_void, id: i32) -> i32;
     pub(crate) fn GetMessageW(message: *mut WinMessage, hwnd: *mut c_void, minimum: u32, maximum: u32) -> i32;
+    pub(crate) fn PeekMessageW(message: *mut WinMessage, hwnd: *mut c_void, minimum: u32, maximum: u32, remove: u32) -> i32;
+    pub(crate) fn GetAsyncKeyState(virtual_key: i32) -> i16;
     pub(crate) fn SetWindowsHookExW(
         hook_id: i32,
         proc: Option<unsafe extern "system" fn(i32, usize, isize) -> isize>,

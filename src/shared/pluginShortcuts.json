@@ -1,0 +1,14 @@
+[
+  { "id": "battle-live", "label": "战斗内", "shortcut": "Ctrl+U", "row": 0, "event": "overlay-battle-live-scan", "requiresTarget": true },
+  { "id": "battle-start", "label": "战斗初", "shortcut": "Ctrl+B", "row": 0, "event": "overlay-battle-start-scan", "requiresTarget": true },
+  { "id": "skill-powers", "label": "校对威力", "shortcut": "Ctrl+P", "row": 0, "event": "overlay-battle-power-scan", "requiresTarget": true },
+  { "id": "trait-align", "label": "校对特性", "shortcut": "Ctrl+T", "row": 0, "event": "overlay-trait-align", "requiresTarget": true },
+  { "id": "self-buff", "label": "我方buff", "shortcut": "Ctrl+I", "row": 1, "event": "overlay-self-buff", "requiresTarget": false },
+  { "id": "enemy-buff", "label": "敌方buff", "shortcut": "Ctrl+O", "row": 1, "event": "overlay-enemy-buff", "requiresTarget": false },
+  { "id": "enemy-attack", "label": "判死", "shortcut": "Ctrl+K", "row": 1, "event": "overlay-enemy-attack-calculate", "requiresTarget": false },
+  { "id": "skill-order", "label": "调整技能", "shortcut": "Ctrl+Y", "row": 1, "event": "overlay-skill-order", "requiresTarget": false },
+  { "id": "quick-calculate", "label": "快捷计算", "shortcut": "Ctrl+J", "row": 1, "event": "overlay-quick-calculate", "requiresTarget": false },
+  { "id": "hide-results", "label": "取消显示计算", "shortcut": "Ctrl+D", "row": null, "event": "overlay-hide-quick-results", "requiresTarget": false },
+  { "id": "edit-mode", "label": "编辑模式", "shortcut": "F8", "row": null, "event": "overlay-force-edit-mode", "requiresTarget": true },
+  { "id": "toggle-visibility", "label": "收缩／展开插件", "shortcut": "F9", "row": null, "event": "", "requiresTarget": true }
+]

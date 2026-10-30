@@ -17,6 +17,7 @@ import {
   type PanelState,
 } from "./layout";
 import { RefreshButton } from "../../components/common/ActionButtons";
+import { PLUGIN_SHORTCUTS, savedPluginShortcuts, savedShortcutButtons, shortcutAria, type PluginShortcutBindings, type PluginShortcutButtons } from "../../shared/pluginShortcuts";
 
 function PluginResizeEdges({ onPointerDown }: { onPointerDown?: ReactPointerEventHandler<HTMLDivElement> }) {
   return <>
@@ -107,6 +108,9 @@ function TeamActionPanel({
   onRecognizeSkillPowers,
   onCalculateEnemyAttack,
   onAlignTraitStacks,
+  onAdjustSkills,
+  shortcuts = savedPluginShortcuts({}),
+  shortcutButtons = savedShortcutButtons({}),
   onApplyBuff,
   onReverseBuff,
   onResetBattle,
@@ -133,6 +137,9 @@ function TeamActionPanel({
   onRecognizeSkillPowers: () => void;
   onCalculateEnemyAttack: () => void;
   onAlignTraitStacks: () => void;
+  onAdjustSkills: () => void;
+  shortcuts?: PluginShortcutBindings;
+  shortcutButtons?: PluginShortcutButtons;
   onApplyBuff: () => void;
   onReverseBuff: () => void;
   onResetBattle: () => void;
@@ -211,14 +218,13 @@ function TeamActionPanel({
         {pluginMode && visibility?.["action-reverse"] !== false ? <button className="buff-button" onClick={onReverseBuff} disabled={!buffOptions.length}>反向</button> : null}
       </div>
       {pluginMode ? <div className="team-action-shortcuts">
-        <button type="button" title="战斗内识别 Ctrl+U" aria-keyshortcuts="Control+U" onClick={onRecognizeBattleLive}>战斗内</button>
-        <button type="button" title="战斗开始识别 Ctrl+B" aria-keyshortcuts="Control+B" onClick={onRecognizeBattleStart}>战斗初</button>
-        <button type="button" title="我方buff Ctrl+I" aria-keyshortcuts="Control+I" onClick={onOpenSelfBuff}>我方buff</button>
-        <button type="button" title="敌方buff Ctrl+O" aria-keyshortcuts="Control+O" onClick={onOpenEnemyBuff}>敌方buff</button>
-        <button type="button" title={quickCalculationActive ? "取消显示计算 Ctrl+D" : "快捷计算 Ctrl+J"} aria-keyshortcuts="Control+J" aria-pressed={quickCalculationActive} onClick={onToggleQuickCalculate}>快捷计算</button>
-        <button type="button" title="校对威力 Ctrl+P" aria-keyshortcuts="Control+P" onClick={onRecognizeSkillPowers}>校对威力</button>
-        <button type="button" title="判死 Ctrl+K" aria-keyshortcuts="Control+K" onClick={onCalculateEnemyAttack}>判死</button>
-        <button type="button" title="校对特性 Ctrl+T" aria-keyshortcuts="Control+T" onClick={onAlignTraitStacks}>校对特性</button>
+        {[0, 1].map((row) => {
+          const buttons = PLUGIN_SHORTCUTS.filter((item) => item.row === row && shortcutButtons[item.id] !== false);
+          const handlers: Record<string, () => void> = { "battle-live": onRecognizeBattleLive, "battle-start": onRecognizeBattleStart, "skill-powers": onRecognizeSkillPowers, "trait-align": onAlignTraitStacks, "self-buff": onOpenSelfBuff, "enemy-buff": onOpenEnemyBuff, "enemy-attack": onCalculateEnemyAttack, "skill-order": onAdjustSkills, "quick-calculate": onToggleQuickCalculate };
+          return buttons.length ? <div className="team-action-shortcut-row" key={row}>
+            {buttons.map((item) => <button key={item.id} type="button" title={`${item.label}${shortcuts[item.id] ? ` ${shortcuts[item.id]}` : ""}`} aria-keyshortcuts={shortcutAria(shortcuts[item.id])} aria-pressed={item.id === "quick-calculate" ? quickCalculationActive : undefined} onClick={handlers[item.id]}>{item.label}</button>)}
+          </div> : null;
+        })}
       </div> : null}
     </section>
   );

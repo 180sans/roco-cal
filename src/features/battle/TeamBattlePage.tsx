@@ -1,4 +1,5 @@
 import { useBattleCalculation } from "./useBattleCalculation";
+import { savedPluginShortcuts, savedShortcutButtons, shortcutMatches } from "../../shared/pluginShortcuts";
 import { trackPointerMovement } from "../../shared/pointerTracking";
 import { useBattleRecognition } from "./useBattleRecognition";
 import { useLatestEffect, useLatestRequest } from "../../services/useLatestRequest";
@@ -226,6 +227,8 @@ function TeamBattlePage({
   );
   const enemyAttackRequests = useLatestRequest(calculationInputKey, displayMode);
   const pluginVisibility = savedPluginVisibility(configs);
+  const shortcuts = useMemo(() => savedPluginShortcuts(configs), [configs]);
+  const shortcutButtons = useMemo(() => savedShortcutButtons(configs), [configs]);
   const traitAlignmentSnapshotRef = useRef("");
   traitAlignmentSnapshotRef.current = JSON.stringify([leftIndex, rightIndex, leftSlots[leftIndex], rightSlots[rightIndex], leftOtherBonuses, rightOtherBonuses, weather, displayMode, targetAttached, targetHwnd, detectionRegions, detectionGroup]);
   const calibrationActive = displayMode === "plugin" && detectionGroup !== null;
@@ -287,8 +290,7 @@ function TeamBattlePage({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (displayMode !== "plugin" || !event.ctrlKey || event.altKey || event.metaKey || event.repeat) return;
-      if (event.code !== "KeyY" && event.key.toLowerCase() !== "y") return;
+      if (displayMode !== "plugin" || !shortcutMatches(event, shortcuts["skill-order"])) return;
       event.preventDefault();
       openSkillOrderRef.current();
     };
@@ -304,21 +306,30 @@ function TeamBattlePage({
       window.removeEventListener("keydown", onKeyDown, true);
       unlisten?.();
     };
-  }, [displayMode]);
+  }, [displayMode, shortcuts]);
 
   useEffect(() => {
     if (displayMode !== "plugin") return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!event.ctrlKey || event.altKey || event.metaKey || event.repeat) return;
-      const key = event.code === "KeyI" ? "i" : event.code === "KeyO" ? "o" : event.key.toLowerCase();
-      if (key !== "i" && key !== "o") return;
+      const side = shortcutMatches(event, shortcuts["self-buff"]) ? "left"
+        : shortcutMatches(event, shortcuts["enemy-buff"]) ? "right" : null;
+      if (!side) return;
       event.preventDefault();
-      const side = key === "i" ? "left" : "right";
       openBuffShortcut(side);
     };
     window.addEventListener("keydown", onKeyDown, true);
-    return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [displayMode]);
+    let disposed = false;
+    const stops: Array<() => void> = [];
+    void Promise.all([
+      listen("overlay-self-buff", () => openBuffShortcut("left")),
+      listen("overlay-enemy-buff", () => openBuffShortcut("right")),
+    ]).then((items) => { if (disposed) items.forEach((stop) => stop()); else stops.push(...items); }).catch((err) => setError(asError(err)));
+    return () => {
+      disposed = true;
+      window.removeEventListener("keydown", onKeyDown, true);
+      stops.forEach((stop) => stop());
+    };
+  }, [displayMode, shortcuts]);
 
   useLatestEffect((request) => {
     if (!buffShortcutSide) return;
@@ -519,6 +530,7 @@ function TeamBattlePage({
   }
 
   const { recognizeDetection, recognizeSkillPowers, targetCanvas, recognizeNumericImages, alignTraitStacks } = useBattleRecognition({
+    shortcuts,
     pets, setLeftSlots, setRightSlots, setLeftIndex, setRightIndex, leftSlots, rightSlots, sameFamily, detectionRoiRefs, ocrTestMode, targetAttached, setDetectionToast, recognitionBusyRef, calibrationSessionRef, setCalibrationResults, cropDetection, setDetectionMessage, calibrationGroupRef, setRecognitionStatus, setDetectedHealth, setDetectedSkillPowers, displayMode, traitAlignmentSnapshotRef, setError, currentBattleSides, weather, patchSlot, leftIndex, teamSkillCardCount, leftAttacks, rightIndex
   });
 
@@ -1144,7 +1156,7 @@ function TeamBattlePage({
       listen("overlay-battle-power-scan", () => void recognizeSkillPowers()),
     ]).then((items) => { if (disposed) items.forEach((stop) => stop()); else stops.push(...items); }).catch((err) => setError(asError(err)));
     return () => { disposed = true; stops.forEach((stop) => stop()); };
-  }, [targetAttached, detectionRegions, pets, leftSlots, rightSlots]);
+  }, [targetAttached, detectionRegions, pets, leftSlots, rightSlots, shortcuts]);
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -1164,13 +1176,13 @@ function TeamBattlePage({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (displayMode !== "plugin" || event.key !== "F8") return;
+      if (displayMode !== "plugin" || !shortcutMatches(event, shortcuts["edit-mode"])) return;
       event.preventDefault();
       void exitMixedMode().catch((err) => setError(asError(err)));
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [displayMode]);
+  }, [displayMode, shortcuts]);
 
   function startTeamRegionDrag(event: ReactPointerEvent<HTMLDivElement>) {
     if (displayMode !== "plugin") return;
@@ -1526,10 +1538,10 @@ return (
             </label>
             <button className={detectionGroup === "battleStart" ? "active" : ""} onClick={() => toggleCalibration("battleStart")}>战斗开始框</button>
             <button className={detectionGroup === "battleLive" ? "active" : ""} onClick={() => toggleCalibration("battleLive")}>战斗内框</button>
-            <button onClick={() => void recognizeDetection("battleStart")} disabled={!targetAttached}>战斗初 Ctrl+B</button>
-            <button onClick={() => void recognizeDetection("battleLive")} disabled={!targetAttached}>战斗内 Ctrl+U</button>
-            <button onClick={() => void recognizeSkillPowers()} disabled={!targetAttached}>威力识别 Ctrl+P</button>
-            <button onClick={() => void calculateEnemyAttackSkills()}>敌方攻击 Ctrl+K</button>
+            <button onClick={() => void recognizeDetection("battleStart")} disabled={!targetAttached}>战斗初 {shortcuts["battle-start"]}</button>
+            <button onClick={() => void recognizeDetection("battleLive")} disabled={!targetAttached}>战斗内 {shortcuts["battle-live"]}</button>
+            <button onClick={() => void recognizeSkillPowers()} disabled={!targetAttached}>威力识别 {shortcuts["skill-powers"]}</button>
+            <button onClick={() => void calculateEnemyAttackSkills()}>敌方攻击 {shortcuts["enemy-attack"]}</button>
           </div>
         </details> : null}
         {targetStatus || layoutMessage || detectionMessage ? <span>{targetStatus || layoutMessage || detectionMessage}</span> : null}
@@ -1548,7 +1560,7 @@ return (
         {displayMode === "plugin" && detectionToast ? <div className="detection-toast" role="status">{detectionToast}</div> : null}
         {calibrationActive ? <section className="calibration-results" data-overlay-control aria-live="polite">
           <header><strong>{detectionGroup === "battleStart" ? "战斗开始校对" : "战斗内校对"}</strong><button onClick={() => toggleCalibration(detectionGroup!)}>退出校对</button></header>
-          <p>{detectionGroup === "battleStart" ? "Ctrl+B 测试精灵框" : "Ctrl+U 测试精灵和血量 · Ctrl+P 测试技能威力"}</p>
+          <p>{detectionGroup === "battleStart" ? `${shortcuts["battle-start"] || "未绑定"} 测试精灵框` : `${shortcuts["battle-live"] || "未绑定"} 测试精灵和血量 · ${shortcuts["skill-powers"] || "未绑定"} 测试技能威力`}</p>
           <p>成功 {Object.values(calibrationResults).filter((item) => item.status === "success").length}/{Object.keys(calibrationResults).length} · 失败 {Object.values(calibrationResults).filter((item) => item.status === "failure").length}</p>
           <div className="calibration-result-grid">
             {Object.entries(calibrationResults).map(([key, item]) => <div key={key} className={`calibration-result ${item.status}`}><strong>{detectionLabel(key)}</strong><span>{item.status === "failure" ? `失败：${item.text}` : item.text}</span></div>)}
@@ -1654,7 +1666,7 @@ return (
             </div>
           </section>
         </section> : null}
-        <TeamActionPanel pluginMode={displayMode === "plugin"} visibility={pluginVisibility} layout={displayMode === "plugin" ? overlayLayout("action") : undefined} onLayoutChange={(partial) => updateOverlayLayout("action", partial)} leftAttacks={leftAttacks} onToggleDirection={() => setLeftAttacks((value) => !value)} onCalculate={() => void calculate()} onRecognizeBattleLive={() => void recognizeDetection("battleLive")} onRecognizeBattleStart={() => void recognizeDetection("battleStart")} onOpenSelfBuff={() => openBuffShortcut("left")} onOpenEnemyBuff={() => openBuffShortcut("right")} onToggleQuickCalculate={() => quickCalculationActive ? hideQuickSkillResultsRef.current() : calculateQuickSkillsRef.current()} quickCalculationActive={quickCalculationActive} onRecognizeSkillPowers={() => void recognizeSkillPowers()} onCalculateEnemyAttack={() => calculateEnemyAttackSkillsRef.current()} onAlignTraitStacks={() => alignTraitStacksRef.current()} onApplyBuff={() => void applyBuff()} onReverseBuff={() => void applyBuff(undefined, true)} onResetBattle={resetBattle} targetHp={targetHp} onTargetHpChange={setTargetHp} onCalculateRequiredPower={() => void calculateRequiredPower()} buffOptions={buffOptions} selectedBuffOption={selectedBuffOption} onSelectBuffOption={setSelectedBuffOption} />
+        <TeamActionPanel shortcuts={shortcuts} shortcutButtons={shortcutButtons} onAdjustSkills={openSkillOrder} pluginMode={displayMode === "plugin"} visibility={pluginVisibility} layout={displayMode === "plugin" ? overlayLayout("action") : undefined} onLayoutChange={(partial) => updateOverlayLayout("action", partial)} leftAttacks={leftAttacks} onToggleDirection={() => setLeftAttacks((value) => !value)} onCalculate={() => void calculate()} onRecognizeBattleLive={() => void recognizeDetection("battleLive")} onRecognizeBattleStart={() => void recognizeDetection("battleStart")} onOpenSelfBuff={() => openBuffShortcut("left")} onOpenEnemyBuff={() => openBuffShortcut("right")} onToggleQuickCalculate={() => quickCalculationActive ? hideQuickSkillResultsRef.current() : calculateQuickSkillsRef.current()} quickCalculationActive={quickCalculationActive} onRecognizeSkillPowers={() => void recognizeSkillPowers()} onCalculateEnemyAttack={() => calculateEnemyAttackSkillsRef.current()} onAlignTraitStacks={() => alignTraitStacksRef.current()} onApplyBuff={() => void applyBuff()} onReverseBuff={() => void applyBuff(undefined, true)} onResetBattle={resetBattle} targetHp={targetHp} onTargetHpChange={setTargetHp} onCalculateRequiredPower={() => void calculateRequiredPower()} buffOptions={buffOptions} selectedBuffOption={selectedBuffOption} onSelectBuffOption={setSelectedBuffOption} />
         {openBonusTools.map(({ side: bonusSide, tool: bonusTool }) => (
           <BattleBonusToolPanel
             key={`${bonusSide}-${bonusTool}`}

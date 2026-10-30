@@ -5,6 +5,8 @@ use std::{ffi::c_void, sync::OnceLock, time::Duration};
 use tauri::{Emitter, Manager};
 #[cfg(windows)]
 use super::ffi::*;
+#[cfg(windows)]
+use roco_desktop_native::plugin_shortcuts::{self, Shortcut};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) struct OverlayTargetBinding {
@@ -37,10 +39,33 @@ struct OverlayHotkeyContext {
     target_state: OverlayTargetState,
     interaction_state: OverlayInteractionState,
     visibility_state: OverlayVisibilityState,
+    edit_shortcut: Arc<Mutex<Option<Shortcut>>>,
 }
 
 #[cfg(windows)]
 static OVERLAY_HOTKEY_CONTEXT: OnceLock<Mutex<Option<OverlayHotkeyContext>>> = OnceLock::new();
+
+#[cfg(windows)]
+struct ShortcutRequest {
+    shortcuts: Vec<Shortcut>,
+    reply: std::sync::mpsc::Sender<Result<(), String>>,
+}
+
+#[cfg(windows)]
+static SHORTCUT_REQUESTS: OnceLock<std::sync::mpsc::Sender<ShortcutRequest>> = OnceLock::new();
+
+pub(crate) fn configure_plugin_shortcuts(bindings: serde_json::Value) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        let shortcuts = plugin_shortcuts::resolve(&bindings)?;
+        let sender = SHORTCUT_REQUESTS.get().ok_or("快捷键服务尚未启动")?;
+        let (reply, response) = std::sync::mpsc::channel();
+        sender.send(ShortcutRequest { shortcuts, reply }).map_err(|_| "快捷键服务已停止")?;
+        response.recv().map_err(|_| "快捷键服务已停止")?
+    }
+    #[cfg(not(windows))]
+    { let _ = bindings; Err("插件快捷键仅支持 Windows".into()) }
+}
 
 pub(crate) fn parse_hwnd(value: &str) -> Result<usize, String> {
     let normalized = value.trim().replace('_', "");
@@ -463,14 +488,19 @@ unsafe extern "system" fn overlay_keyboard_hook(code: i32, w_param: usize, l_par
     const HC_ACTION: i32 = 0;
     const WM_KEYDOWN: usize = 0x0100;
     const WM_SYSKEYDOWN: usize = 0x0104;
-    const VK_F8: u32 = 0x77;
     if code == HC_ACTION && (w_param == WM_KEYDOWN || w_param == WM_SYSKEYDOWN) && l_param != 0 {
         let event = unsafe { &*(l_param as *const KeyboardLowLevelHook) };
-        if event.vk_code == VK_F8 {
-            if let Some(context) = OVERLAY_HOTKEY_CONTEXT
+        if let Some(context) = OVERLAY_HOTKEY_CONTEXT
                 .get()
                 .and_then(|slot| slot.lock().ok())
                 .and_then(|guard| guard.clone())
+        {
+            let shortcut = context.edit_shortcut.lock().ok().and_then(|binding| binding.clone());
+            let modifiers = u32::from(unsafe { GetAsyncKeyState(0x12) } < 0)
+                | (u32::from(unsafe { GetAsyncKeyState(0x11) } < 0) << 1)
+                | (u32::from(unsafe { GetAsyncKeyState(0x10) } < 0) << 2);
+            if shortcut.as_ref().is_some_and(|shortcut| shortcut.virtual_key == event.vk_code && shortcut.modifiers == modifiers)
+                && unsafe { GetAsyncKeyState(0x5B) } >= 0 && unsafe { GetAsyncKeyState(0x5C) } >= 0
             {
                 force_overlay_edit_mode_from_hotkey(&context);
             }
@@ -551,49 +581,6 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
         std::thread::sleep(Duration::from_millis(100));
     });
 
-    let f9_app = app.handle().clone();
-    let f9_target_state = app.state::<OverlayTargetState>().inner().clone();
-    let f9_interaction_state = app.state::<OverlayInteractionState>().inner().clone();
-    let f9_visibility_state = app.state::<OverlayVisibilityState>().inner().clone();
-    std::thread::spawn(move || {
-        const F9_HOTKEY_ID: i32 = 0x5248;
-        const VK_F9: u32 = 0x78;
-        const WM_HOTKEY: u32 = 0x0312;
-        const MOD_NOREPEAT: u32 = 0x4000;
-        if unsafe {
-            RegisterHotKey(
-                std::ptr::null_mut(),
-                F9_HOTKEY_ID,
-                MOD_NOREPEAT,
-                VK_F9,
-            )
-        } == 0
-        {
-            return;
-        }
-        let mut message = WinMessage {
-            hwnd: std::ptr::null_mut(),
-            message: 0,
-            w_param: 0,
-            l_param: 0,
-            time: 0,
-            point: WinPoint { x: 0, y: 0 },
-        };
-        while unsafe { GetMessageW(&mut message, std::ptr::null_mut(), 0, 0) } > 0 {
-            if message.message == WM_HOTKEY
-                && message.w_param == F9_HOTKEY_ID as usize
-            {
-                toggle_overlay_visibility(
-                    &f9_app,
-                    &f9_target_state,
-                    &f9_interaction_state,
-                    &f9_visibility_state,
-                );
-            }
-        }
-        unsafe { UnregisterHotKey(std::ptr::null_mut(), F9_HOTKEY_ID) };
-    });
-
     let hotkey_app = app.handle().clone();
     let hotkey_target_state = app.state::<OverlayTargetState>().inner().clone();
     let hotkey_interaction_state = app.state::<OverlayInteractionState>().inner().clone();
@@ -603,6 +590,7 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
         target_state: hotkey_target_state.clone(),
         interaction_state: hotkey_interaction_state.clone(),
         visibility_state: hotkey_visibility_state.clone(),
+        edit_shortcut: Arc::new(Mutex::new(None)),
     };
     let _ = OVERLAY_HOTKEY_CONTEXT
         .get_or_init(|| Mutex::new(None))
@@ -632,136 +620,66 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
         while unsafe { GetMessageW(&mut message, std::ptr::null_mut(), 0, 0) } > 0 {}
         unsafe { UnhookWindowsHookEx(hook) };
     });
+    let configs = std::fs::read_to_string(crate::app_data_dir(app.handle()).join("configs.json"))
+        .ok().and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok());
+    let bindings = configs.as_ref().and_then(|configs| configs.pointer("/team_layout/shortcuts"))
+        .cloned().unwrap_or_else(|| serde_json::json!({}));
+    let initial = plugin_shortcuts::resolve(&bindings).unwrap_or_else(|error| {
+        eprintln!("Cannot load plugin shortcuts: {error}");
+        plugin_shortcuts::resolve(&serde_json::json!({})).unwrap_or_default()
+    });
+    let (sender, requests) = std::sync::mpsc::channel::<ShortcutRequest>();
+    let _ = SHORTCUT_REQUESTS.set(sender);
     std::thread::spawn(move || {
-        const OVERLAY_HOTKEY_ID: i32 = 0x524F;
-        const QUICK_CALCULATE_HOTKEY_ID: i32 = 0x5243;
-        const ENEMY_ATTACK_CALCULATE_HOTKEY_ID: i32 = 0x5249;
-        const HIDE_QUICK_RESULTS_HOTKEY_ID: i32 = 0x5244;
-        const BATTLE_START_SCAN_HOTKEY_ID: i32 = 0x5245;
-        const BATTLE_LIVE_SCAN_HOTKEY_ID: i32 = 0x5246;
-        const BATTLE_POWER_SCAN_HOTKEY_ID: i32 = 0x5247;
-        const TRAIT_ALIGN_HOTKEY_ID: i32 = 0x5254;
-        const SKILL_ORDER_HOTKEY_ID: i32 = 0x5259;
-        const VK_F8: u32 = 0x77;
-        const VK_J: u32 = 0x4A;
-        const VK_K: u32 = 0x4B;
-        const VK_D: u32 = 0x44;
-        const VK_B: u32 = 0x42;
-        const VK_U: u32 = 0x55;
-        const VK_P: u32 = 0x50;
-        const VK_T: u32 = 0x54;
-        const VK_Y: u32 = 0x59;
         const WM_HOTKEY: u32 = 0x0312;
-        const MOD_CONTROL: u32 = 0x0002;
-        let overlay_hotkey_registered = unsafe {
-            RegisterHotKey(std::ptr::null_mut(), OVERLAY_HOTKEY_ID, 0, VK_F8)
-        } != 0;
-        let quick_hotkey_registered = unsafe {
-            RegisterHotKey(
-                std::ptr::null_mut(),
-                QUICK_CALCULATE_HOTKEY_ID,
-                MOD_CONTROL,
-                VK_J,
-            )
-        } != 0;
-        let enemy_attack_calculate_registered = unsafe {
-            RegisterHotKey(
-                std::ptr::null_mut(),
-                ENEMY_ATTACK_CALCULATE_HOTKEY_ID,
-                MOD_CONTROL,
-                VK_K,
-            )
-        } != 0;
-        let hide_quick_results_registered = unsafe {
-            RegisterHotKey(
-                std::ptr::null_mut(),
-                HIDE_QUICK_RESULTS_HOTKEY_ID,
-                MOD_CONTROL,
-                VK_D,
-            )
-        } != 0;
-        let battle_start_scan_registered = unsafe { RegisterHotKey(std::ptr::null_mut(), BATTLE_START_SCAN_HOTKEY_ID, MOD_CONTROL, VK_B) } != 0;
-        let battle_live_scan_registered = unsafe { RegisterHotKey(std::ptr::null_mut(), BATTLE_LIVE_SCAN_HOTKEY_ID, MOD_CONTROL, VK_U) } != 0;
-        let battle_power_scan_registered = unsafe { RegisterHotKey(std::ptr::null_mut(), BATTLE_POWER_SCAN_HOTKEY_ID, MOD_CONTROL, VK_P) } != 0;
-        let trait_align_registered = unsafe { RegisterHotKey(std::ptr::null_mut(), TRAIT_ALIGN_HOTKEY_ID, MOD_CONTROL, VK_T) } != 0;
-        let skill_order_registered = unsafe { RegisterHotKey(std::ptr::null_mut(), SKILL_ORDER_HOTKEY_ID, MOD_CONTROL | 0x4000, VK_Y) } != 0;
-        let mut message = WinMessage {
-            hwnd: std::ptr::null_mut(),
-            message: 0,
-            w_param: 0,
-            l_param: 0,
-            time: 0,
-            point: WinPoint { x: 0, y: 0 },
+        const WM_QUIT: u32 = 0x0012;
+        let register = |shortcut: &Shortcut| unsafe {
+            RegisterHotKey(std::ptr::null_mut(), shortcut.registration_id, shortcut.modifiers | 0x4000, shortcut.virtual_key) != 0
         };
-        while unsafe { GetMessageW(&mut message, std::ptr::null_mut(), 0, 0) } > 0 {
-            if message.message != WM_HOTKEY {
-                continue;
+        let unregister = |shortcut: &Shortcut| { unsafe { UnregisterHotKey(std::ptr::null_mut(), shortcut.registration_id) }; };
+        let mut current = Vec::new();
+        for shortcut in initial {
+            if register(&shortcut) { current.push(shortcut); }
+            else { eprintln!("Cannot register {} ({})", shortcut.label, shortcut.chord); }
+        }
+        let update_edit_shortcut = |shortcuts: &[Shortcut]| {
+            if let Ok(mut binding) = hotkey_context.edit_shortcut.lock() {
+                *binding = shortcuts.iter().find(|shortcut| shortcut.id == "edit-mode").cloned();
             }
-            let binding = hotkey_target_state
-                .binding
-                .lock()
-                .ok()
-                .and_then(|binding| *binding);
-            let calculation_hotkey = message.w_param == QUICK_CALCULATE_HOTKEY_ID as usize
-                || message.w_param == ENEMY_ATTACK_CALCULATE_HOTKEY_ID as usize
-                || message.w_param == HIDE_QUICK_RESULTS_HOTKEY_ID as usize
-                || message.w_param == SKILL_ORDER_HOTKEY_ID as usize;
-            if binding.is_none() && !calculation_hotkey {
-                continue;
+        };
+        update_edit_shortcut(&current);
+        let mut message = WinMessage {
+            hwnd: std::ptr::null_mut(), message: 0, w_param: 0, l_param: 0,
+            time: 0, point: WinPoint { x: 0, y: 0 },
+        };
+        'runtime: loop {
+            // Drain old key messages before accepting a new configuration.
+            while unsafe { PeekMessageW(&mut message, std::ptr::null_mut(), 0, 0, 1) } != 0 {
+                if message.message == WM_QUIT { break 'runtime; }
+                if message.message != WM_HOTKEY { continue; }
+                let Some(shortcut) = current.iter().find(|shortcut| shortcut.registration_id as usize == message.w_param) else { continue; };
+                let chord = message.l_param as u32;
+                if chord >> 16 != shortcut.virtual_key || chord & 0xf != shortcut.modifiers { continue; }
+                let binding = hotkey_target_state.binding.lock().ok().and_then(|binding| *binding);
+                if shortcut.requires_target && binding.is_none() { continue; }
+                if shortcut.id == "toggle-visibility" {
+                    toggle_overlay_visibility(&hotkey_app, &hotkey_target_state, &hotkey_interaction_state, &hotkey_visibility_state);
+                    continue;
+                }
+                if hotkey_visibility_state.collapsed.load(Ordering::Relaxed) { continue; }
+                if shortcut.id == "edit-mode" { force_overlay_edit_mode_from_hotkey(&hotkey_context); }
+                else {
+                    if shortcut.id == "skill-order" { force_overlay_edit_mode_from_hotkey(&hotkey_context); }
+                    let _ = hotkey_app.emit(&shortcut.event, ());
+                }
             }
-            if hotkey_visibility_state.collapsed.load(Ordering::Relaxed) {
-                continue;
+            while let Ok(request) = requests.try_recv() {
+                let result = plugin_shortcuts::replace(&mut current, request.shortcuts, register, unregister);
+                update_edit_shortcut(&current);
+                let _ = request.reply.send(result);
             }
-            if overlay_hotkey_registered
-                && message.w_param == OVERLAY_HOTKEY_ID as usize
-            {
-                force_overlay_edit_mode_from_hotkey(&hotkey_context);
-            } else if quick_hotkey_registered
-                && message.w_param == QUICK_CALCULATE_HOTKEY_ID as usize
-            {
-                let _ = hotkey_app.emit("overlay-quick-calculate", ());
-            } else if enemy_attack_calculate_registered
-                && message.w_param == ENEMY_ATTACK_CALCULATE_HOTKEY_ID as usize
-            {
-                let _ = hotkey_app.emit("overlay-enemy-attack-calculate", ());
-            } else if hide_quick_results_registered
-                && message.w_param == HIDE_QUICK_RESULTS_HOTKEY_ID as usize
-            {
-                let _ = hotkey_app.emit("overlay-hide-quick-results", ());
-            } else if battle_start_scan_registered && message.w_param == BATTLE_START_SCAN_HOTKEY_ID as usize {
-                let _ = hotkey_app.emit("overlay-battle-start-scan", ());
-            } else if battle_live_scan_registered && message.w_param == BATTLE_LIVE_SCAN_HOTKEY_ID as usize {
-                let _ = hotkey_app.emit("overlay-battle-live-scan", ());
-            } else if battle_power_scan_registered && message.w_param == BATTLE_POWER_SCAN_HOTKEY_ID as usize {
-                let _ = hotkey_app.emit("overlay-battle-power-scan", ());
-            } else if trait_align_registered && message.w_param == TRAIT_ALIGN_HOTKEY_ID as usize {
-                let _ = hotkey_app.emit("overlay-trait-align", ());
-            } else if skill_order_registered && message.w_param == SKILL_ORDER_HOTKEY_ID as usize {
-                force_overlay_edit_mode_from_hotkey(&hotkey_context);
-                let _ = hotkey_app.emit("overlay-skill-order", ());
-            }
+            std::thread::sleep(Duration::from_millis(15));
         }
-        if overlay_hotkey_registered {
-            unsafe { UnregisterHotKey(std::ptr::null_mut(), OVERLAY_HOTKEY_ID) };
-        }
-        if quick_hotkey_registered {
-            unsafe { UnregisterHotKey(std::ptr::null_mut(), QUICK_CALCULATE_HOTKEY_ID) };
-        }
-        if enemy_attack_calculate_registered {
-            unsafe { UnregisterHotKey(std::ptr::null_mut(), ENEMY_ATTACK_CALCULATE_HOTKEY_ID) };
-        }
-        if hide_quick_results_registered {
-            unsafe {
-                UnregisterHotKey(
-                    std::ptr::null_mut(),
-                    HIDE_QUICK_RESULTS_HOTKEY_ID,
-                )
-            };
-        }
-        if battle_start_scan_registered { unsafe { UnregisterHotKey(std::ptr::null_mut(), BATTLE_START_SCAN_HOTKEY_ID) }; }
-        if battle_live_scan_registered { unsafe { UnregisterHotKey(std::ptr::null_mut(), BATTLE_LIVE_SCAN_HOTKEY_ID) }; }
-        if battle_power_scan_registered { unsafe { UnregisterHotKey(std::ptr::null_mut(), BATTLE_POWER_SCAN_HOTKEY_ID) }; }
-        if trait_align_registered { unsafe { UnregisterHotKey(std::ptr::null_mut(), TRAIT_ALIGN_HOTKEY_ID) }; }
-        if skill_order_registered { unsafe { UnregisterHotKey(std::ptr::null_mut(), SKILL_ORDER_HOTKEY_ID) }; }
+        for shortcut in &current { unregister(shortcut); }
     });
 }

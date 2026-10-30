@@ -1812,14 +1812,22 @@ body:has(.plugin-mode) .app-header .weather-panel {
   display: grid;
   gap: 6px;
   grid-template-rows: 1fr auto;
-  min-height: calc(max(var(--calc-button-height), var(--buff-button-height)) + var(--calc-button-height) + 20px);
+  min-height: calc(max(var(--calc-button-height), var(--buff-button-height)) + 2 * var(--calc-button-height) + 24px);
 }
 
 .team-action-shortcuts {
+  display: grid;
+  gap: 4px;
+}
+
+.team-action-shortcut-row {
   align-items: center;
   display: flex;
   gap: 4px;
 }
+
+.shortcut-setting-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.shortcut-setting-row > span { flex: 1; }
 
 .team-action-shortcuts button {
   flex: 1 0 auto;

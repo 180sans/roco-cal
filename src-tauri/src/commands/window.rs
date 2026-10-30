@@ -15,6 +15,12 @@ use std::sync::atomic::Ordering;
 use tauri::{Emitter, Manager};
 
 #[tauri::command]
+pub(crate) async fn configure_plugin_shortcuts(bindings: Value) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || crate::platform::windows::overlay::configure_plugin_shortcuts(bindings))
+        .await.map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
 pub(crate) fn update_overlay_click_through(
     app: tauri::AppHandle,
     target_state: tauri::State<'_, OverlayTargetState>,

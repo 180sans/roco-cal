@@ -24,6 +24,7 @@ export const desktopApi = {
   appState: () => invoke<AppState>("app_state"),
   externalIcons: () => invoke<ExternalIconCatalog>("external_icons"),
   openConfigDirectory: () => invoke<void>("open_config_directory"),
+  configurePluginShortcuts: (bindings: Record<string, string>) => invoke<void>("configure_plugin_shortcuts", { bindings }),
   listSkills: (payload: Payload) => invoke<SkillListResult>("list_skills", { payload }),
   listBuffSkills: (payload: Payload) => invoke<{ items: BuffShortcutEntry[] }>("list_buff_skills", { payload }),
   traitInfo: (payload: Payload) => invoke<any>("trait_info", { payload }),

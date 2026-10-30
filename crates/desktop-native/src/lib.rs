@@ -2,6 +2,7 @@
 //! This crate never starts Python; battle rules remain in the battle engine.
 pub mod desktop_data;
 pub mod external_icons;
+pub mod plugin_shortcuts;
 pub mod inference;
 
 mod encoding;
