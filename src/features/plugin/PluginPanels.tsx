@@ -156,6 +156,7 @@ function TeamActionPanel({
     y: 76,
   }));
   const position = pluginMode && layout ? layout : normalPosition;
+  const shortcutRows = [0, 1].map((row) => PLUGIN_SHORTCUTS.filter((item) => item.row === row && shortcutButtons[item.id] !== false)).filter((buttons) => buttons.length > 0);
   const dragRef = useRef<{ pointerX: number; pointerY: number; x: number; y: number } | null>(null);
   const panelRef = useRef<HTMLElement | null>(null);
 
@@ -217,13 +218,12 @@ function TeamActionPanel({
         {(!pluginMode || visibility?.["action-apply"] !== false) ? <button className="buff-button" onClick={onApplyBuff} disabled={!buffOptions.length}>应用</button> : null}
         {pluginMode && visibility?.["action-reverse"] !== false ? <button className="buff-button" onClick={onReverseBuff} disabled={!buffOptions.length}>反向</button> : null}
       </div>
-      {pluginMode ? <div className="team-action-shortcuts">
-        {[0, 1].map((row) => {
-          const buttons = PLUGIN_SHORTCUTS.filter((item) => item.row === row && shortcutButtons[item.id] !== false);
+      {pluginMode && shortcutRows.length > 0 ? <div className="team-action-shortcuts">
+        {shortcutRows.map((buttons) => {
           const handlers: Record<string, () => void> = { "battle-live": onRecognizeBattleLive, "battle-start": onRecognizeBattleStart, "skill-powers": onRecognizeSkillPowers, "trait-align": onAlignTraitStacks, "self-buff": onOpenSelfBuff, "enemy-buff": onOpenEnemyBuff, "enemy-attack": onCalculateEnemyAttack, "skill-order": onAdjustSkills, "quick-calculate": onToggleQuickCalculate };
-          return buttons.length ? <div className="team-action-shortcut-row" key={row}>
+          return <div className="team-action-shortcut-row" key={buttons[0].row!}>
             {buttons.map((item) => <button key={item.id} type="button" title={`${item.label}${shortcuts[item.id] ? ` ${shortcuts[item.id]}` : ""}`} aria-keyshortcuts={shortcutAria(shortcuts[item.id])} aria-pressed={item.id === "quick-calculate" ? quickCalculationActive : undefined} onClick={handlers[item.id]}>{item.label}</button>)}
-          </div> : null;
+          </div>;
         })}
       </div> : null}
     </section>
