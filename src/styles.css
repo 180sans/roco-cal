@@ -190,9 +190,7 @@ select {
   padding: 0 8px;
 }
 
-/* 插件叠加层运行时，应用页面导航会固定压在目标窗口顶部；
-   选择器和快捷计算打开时这些导航按钮仍露在叠加层外沿。 */
-.app-shell.overlay-attached:has(> .battle-view:not([hidden]) > .battle-page.plugin-mode) > .app-header .tabs,
+/* 普通绑定状态保留顶部导航，混合模式仍隐藏；天气使用队伍面板内的入口。 */
 .overlay-attached .app-header .weather-panel,
 .overlay-attached .team-layout-actions-more summary::-webkit-details-marker,
 body:has(.battle-page.mixed-active) .app-header,
@@ -4285,6 +4283,16 @@ button.trigger-button > img {
 .battle-page.plugin-mode .roster .slot .family-form-select-compact > span[aria-hidden="true"] {
   font-size: 10px;
   line-height: 1;
+}
+
+/* 我方形态入口与右侧天分悬浮框分开，和敌方保持镜像。 */
+.battle-page.plugin-mode .team-left-roster .slot-grid {
+  padding-left: 18px;
+}
+
+.battle-page.plugin-mode .team-left-roster .slot .family-form-select-compact {
+  left: -18px;
+  right: auto;
 }
 
 .battle-page.immersive-mode.plugin-mode .slot-family-control .family-form-select {
