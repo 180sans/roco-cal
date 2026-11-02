@@ -60,6 +60,16 @@ def normalize_count(value):
     return numeric
 
 
+def _snap_power_integer(value):
+    # 只吸收整数边界附近的浮点舍入误差，不改变真实小数的向下取整规则。
+    if not math.isfinite(value):
+        return value
+    nearest = round(value)
+    if abs(value - nearest) <= 8 * math.ulp(value):
+        return float(nearest)
+    return value
+
+
 def calc_effective_skill_power(
     skill_power,
     power_multiplier,
@@ -80,9 +90,9 @@ def calc_effective_skill_power(
     if buff_denominator == 0:
         raise ValueError("buff 分母不能为0")
 
-    base_power = max(1, math.floor((skill_power + power_bonus) * power_multiplier_value))
+    base_power = max(1, math.floor(_snap_power_integer((skill_power + power_bonus) * power_multiplier_value)))
     effective_power = (buff_numerator / buff_denominator) * base_power * (1 + type_bonus) * advantage
-    return effective_power
+    return _snap_power_integer(effective_power)
 
 
 def calculate_damage(
