@@ -21,6 +21,14 @@ def empty_trait_runtime(name: str = "", effect_text: str = "") -> dict[str, Any]
     }
 
 
+def trait_level(runtime: dict[str, Any] | None, default: int = 60) -> int:
+    if runtime:
+        for effect in runtime.get("resolved_effects", []):
+            if effect.get("kind") == "level" and effect.get("target") == "self" and effect.get("operation") == "set":
+                return max(1, int(effect["value"]))
+    return default
+
+
 def _resolve_effect_value(effect: dict[str, Any], count: int, stackable: bool) -> float | int | None:
     if count <= 0:
         return None
@@ -88,6 +96,10 @@ def _resolve_group_runtime(
         return empty_trait_runtime(name=name, effect_text=effect_text)
 
     normalized_stacks = max(int(stacks or 0), 0)
+    is_level_trait = battle_effect.get("format") == "level_stack_v1"
+    if is_level_trait:
+        level_stack = next((group["stack"] for group in groups if group.get("mode") == "current_level"), {})
+        normalized_stacks = max(1, normalized_stacks or int(level_stack.get("default", 60)))
     choices = choices if isinstance(choices, dict) else {}
     exclusive_choices = {}
     for group in groups:
@@ -110,6 +122,11 @@ def _resolve_group_runtime(
     resolved_effects = []
     conditions = []
     for group in groups:
+        if is_level_trait:
+            condition = group.get("condition") or {}
+            if condition.get("source") == "stack" and condition.get("stack_id") == "current_level":
+                if condition.get("operator") == "lt" and not normalized_stacks < condition["value"]:
+                    continue
         group_name = group.get("exclusive_group")
         if isinstance(group_name, str) and group.get("mode") != exclusive_choices[group_name]["selected"]:
             continue
@@ -117,20 +134,23 @@ def _resolve_group_runtime(
         is_stack = stack.get("enabled") is True
         is_passive = group.get("passive") is True
         is_trigger = not is_stack and not is_passive and stack.get("enabled") is False
-        if is_stack:
+        is_level_gain = is_level_trait and stack.get("source") == "current_level_minus_base"
+        if is_level_gain:
+            count = max(0, normalized_stacks - int(battle_effect.get("base_level", 60)))
+        elif is_stack:
             count = normalized_stacks
         elif is_passive or (is_trigger and triggered):
             count = 1
         else:
             continue
-        if is_stack and count == 0:
+        if (is_stack or is_level_gain) and count == 0:
             continue
         resolved_effects.extend(_resolve_group_effects(group, count))
         if is_trigger and isinstance(group.get("mode"), str):
             conditions.append({"mode": group["mode"]})
 
     template = "generic_stack" if stack_input else "special_condition" if triggerable else "passive"
-    return {
+    runtime = {
         "name": name,
         "effect_text": effect_text,
         "affects_battle": True,
@@ -148,6 +168,9 @@ def _resolve_group_runtime(
         "exclusive_choices": exclusive_choices,
         "note": battle_effect.get("note"),
     }
+    if is_level_trait:
+        runtime.update(current_level=normalized_stacks, alignment_source="self_health")
+    return runtime
 
 
 def resolve_trait_runtime(

@@ -21,19 +21,19 @@ function personalityValue(value: string | null, stat: string, direction: 1 | -1)
   return direction * (Number.isFinite(amount) && amount > 0 ? amount : direction > 0 ? 0.2 : 0.1);
 }
 
-function speedValue(raceValue: number, iv: number, personality: number | null) {
-  const level = 60;
+function speedValue(raceValue: number, iv: number, personality: number | null, level = 60) {
   const star = 5;
   const effort = 10 * star;
   const effectiveIv = iv + iv * star;
-  let base = Math.floor(level * (raceValue / 100) + 50 * (raceValue / 100) + 10 + 0.5)
-    + Math.floor(level * ((effectiveIv / 2) / 100) + 50 * ((effectiveIv / 2) / 100) + 0.5);
+  const racePart = level * (raceValue / 100) + 50 * (raceValue / 100);
+  const ivPart = level * ((effectiveIv / 2) / 100) + 50 * ((effectiveIv / 2) / 100);
+  let base = Math.floor(racePart + ivPart + 0.5) + 10;
   // Match calc_attr's confirmed exception for original race 105 with zero talent.
-  if (raceValue === 105 && iv === 0) base -= 1;
+  if (raceValue === 105 && iv === 0 && level === 60) base -= 1;
   return Math.floor((base * (1 + (personality || 0))) + effort + 0.5);
 }
 
-function speedScenarios(value: UnitState, pets: Pet[], modifiers: SpeedModifiers = { flat: 0, percent: 0 }): SpeedScenario[] {
+function speedScenarios(value: UnitState, pets: Pet[], modifiers: SpeedModifiers = { flat: 0, percent: 0 }, level = 60): SpeedScenario[] {
   // display_name is a user-defined preset label; calculations must use the pet identity.
   const petName = value.mega_form || value.name;
   const findPet = (name: string) => pets.find((item) => item.label === name || item.name === name || `${item.id}${item.name}` === name);
@@ -80,7 +80,7 @@ function speedScenarios(value: UnitState, pets: Pet[], modifiers: SpeedModifiers
   }];
   return scenarios.map((scenario) => ({
     label: scenario.label,
-    value: Math.floor((speedValue(pet.spd!, scenario.iv, scenario.personality) + (value.speed_buff || 0) + modifiers.flat) * (1 + modifiers.percent)),
+    value: Math.floor((speedValue(pet.spd!, scenario.iv, scenario.personality, level) + (value.speed_buff || 0) + modifiers.flat) * (1 + modifiers.percent)),
   }));
 }
 
@@ -145,8 +145,8 @@ function SpeedLine({ left, right, pets, weather, layout, buffLayout, onLayoutCha
   useLatestEffect((request) => loadRuntime(right, setRightRuntime, request), [right.name, right.trait_override_query, right.mega, right.mega_form, right.trait_triggered, right.trait_stacks, right.trait_choices]);
   const leftModifiers = addSpeedModifiers(traitSpeedModifiers(leftRuntime, weather, "self"), traitSpeedModifiers(rightRuntime, weather, "opponent"));
   const rightModifiers = addSpeedModifiers(traitSpeedModifiers(rightRuntime, weather, "self"), traitSpeedModifiers(leftRuntime, weather, "opponent"));
-  const leftScenarios = speedScenarios(left, pets, leftModifiers);
-  const rightScenarios = speedScenarios(right, pets, rightModifiers);
+  const leftScenarios = speedScenarios(left, pets, leftModifiers, leftRuntime?.current_level ?? 60);
+  const rightScenarios = speedScenarios(right, pets, rightModifiers, rightRuntime?.current_level ?? 60);
   const sideName = (value: UnitState, fallback: string) => petNameOnly(value.display_name || value.name) || fallback;
   const renderSide = (value: UnitState, scenarios: SpeedScenario[], fallback: string) => (
     <div className="speed-line-side">

@@ -115,6 +115,35 @@ def trait_power_candidates(payload: dict[str, Any]) -> dict[str, Any]:
     if not runtime.get("stackable"):
         raise ValueError("当前特性没有可修正的叠层，无法进行特性对齐")
 
+    if runtime.get("alignment_source") == "self_health":
+        from core.calshuxing import calc_attr
+        from core.damresult import resolve_personality_candidates
+        from core.find_pets import pets_dataset
+
+        mega_form = (attacker.get("mega_form") or "").strip()
+        pet = pets_dataset.find(
+            mega_form or attacker.get("name", ""),
+            devolution=int(attacker.get("devolution", 0) or 0),
+            mega=bool(attacker.get("mega", False)) and not mega_form,
+        )
+        if not pet:
+            raise ValueError("未找到当前我方精灵，无法校对等级")
+        hp_iv = (attacker.get("iv") or {}).get("hp")
+        talents = [hp_iv] if hp_iv is not None else range(11)
+        personalities = resolve_personality_candidates(attacker.get("personality_bouns"), attacker.get("personality_down"), "hp")
+        minimum = max(1, min(99, int(payload.get("min_stacks", 1))))
+        maximum = max(1, min(99, int(payload.get("max_stacks", 99))))
+        if minimum > maximum:
+            raise ValueError("等级搜索范围无效")
+        candidates = [{
+            "stacks": level,
+            "powers": [[], [], [], []],
+            "hpValues": sorted({calc_attr("hp", pet["hp"], talent, level=level, personality_bonus=nature)
+                                for talent in talents for nature in personalities}),
+        } for level in range(minimum, maximum + 1)]
+        return {"traitName": runtime.get("name"), "alignmentSource": "self_health", "candidates": candidates,
+                "affectedSkills": [], "nonStackingSkills": []}
+
     # 保留技能槽索引，不能跳过状态技能后把 OCR 威力对应到其他技能上。
     skill_names = (attacker.get("skills") or [])[:4]
     attack_skills = []
@@ -389,6 +418,7 @@ def calculate_willpower(payload: dict[str, Any]) -> dict[str, Any]:
     from core.damresult import battle_damage, parse_personality, get_personality_bonus_for_attr
     from core.ele_advantage import TypeChart
     from core.find_pets import pets_dataset
+    from core.trait_runtime import trait_level
 
     attacker = payload.get("attacker") or {}
     defender = payload.get("defender") or {}
@@ -407,7 +437,7 @@ def calculate_willpower(payload: dict[str, Any]) -> dict[str, Any]:
     trait_effects = (attacker_args.get("attacker_trait_runtime") or {}).get("resolved_effects", [])
 
     def final_attack_value(attribute: str, buff_key: str) -> float:
-        value = calc_attr(attribute, attacker_data[attribute], iv.get(attribute) or 0, level=60, personality_bonus=get_personality_bonus_for_attr(personality, attribute))
+        value = calc_attr(attribute, attacker_data[attribute], iv.get(attribute) or 0, level=trait_level(attacker_args.get("attacker_trait_runtime")), personality_bonus=get_personality_bonus_for_attr(personality, attribute))
         # Passive/self trait stat buffs contribute to the type decision before damage is calculated.
         trait_buff = sum(
             float(effect.get("value", 0) or 0)

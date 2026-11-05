@@ -257,7 +257,7 @@ function TeamTraitEditor({
           ) : null}
           {traitRuntime?.stack_input ? (
             <div className="trait-stack-control">
-              <NumberInput value={value.trait_stacks} min={0} max={99} onChange={(trait_stacks) => onChange({ trait_stacks })} />
+              <NumberInput value={traitRuntime.current_level ?? value.trait_stacks} min={traitRuntime.current_level != null ? 1 : 0} max={99} onChange={(trait_stacks) => onChange({ trait_stacks })} />
             </div>
           ) : null}
           {traitRuntime?.stack_input ? <RefreshButton className="compact-button trait-reset-button" onClick={() => onChange({ trait_override_query: null, trait_triggered: false, trait_stacks: 0, trait_choices: {} })} /> : null}

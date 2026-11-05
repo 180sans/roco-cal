@@ -41,13 +41,14 @@
           },
           "stack": {
             "id": "battle_level_gained",
-            "enabled": true,
-            "input": true,
+            "enabled": false,
+            "input": false,
             "permanent": false,
             "default": 0,
             "min": 0,
             "step": 1,
-            "hint": "战斗中实际提升的等级数；与当前等级独立，继承等级不自动重复计为升级"
+            "hint": "按当前等级减60自动计算，最低为0；每级被动物攻+5%",
+            "source": "current_level_minus_base"
           },
           "effects": [
             {
@@ -58,7 +59,8 @@
                 "atk": 0.05
               }
             }
-          ]
+          ],
+          "passive": true
         },
         {
           "mode": "self_level_lt_80",
@@ -88,7 +90,7 @@
           ]
         }
       ],
-      "note": "从圣龙的心愿进化后保留实际等级，填入当前等级。物攻加成单独填写战斗中实际提升的等级数，不由当前等级减60自动推断。"
+      "note": "从圣龙的心愿进化后保留实际等级，填入当前等级。被动物攻加成按max(当前等级-60, 0)×5%自动计算，无需手动触发。"
     }
   }
 }

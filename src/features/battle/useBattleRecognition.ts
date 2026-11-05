@@ -333,12 +333,27 @@ function useBattleRecognition(dependencies: BattleRecognitionDependencies) {
       checkSnapshot();
       setRecognitionStatus({ label: "特性对齐", detail: "正在识别我方技能威力", progress: "OCR 识别中" });
       const capture = await targetCanvas();
+      const candidateResult = await candidatesPromise;
+      if ("error" in candidateResult) throw candidateResult.error;
+      const { data } = candidateResult;
+      checkSnapshot();
+      if (data.alignmentSource === "self_health") {
+        setRecognitionStatus({ label: "特性对齐", detail: "正在识别我方最大生命以校对等级", progress: "OCR 识别中" });
+        const response = await recognizeNumericImages([{ key: "selfHealth", imageDataUrl: cropDetection(capture, "selfHealth"), mode: "self_health" }]);
+        checkSnapshot();
+        const health = response.items[0]?.text?.trim() || "识别失败";
+        setDetectedHealth((previous) => ({ ...previous, self: health }));
+        const extended = await invokeRecognitionTimed(() => desktopApi.traitPowerCandidates({ ...candidatePayload, min_stacks: 11, max_stacks: 99 }), "trait level alignment candidate calculation (11-99)");
+        checkSnapshot();
+        const level = matchTraitStacks({ ...data, candidates: [...data.candidates, ...extended.candidates] }, [health]);
+        patchSlot("left", leftIndex, { trait_stacks: level });
+        notify(`特性对齐完成：${data.traitName}已修正为 ${level} 级`);
+        return;
+      }
       const ocrPromise = recognizeNumericImages(
         (["skill1", "skill2", "skill3", "skill4"] as const).map((key) => ({ key, imageDataUrl: cropDetection(capture, key), mode: "power" })),
       );
-      const [candidateResult, response] = await Promise.all([candidatesPromise, ocrPromise]);
-      if ("error" in candidateResult) throw candidateResult.error;
-      const { data } = candidateResult;
+      const response = await ocrPromise;
       checkSnapshot();
       const powers = Array.from({ length: 4 }, (_, index) => response.items[index]?.text?.trim() || "识别失败");
       setDetectedSkillPowers(powers);
@@ -348,6 +363,7 @@ function useBattleRecognition(dependencies: BattleRecognitionDependencies) {
       let allCandidates = data;
       if (!data.affectedSkills.length || matchingStacks.length !== 1) {
         const extended = await invokeRecognitionTimed(() => desktopApi.traitPowerCandidates({ ...candidatePayload, min_stacks: 11, max_stacks: 99 }), "trait alignment fallback candidate calculation (11-99)");
+        checkSnapshot();
         allCandidates = {
           ...data,
           affectedSkills: data.affectedSkills.length ? data.affectedSkills : extended.affectedSkills,

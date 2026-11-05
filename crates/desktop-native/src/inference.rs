@@ -219,17 +219,15 @@ impl Inference {
         if guard.is_none() {
             let init_started = std::time::Instant::now();
             let dir = self.resources.join("image-classifier");
-            let metadata: Value = serde_json::from_slice(
-                &std::fs::read(dir.join("legacy_558.onnx.json")).map_err(err)?,
+            let classes: Vec<String> = serde_json::from_slice(
+                &std::fs::read(dir.join("all_classes.classes.json")).map_err(err)?,
             )
             .map_err(err)?;
-            let classes: Vec<String> =
-                serde_json::from_value(metadata["class_order"].clone()).map_err(err)?;
             if classes.is_empty() {
                 return Err("Classifier classes are empty".into());
             }
             *guard = Some(Classifier {
-                session: session(&dir.join("legacy_558.onnx"))?,
+                session: session(&dir.join("all_classes.onnx"))?,
                 classes,
             });
             model_init_ms = init_started.elapsed().as_secs_f64() * 1000.0;

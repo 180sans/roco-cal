@@ -10,6 +10,7 @@ from core.ele_advantage import TypeChart
 from core.find_pets import pets_dataset
 from core.skill_finder import _normalize_runtime_value, skill_dataset, resolve_skill
 from core.calshuxing import calc_attr
+from core.trait_runtime import trait_level
 
 def cal_product(values, default=1):
     """
@@ -693,7 +694,10 @@ def _collect_trait_modifiers(
             or (
                 owner_side == "defender"
                 and target == "enemy"
-                and effect.get("context", {}).get("subject") == "attacker"
+                and (
+                    effect.get("context", {}).get("subject") == "attacker"
+                    or effect.get("context", {}).get("timing") == "incoming"
+                )
             )
         ):
             modifiers["damage_multipliers"].append(value)
@@ -971,6 +975,8 @@ def battle_damage(
     """
 
     # ========== 0. 查找并解析技能 ==========
+    atk_lv = trait_level(attacker_trait_runtime, atk_lv)
+    def_lv = trait_level(defender_trait_runtime, def_lv)
     skill_data = skill_data_override or skill_dataset.find_skill(skill_name)
     if skill_data is None:
         raise ValueError(f"未找到技能: {skill_name}")
