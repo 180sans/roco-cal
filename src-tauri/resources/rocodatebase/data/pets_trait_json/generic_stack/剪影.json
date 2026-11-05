@@ -1,0 +1,30 @@
+{
+  "特性": {
+    "名称": "剪影",
+    "效果": "敌方精灵离场时，自己获得技能威力+20。",
+    "battle_effect": {
+      "affects_battle": true,
+      "effect_groups": [
+        {
+          "mode": "enemy_switch_out",
+          "context": {
+            "subject": "enemy",
+            "timing": "after"
+          },
+          "stack": {
+            "enabled": true,
+            "input": true,
+            "permanent": false,
+            "hint": "敌方精灵离场次数"
+          },
+          "effects": [
+            {
+              "kind": "power_bonus",
+              "value_per_stack": 20
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

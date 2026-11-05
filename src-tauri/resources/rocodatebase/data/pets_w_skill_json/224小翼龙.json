@@ -209,6 +209,10 @@
     {
       "skill_name": "龙守望",
       "unlock_condition": "[技能石]龙守望"
+    },
+    {
+      "skill_name": "龙之爪牙",
+      "unlock_condition": "[技能石]龙之爪牙"
     }
   ]
 }

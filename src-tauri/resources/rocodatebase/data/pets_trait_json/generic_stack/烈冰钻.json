@@ -1,0 +1,53 @@
+{
+  "特性": {
+    "名称": "烈冰钻",
+    "效果": "敌方携带技能总能耗每有1点，自己攻击时威力+10%，若敌方总能耗大于15，自己获得速度+75。",
+    "battle_effect": {
+      "affects_battle": true,
+      "effect_groups": [
+        {
+          "mode": "skills_total_cost",
+          "context": {
+            "subject": "enemy",
+            "timing": "carried"
+          },
+          "stack": {
+            "enabled": true,
+            "input": true,
+            "permanent": false,
+            "hint": "敌方携带技能总能耗"
+          },
+          "effects": [
+            {
+              "kind": "power_multiplier",
+              "value_per_stack": 0.1
+            }
+          ]
+        },
+        {
+          "mode": "enemy_skills_total_cost_gt_15",
+          "context": {
+            "subject": "enemy",
+            "timing": "carried"
+          },
+          "stack": {
+            "enabled": false,
+            "input": false,
+            "permanent": false,
+            "hint": ""
+          },
+          "effects": [
+            {
+              "kind": "stat_buff",
+              "target": "self",
+              "values": {
+                "spd": 75
+              },
+              "value_type": "flat"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -207,6 +207,10 @@
     {
       "skill_name": "重击",
       "unlock_condition": "[技能石]重击"
+    },
+    {
+      "skill_name": "气泡",
+      "unlock_condition": "技能石"
     }
   ]
 }

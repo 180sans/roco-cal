@@ -292,5 +292,14 @@
     "skill_power": 55,
     "cost": 3,
     "effect": "normal"
+  },
+  {
+    "name": "夏蛰",
+    "element": "虫",
+    "type": "状态",
+    "description": "己方队伍获得2次随机奉献，应对防御：获得所有种类的奉献各1次。",
+    "skill_power": null,
+    "cost": 4,
+    "effect": "normal"
   }
 ]

@@ -5,12 +5,12 @@
   "elements": [
     "萌"
   ],
-  "种族资质": 449,
-  "hp": 94,
-  "atk": 41,
-  "mag": 84,
-  "def": 56,
-  "res": 94,
+  "种族资质": 485,
+  "hp": 105,
+  "atk": 52,
+  "mag": 100,
+  "def": 55,
+  "res": 93,
   "spd": 80,
   "特性": "迎宾",
   "evolution": {
@@ -208,6 +208,10 @@
     {
       "skill_name": "可爱",
       "unlock_condition": "[技能石]可爱"
+    },
+    {
+      "skill_name": "筑梦",
+      "unlock_condition": "[技能石]筑梦"
     }
   ]
 }

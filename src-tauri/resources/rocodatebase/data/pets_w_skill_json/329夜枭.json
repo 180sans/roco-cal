@@ -126,7 +126,7 @@
       "unlock_condition": "（血脉）虫系血脉"
     },
     {
-      "skill_name": "缠丝劲",
+      "skill_name": "贯手",
       "unlock_condition": "（血脉）武系血脉"
     },
     {
@@ -224,6 +224,10 @@
     {
       "skill_name": "仰望夜空",
       "unlock_condition": "[技能石]仰望夜空"
+    },
+    {
+      "skill_name": "冥暗诅咒",
+      "unlock_condition": "[技能石]冥暗诅咒"
     }
   ]
 }

@@ -26,5 +26,15 @@
       "065蹦蹦花（海神球形态）"
     ],
     "next": []
-  }
+  },
+  "skills": [
+    {
+      "skill_name": "外附传播",
+      "unlock_condition": "[技能石]外附传播"
+    },
+    {
+      "skill_name": "投毒",
+      "unlock_condition": "[技能石]投毒"
+    }
+  ]
 }

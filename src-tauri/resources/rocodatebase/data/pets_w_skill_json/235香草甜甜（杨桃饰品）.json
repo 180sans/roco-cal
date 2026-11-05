@@ -239,6 +239,10 @@
     {
       "skill_name": "打喷嚏",
       "unlock_condition": "[技能石]打喷嚏"
+    },
+    {
+      "skill_name": "严霜",
+      "unlock_condition": "[技能石]严霜"
     }
   ]
 }

@@ -1,0 +1,33 @@
+{
+  "id": "493",
+  "name": "超能阿布",
+  "other_name": [],
+  "elements": [
+    "龙"
+  ],
+  "种族资质": 578,
+  "hp": 126,
+  "atk": 105,
+  "mag": 45,
+  "def": 122,
+  "res": 80,
+  "spd": 100,
+  "特性": "圣龙的守护",
+  "evolution": {
+    "stage": "mega",
+    "chain": [
+      "493阿布",
+      "493超能阿布"
+    ],
+    "prev": [
+      "493阿布"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "深红龙击",
+      "unlock_condition": "[技能石]深红龙击"
+    }
+  ]
+}

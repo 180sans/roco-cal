@@ -204,6 +204,10 @@
     {
       "skill_name": "拖拉机",
       "unlock_condition": "[技能石]拖拉机"
+    },
+    {
+      "skill_name": "蛋壳",
+      "unlock_condition": "[技能石]蛋壳"
     }
   ]
 }

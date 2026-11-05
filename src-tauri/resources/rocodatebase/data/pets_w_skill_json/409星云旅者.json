@@ -210,6 +210,10 @@
     {
       "skill_name": "重组",
       "unlock_condition": "[技能石]重组"
+    },
+    {
+      "skill_name": "蓝移",
+      "unlock_condition": "[技能石]蓝移"
     }
   ]
 }

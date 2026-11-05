@@ -222,6 +222,10 @@
     {
       "skill_name": "嗜痛",
       "unlock_condition": "[技能石]嗜痛"
+    },
+    {
+      "skill_name": "恋恋不舍",
+      "unlock_condition": "[技能石]恋恋不舍"
     }
   ]
 }

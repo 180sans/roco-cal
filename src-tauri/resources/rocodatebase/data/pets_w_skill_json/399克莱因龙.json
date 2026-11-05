@@ -209,6 +209,10 @@
     {
       "skill_name": "守护咒",
       "unlock_condition": "技能石"
+    },
+    {
+      "skill_name": "咒火",
+      "unlock_condition": "[技能石]咒火"
     }
   ]
 }

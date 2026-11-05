@@ -25,5 +25,15 @@
       "192棋绮后（白子）"
     ],
     "next": []
-  }
+  },
+  "skills": [
+    {
+      "skill_name": "矿物置换",
+      "unlock_condition": "[技能石]矿物置换"
+    },
+    {
+      "skill_name": "碎银",
+      "unlock_condition": "[技能石]碎银"
+    }
+  ]
 }

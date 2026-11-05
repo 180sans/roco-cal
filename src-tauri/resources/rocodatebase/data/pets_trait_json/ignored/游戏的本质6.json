@@ -1,0 +1,16 @@
+{
+  "特性": {
+    "名称": "游戏的本质6",
+    "效果": "入场时随机获得1~6点，在场时双方根据点数获得不同效果。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "原描述未列出各点数的具体效果，暂不编造伤害或属性数值。",
+      "ignored_text": "入场时随机获得1~6点，在场时双方根据点数获得不同效果。"
+    }
+  }
+}

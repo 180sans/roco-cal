@@ -224,6 +224,10 @@
     {
       "skill_name": "踏雷",
       "unlock_condition": "技能石"
+    },
+    {
+      "skill_name": "重启",
+      "unlock_condition": "[技能石]重启"
     }
   ]
 }

@@ -241,6 +241,10 @@
     {
       "skill_name": "量子涨落",
       "unlock_condition": "[技能石]量子涨落"
+    },
+    {
+      "skill_name": "蛋壳",
+      "unlock_condition": "[技能石]蛋壳"
     }
   ]
 }

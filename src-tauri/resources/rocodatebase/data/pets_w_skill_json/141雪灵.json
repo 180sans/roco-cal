@@ -237,6 +237,14 @@
     {
       "skill_name": "打喷嚏",
       "unlock_condition": "[技能石]打喷嚏"
+    },
+    {
+      "skill_name": "冷冻",
+      "unlock_condition": "[技能石]冷冻"
+    },
+    {
+      "skill_name": "热桥",
+      "unlock_condition": "[技能石]热桥"
     }
   ]
 }

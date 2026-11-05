@@ -204,6 +204,10 @@
     {
       "skill_name": "啮合传递",
       "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "夏蛰",
+      "unlock_condition": "[技能石]夏蛰"
     }
   ]
 }

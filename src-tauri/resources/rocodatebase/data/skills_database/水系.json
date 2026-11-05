@@ -312,5 +312,49 @@
     "skill_power": null,
     "cost": 1,
     "effect": "normal"
+  },
+  {
+    "name": "离岸流",
+    "element": "水",
+    "type": "物攻",
+    "description": "造成物伤，使用至少2次水系技能后，本技能能耗永久-3。",
+    "skill_power": 125,
+    "cost": 5,
+    "effect": "normal"
+  },
+  {
+    "name": "续杯",
+    "element": "水",
+    "type": "状态",
+    "description": "自己获得双攻+50%，本技能能耗每-1，额外获得50%。",
+    "skill_power": null,
+    "cost": 2,
+    "buff_options": [
+      {
+        "label": "自己物攻 +50% / 自己魔攻 +50%",
+        "effects": [
+          {
+            "target": "self",
+            "field": "phys_atk_buff",
+            "value": 50
+          },
+          {
+            "target": "self",
+            "field": "mag_atk_buff",
+            "value": 50
+          }
+        ]
+      }
+    ],
+    "effect": "normal"
+  },
+  {
+    "name": "间歇泉",
+    "element": "水",
+    "type": "物攻",
+    "description": "造成物伤，自己每有1层减益，本技能能耗-1。",
+    "skill_power": 115,
+    "cost": 4,
+    "effect": "normal"
   }
 ]

@@ -217,6 +217,10 @@
     {
       "skill_name": "龙守望",
       "unlock_condition": "[技能石]龙守望"
+    },
+    {
+      "skill_name": "画龙点睛",
+      "unlock_condition": "[技能石]画龙点睛"
     }
   ]
 }

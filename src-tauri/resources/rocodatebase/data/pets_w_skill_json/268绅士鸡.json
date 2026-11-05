@@ -238,6 +238,10 @@
     {
       "skill_name": "叠势",
       "unlock_condition": "技能石"
+    },
+    {
+      "skill_name": "持续高温",
+      "unlock_condition": "技能石"
     }
   ]
 }

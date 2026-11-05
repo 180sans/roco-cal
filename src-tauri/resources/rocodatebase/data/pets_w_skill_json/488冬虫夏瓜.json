@@ -1,0 +1,206 @@
+{
+  "id": "488",
+  "name": "冬虫夏瓜",
+  "other_name": [],
+  "elements": [
+    "虫",
+    "草"
+  ],
+  "种族资质": 580,
+  "hp": 107,
+  "atk": 62,
+  "mag": 125,
+  "def": 77,
+  "res": 129,
+  "spd": 80,
+  "特性": "虫草多糖",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "487西瓜虫",
+      "488冬虫夏瓜"
+    ],
+    "prev": [
+      "487西瓜虫"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "虫刺",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "根吸收",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "汲取",
+      "unlock_condition": "（默认）Lv.5"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "虫鸣",
+      "unlock_condition": "（默认）Lv.18"
+    },
+    {
+      "skill_name": "纤维化",
+      "unlock_condition": "（默认）Lv.20"
+    },
+    {
+      "skill_name": "富养化",
+      "unlock_condition": "（默认）Lv.21"
+    },
+    {
+      "skill_name": "果粒",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "芳香诱引",
+      "unlock_condition": "（默认）Lv.31"
+    },
+    {
+      "skill_name": "食腐",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "光能聚集",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "夏蛰",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "虫群智慧",
+      "unlock_condition": "[技能石]虫群智慧"
+    },
+    {
+      "skill_name": "虫蛊",
+      "unlock_condition": "[技能石]虫蛊"
+    },
+    {
+      "skill_name": "虫结阵",
+      "unlock_condition": "[技能石]虫结阵"
+    },
+    {
+      "skill_name": "叶绿光束",
+      "unlock_condition": "[技能石]叶绿光束"
+    },
+    {
+      "skill_name": "孢子",
+      "unlock_condition": "[技能石]孢子"
+    },
+    {
+      "skill_name": "移花接木",
+      "unlock_condition": "[技能石]移花接木"
+    },
+    {
+      "skill_name": "养分回流",
+      "unlock_condition": "[技能石]养分回流"
+    },
+    {
+      "skill_name": "能量炮",
+      "unlock_condition": "[技能石]能量炮"
+    },
+    {
+      "skill_name": "快速移动",
+      "unlock_condition": "[技能石]快速移动"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "清洗",
+      "unlock_condition": "[技能石]清洗"
+    },
+    {
+      "skill_name": "水花四溅",
+      "unlock_condition": "[技能石]水花四溅"
+    },
+    {
+      "skill_name": "拍击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "徒长",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火爪",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "肥皂泡",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "淤泥表皮",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "磁干扰",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "贯手",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "灵媒",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "锁芯",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "（血脉）幻系血脉"
+    }
+  ]
+}

@@ -388,5 +388,45 @@
     "skill_power": null,
     "cost": 1,
     "effect": "normal"
+  },
+  {
+    "name": "严霜",
+    "element": "冰",
+    "type": "状态",
+    "description": "敌方获得8层冻结。",
+    "skill_power": null,
+    "cost": 4,
+    "effect": "normal"
+  },
+  {
+    "name": "热桥",
+    "element": "冰",
+    "type": "防御",
+    "description": "减伤80%，应对攻击：敌方获得魔防-60%。",
+    "skill_power": null,
+    "cost": 2,
+    "damage_reduction": "80%",
+    "buff_options": [
+      {
+        "label": "敌方魔防 -60%",
+        "effects": [
+          {
+            "target": "opponent",
+            "field": "mag_def_buff",
+            "value": -60
+          }
+        ]
+      }
+    ],
+    "effect": "normal"
+  },
+  {
+    "name": "冷冻",
+    "element": "冰",
+    "type": "物攻",
+    "description": "造成物伤，使敌方获得至少2次冻结后，每次使用本技能可使敌方能耗+1。",
+    "skill_power": 100,
+    "cost": 4,
+    "effect": "normal"
   }
 ]

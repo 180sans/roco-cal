@@ -320,5 +320,23 @@
     "skill_power": null,
     "cost": 2,
     "effect": "normal"
+  },
+  {
+    "name": "蓝移",
+    "element": "幻",
+    "type": "魔攻",
+    "description": "造成魔伤，使敌方获得至少4层星陨后，每次使用本技能可使敌方获得1层星陨。",
+    "skill_power": 110,
+    "cost": 4,
+    "effect": "normal"
+  },
+  {
+    "name": "混合态",
+    "element": "幻",
+    "type": "状态",
+    "description": "敌方获得随机10层属性减益。",
+    "skill_power": null,
+    "cost": 1,
+    "effect": "normal"
   }
 ]

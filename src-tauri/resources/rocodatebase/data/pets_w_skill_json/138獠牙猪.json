@@ -211,6 +211,10 @@
     {
       "skill_name": "冰墙",
       "unlock_condition": "[技能石]冰墙"
+    },
+    {
+      "skill_name": "泥浆铠甲",
+      "unlock_condition": "技能石"
     }
   ]
 }

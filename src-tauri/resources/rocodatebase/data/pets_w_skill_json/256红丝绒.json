@@ -232,6 +232,10 @@
     {
       "skill_name": "星火",
       "unlock_condition": "[技能石]星火"
+    },
+    {
+      "skill_name": "筑梦",
+      "unlock_condition": "[技能石]筑梦"
     }
   ]
 }

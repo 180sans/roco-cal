@@ -1,0 +1,16 @@
+{
+  "特性": {
+    "名称": "深层侵蚀",
+    "效果": "使用技能后，敌方获得中毒，获得层数等于中毒印记层数的2倍。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "仅施加中毒；参照主库，异常状态施加不配置为当前伤害计算效果。",
+      "ignored_text": "使用技能后，敌方获得中毒，获得层数等于中毒印记层数的2倍。"
+    }
+  }
+}

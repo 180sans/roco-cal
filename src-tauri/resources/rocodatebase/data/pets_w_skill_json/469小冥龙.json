@@ -1,0 +1,210 @@
+{
+  "id": "469",
+  "name": "小冥龙",
+  "other_name": [],
+  "elements": [
+    "幽",
+    "龙"
+  ],
+  "种族资质": 402,
+  "hp": 94,
+  "atk": 102,
+  "mag": 34,
+  "def": 65,
+  "res": 51,
+  "spd": 56,
+  "特性": "恶龙的奢望",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "469小冥龙",
+      "470冥古龙"
+    ],
+    "prev": [],
+    "next": [
+      "470冥古龙"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "诡刺",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "魔镜",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "扫尾",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "穿膛",
+      "unlock_condition": "（默认）Lv.9"
+    },
+    {
+      "skill_name": "掠影",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "降灵",
+      "unlock_condition": "（默认）Lv.17"
+    },
+    {
+      "skill_name": "咒火",
+      "unlock_condition": "（默认）Lv.24"
+    },
+    {
+      "skill_name": "惊吓盒子",
+      "unlock_condition": "（默认）Lv.29"
+    },
+    {
+      "skill_name": "深红龙击",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "冥暗诅咒",
+      "unlock_condition": "（默认）Lv.39"
+    },
+    {
+      "skill_name": "龙之利爪",
+      "unlock_condition": "（默认）Lv.43"
+    },
+    {
+      "skill_name": "撞鬼",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "坟场搏击",
+      "unlock_condition": "[技能石]坟场搏击"
+    },
+    {
+      "skill_name": "入梦",
+      "unlock_condition": "[技能石]入梦"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "[技能石]勾魂"
+    },
+    {
+      "skill_name": "吹炎",
+      "unlock_condition": "[技能石]吹炎"
+    },
+    {
+      "skill_name": "龙吟",
+      "unlock_condition": "[技能石]龙吟"
+    },
+    {
+      "skill_name": "撕裂",
+      "unlock_condition": "[技能石]撕裂"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "[技能石]贪婪"
+    },
+    {
+      "skill_name": "扇风",
+      "unlock_condition": "[技能石]扇风"
+    },
+    {
+      "skill_name": "超声波",
+      "unlock_condition": "[技能石]超声波"
+    },
+    {
+      "skill_name": "偷袭",
+      "unlock_condition": "[技能石]偷袭"
+    },
+    {
+      "skill_name": "当头棒喝",
+      "unlock_condition": "[技能石]当头棒喝"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "[技能石]力量增效"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "猛烈撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "荆棘爪",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰箭",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "泡沫",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "折线冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "冰爪",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "龙吼",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "球状闪电",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "尾后针",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "碰爪",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "幻象",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "诋毁",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "念力膨胀",
+      "unlock_condition": "（血脉）幻系血脉"
+    },
+    {
+      "skill_name": "荒芜之噬",
+      "unlock_condition": "需要：冥古龙"
+    }
+  ]
+}

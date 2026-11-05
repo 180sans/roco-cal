@@ -224,6 +224,10 @@
     {
       "skill_name": "雪原狩猎",
       "unlock_condition": "[技能石]雪原狩猎"
+    },
+    {
+      "skill_name": "冷冻",
+      "unlock_condition": "[技能石]冷冻"
     }
   ]
 }

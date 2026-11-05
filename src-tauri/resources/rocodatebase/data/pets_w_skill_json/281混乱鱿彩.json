@@ -233,6 +233,10 @@
     {
       "skill_name": "离魂术",
       "unlock_condition": "[技能石]离魂术"
+    },
+    {
+      "skill_name": "灵扰",
+      "unlock_condition": "[技能石]灵扰"
     }
   ]
 }

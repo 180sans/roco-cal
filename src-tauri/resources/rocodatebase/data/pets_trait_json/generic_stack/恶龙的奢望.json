@@ -1,0 +1,67 @@
+{
+  "特性": {
+    "名称": "恶龙的奢望",
+    "效果": "初始等级+39，回合结束时等级-10，低于80级时受到伤害+40%。",
+    "battle_effect": {
+      "affects_battle": true,
+      "format": "level_stack_v1",
+      "base_level": 60,
+      "effect_groups": [
+        {
+          "mode": "current_level",
+          "context": {
+            "subject": "self",
+            "timing": "current"
+          },
+          "stack": {
+            "id": "current_level",
+            "enabled": true,
+            "input": true,
+            "permanent": false,
+            "default": 99,
+            "min": 1,
+            "step": 1,
+            "hint": "当前等级：每层代表1级，可手动填写技能改变或进化继承后的实际等级"
+          },
+          "effects": [
+            {
+              "kind": "level",
+              "target": "self",
+              "operation": "set",
+              "default_stack": 99,
+              "value_per_stack": 1
+            }
+          ]
+        },
+        {
+          "mode": "self_level_lt_80",
+          "context": {
+            "subject": "self",
+            "timing": "incoming"
+          },
+          "passive": true,
+          "condition": {
+            "source": "stack",
+            "stack_id": "current_level",
+            "operator": "lt",
+            "value": 80
+          },
+          "stack": {
+            "enabled": false,
+            "input": false,
+            "permanent": false,
+            "hint": ""
+          },
+          "effects": [
+            {
+              "kind": "damage_multiplier",
+              "target": "enemy",
+              "value": 0.4
+            }
+          ]
+        }
+      ],
+      "note": "基础60级加初始39级，默认当前等级99；回合结束等级减少10，直接修改当前等级。"
+    }
+  }
+}

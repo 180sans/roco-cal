@@ -245,6 +245,14 @@
     {
       "skill_name": "补觉",
       "unlock_condition": "[技能石]补觉"
+    },
+    {
+      "skill_name": "外附传播",
+      "unlock_condition": "[技能石]外附传播"
+    },
+    {
+      "skill_name": "投毒",
+      "unlock_condition": "[技能石]投毒"
     }
   ]
 }

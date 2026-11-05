@@ -1,0 +1,16 @@
+{
+  "特性": {
+    "名称": "沙滩节拍",
+    "效果": "使用水系技能后，下次行动草系技能能耗-3。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "仅改变技能能耗，不配置当前伤害计算字段。",
+      "ignored_text": "使用水系技能后，下次行动草系技能能耗-3。"
+    }
+  }
+}

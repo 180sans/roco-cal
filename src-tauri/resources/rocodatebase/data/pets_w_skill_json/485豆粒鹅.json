@@ -1,0 +1,225 @@
+{
+  "id": "485",
+  "name": "豆粒鹅",
+  "other_name": [],
+  "elements": [
+    "冰"
+  ],
+  "种族资质": 503,
+  "hp": 102,
+  "atk": 77,
+  "mag": 69,
+  "def": 107,
+  "res": 72,
+  "spd": 76,
+  "特性": "高吹雪",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "485豆粒鹅",
+      "486刨雪鹅"
+    ],
+    "prev": [],
+    "next": [
+      "486刨雪鹅"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "冰锥",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "抓挠",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "风吹雪",
+      "unlock_condition": "（默认）Lv.2"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.5"
+    },
+    {
+      "skill_name": "雪球",
+      "unlock_condition": "（默认）Lv.11"
+    },
+    {
+      "skill_name": "热桥",
+      "unlock_condition": "（默认）Lv.19"
+    },
+    {
+      "skill_name": "寒风吹",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "热身运动",
+      "unlock_condition": "（默认）Lv.31"
+    },
+    {
+      "skill_name": "缓一缓",
+      "unlock_condition": "（默认）Lv.35"
+    },
+    {
+      "skill_name": "打雪仗",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "冷冻",
+      "unlock_condition": "（默认）Lv.42"
+    },
+    {
+      "skill_name": "霜天",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "暴风雪",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "乱打",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "极寒领域",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "丢冰块",
+      "unlock_condition": "[技能石]丢冰块"
+    },
+    {
+      "skill_name": "冰墙",
+      "unlock_condition": "[技能石]冰墙"
+    },
+    {
+      "skill_name": "速冻",
+      "unlock_condition": "[技能石]速冻"
+    },
+    {
+      "skill_name": "冰天雪地",
+      "unlock_condition": "[技能石]冰天雪地"
+    },
+    {
+      "skill_name": "打喷嚏",
+      "unlock_condition": "[技能石]打喷嚏"
+    },
+    {
+      "skill_name": "潮涌",
+      "unlock_condition": "[技能石]潮涌"
+    },
+    {
+      "skill_name": "肥皂泡",
+      "unlock_condition": "[技能石]肥皂泡"
+    },
+    {
+      "skill_name": "洗礼",
+      "unlock_condition": "[技能石]洗礼"
+    },
+    {
+      "skill_name": "水环",
+      "unlock_condition": "[技能石]水环"
+    },
+    {
+      "skill_name": "扇风",
+      "unlock_condition": "[技能石]扇风"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "[技能石]风矢"
+    },
+    {
+      "skill_name": "羽翼庇护",
+      "unlock_condition": "[技能石]羽翼庇护"
+    },
+    {
+      "skill_name": "压扁",
+      "unlock_condition": "[技能石]压扁"
+    },
+    {
+      "skill_name": "血气",
+      "unlock_condition": "[技能石]血气"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "嗜痛",
+      "unlock_condition": "[技能石]嗜痛"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "淤泥表皮",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "鹰爪",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "报复",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "啮合传递",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（血脉）幻系血脉"
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "特性": {
+    "名称": "圣龙的守护",
+    "效果": "在战斗中每提升1级，获得物攻+5%，低于80级时受到伤害+30%。",
+    "battle_effect": {
+      "affects_battle": true,
+      "format": "level_stack_v1",
+      "base_level": 60,
+      "effect_groups": [
+        {
+          "mode": "current_level",
+          "context": {
+            "subject": "self",
+            "timing": "current"
+          },
+          "stack": {
+            "id": "current_level",
+            "enabled": true,
+            "input": true,
+            "permanent": false,
+            "default": 60,
+            "min": 1,
+            "step": 1,
+            "hint": "当前等级：每层代表1级，可手动填写技能改变或进化继承后的实际等级"
+          },
+          "effects": [
+            {
+              "kind": "level",
+              "target": "self",
+              "operation": "set",
+              "default_stack": 60,
+              "value_per_stack": 1
+            }
+          ]
+        },
+        {
+          "mode": "battle_level_gained",
+          "context": {
+            "subject": "self",
+            "timing": "after"
+          },
+          "stack": {
+            "id": "battle_level_gained",
+            "enabled": true,
+            "input": true,
+            "permanent": false,
+            "default": 0,
+            "min": 0,
+            "step": 1,
+            "hint": "战斗中实际提升的等级数；与当前等级独立，继承等级不自动重复计为升级"
+          },
+          "effects": [
+            {
+              "kind": "stat_buff",
+              "target": "self",
+              "default_stack": 0,
+              "values_per_stack": {
+                "atk": 0.05
+              }
+            }
+          ]
+        },
+        {
+          "mode": "self_level_lt_80",
+          "context": {
+            "subject": "self",
+            "timing": "incoming"
+          },
+          "passive": true,
+          "condition": {
+            "source": "stack",
+            "stack_id": "current_level",
+            "operator": "lt",
+            "value": 80
+          },
+          "stack": {
+            "enabled": false,
+            "input": false,
+            "permanent": false,
+            "hint": ""
+          },
+          "effects": [
+            {
+              "kind": "damage_multiplier",
+              "target": "enemy",
+              "value": 0.3
+            }
+          ]
+        }
+      ],
+      "note": "从圣龙的心愿进化后保留实际等级，填入当前等级。物攻加成单独填写战斗中实际提升的等级数，不由当前等级减60自动推断。"
+    }
+  }
+}

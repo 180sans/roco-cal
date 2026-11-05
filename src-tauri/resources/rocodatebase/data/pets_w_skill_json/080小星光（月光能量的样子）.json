@@ -233,6 +233,10 @@
     {
       "skill_name": "闪光弹",
       "unlock_condition": "[技能石]闪光弹"
+    },
+    {
+      "skill_name": "重启",
+      "unlock_condition": "[技能石]重启"
     }
   ]
 }

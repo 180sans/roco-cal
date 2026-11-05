@@ -69,24 +69,24 @@
   },
   {
     "name": "破防",
-    "cost": 2,
+    "cost": 1,
     "element": "武",
     "type": "状态",
     "skill_power": null,
-    "description": "敌方获得双防-70%，应对防御：额外使被应对技能冷却2回合。",
+    "description": "敌方获得双防-80%，应对防御：额外使被应对技能冷却2回合。",
     "buff_options": [
       {
-        "label": "敌方物防 -70% / 敌方魔防 -70%",
+        "label": "敌方物防 -80% / 敌方魔防 -80%",
         "effects": [
           {
             "target": "opponent",
             "field": "phys_def_buff",
-            "value": -70
+            "value": -80
           },
           {
             "target": "opponent",
             "field": "mag_def_buff",
-            "value": -70
+            "value": -80
           }
         ]
       }

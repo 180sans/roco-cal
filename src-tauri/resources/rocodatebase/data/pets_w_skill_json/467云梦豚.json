@@ -1,0 +1,201 @@
+{
+  "id": "467",
+  "name": "云梦豚",
+  "other_name": [],
+  "elements": [
+    "水"
+  ],
+  "种族资质": 480,
+  "hp": 77,
+  "atk": 37,
+  "mag": 101,
+  "def": 87,
+  "res": 94,
+  "spd": 84,
+  "特性": "吐水",
+  "evolution": {
+    "stage": 1,
+    "chain": [
+      "467云梦豚",
+      "468长江豚"
+    ],
+    "prev": [],
+    "next": [
+      "468长江豚"
+    ]
+  },
+  "skills": [
+    {
+      "skill_name": "水弹",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "音波弹",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "水弹枪",
+      "unlock_condition": "（默认）Lv.3"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "水花四溅",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "润泽",
+      "unlock_condition": "（默认）Lv.21"
+    },
+    {
+      "skill_name": "洗礼",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "激流",
+      "unlock_condition": "（默认）Lv.25"
+    },
+    {
+      "skill_name": "盐水浴",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "阻断",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "应激反应",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "天洪",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "消毒法",
+      "unlock_condition": "[技能石]消毒法"
+    },
+    {
+      "skill_name": "鼓劲",
+      "unlock_condition": "[技能石]鼓劲"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "[技能石]晒太阳"
+    },
+    {
+      "skill_name": "汲取",
+      "unlock_condition": "[技能石]汲取"
+    },
+    {
+      "skill_name": "花香",
+      "unlock_condition": "[技能石]花香"
+    },
+    {
+      "skill_name": "叶绿光束",
+      "unlock_condition": "[技能石]叶绿光束"
+    },
+    {
+      "skill_name": "富养化",
+      "unlock_condition": "[技能石]富养化"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "[技能石]甜心续航"
+    },
+    {
+      "skill_name": "撒娇",
+      "unlock_condition": "[技能石]撒娇"
+    },
+    {
+      "skill_name": "破罐破摔",
+      "unlock_condition": "[技能石]破罐破摔"
+    },
+    {
+      "skill_name": "鸣叫",
+      "unlock_condition": "[技能石]鸣叫"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "徒长",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "水泡盾",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "淤泥表皮",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "风矢",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "飞吻",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "报复",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "念力膨胀",
+      "unlock_condition": "（血脉）幻系血脉"
+    }
+  ]
+}

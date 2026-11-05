@@ -1,0 +1,33 @@
+{
+  "特性": {
+    "名称": "储备金",
+    "效果": "自己每使用1次聚能，回合结束时获得物攻+50%。",
+    "battle_effect": {
+      "affects_battle": true,
+      "effect_groups": [
+        {
+          "mode": "energy_charge",
+          "context": {
+            "subject": "self",
+            "timing": "turn_end"
+          },
+          "stack": {
+            "enabled": true,
+            "input": true,
+            "permanent": false,
+            "hint": "聚能次数"
+          },
+          "effects": [
+            {
+              "kind": "stat_buff",
+              "target": "self",
+              "values_per_stack": {
+                "atk": 0.5
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

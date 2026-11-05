@@ -169,6 +169,58 @@
     {
       "skill_name": "驱赶",
       "unlock_condition": "[技能石]驱赶"
+    },
+    {
+      "skill_name": "冷冻",
+      "unlock_condition": "[技能石]冷冻"
+    },
+    {
+      "skill_name": "恋恋不舍",
+      "unlock_condition": "[技能石]恋恋不舍"
+    },
+    {
+      "skill_name": "投毒",
+      "unlock_condition": "[技能石]投毒"
+    },
+    {
+      "skill_name": "果粒",
+      "unlock_condition": "[技能石]果粒"
+    },
+    {
+      "skill_name": "深红龙击",
+      "unlock_condition": "[技能石]深红龙击"
+    },
+    {
+      "skill_name": "灵扰",
+      "unlock_condition": "[技能石]灵扰"
+    },
+    {
+      "skill_name": "碎银",
+      "unlock_condition": "[技能石]碎银"
+    },
+    {
+      "skill_name": "离岸流",
+      "unlock_condition": "[技能石]离岸流"
+    },
+    {
+      "skill_name": "维管束重构",
+      "unlock_condition": "[技能石]维管束重构"
+    },
+    {
+      "skill_name": "蓝移",
+      "unlock_condition": "[技能石]蓝移"
+    },
+    {
+      "skill_name": "过充电",
+      "unlock_condition": "[技能石]过充电"
+    },
+    {
+      "skill_name": "间歇泉",
+      "unlock_condition": "[技能石]间歇泉"
+    },
+    {
+      "skill_name": "龙之爪牙",
+      "unlock_condition": "[技能石]龙之爪牙"
     }
   ]
 }

@@ -1,0 +1,16 @@
+{
+  "特性": {
+    "名称": "高吹雪",
+    "效果": "使敌方获得10层冻结后，天气变为暴风雪，持续5回合。（最多触发1次）",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "仅改变天气；天气由战斗环境设置，不配置不存在的特性天气效果字段。",
+      "ignored_text": "使敌方获得10层冻结后，天气变为暴风雪，持续5回合。（最多触发1次）"
+    }
+  }
+}

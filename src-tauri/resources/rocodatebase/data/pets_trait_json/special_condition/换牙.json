@@ -1,0 +1,33 @@
+{
+  "特性": {
+    "名称": "换牙",
+    "效果": "驱散1次自己的减益后，获得物攻永久+50%。（最多触发1次）",
+    "battle_effect": {
+      "affects_battle": true,
+      "effect_groups": [
+        {
+          "mode": "self_debuff_dispelled",
+          "context": {
+            "subject": "self",
+            "timing": "after"
+          },
+          "stack": {
+            "enabled": false,
+            "input": false,
+            "permanent": true,
+            "hint": ""
+          },
+          "effects": [
+            {
+              "kind": "stat_buff",
+              "target": "self",
+              "values": {
+                "atk": 0.5
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

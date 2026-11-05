@@ -214,6 +214,10 @@
     {
       "skill_name": "掉包",
       "unlock_condition": "[技能石]掉包"
+    },
+    {
+      "skill_name": "灵扰",
+      "unlock_condition": "[技能石]灵扰"
     }
   ]
 }

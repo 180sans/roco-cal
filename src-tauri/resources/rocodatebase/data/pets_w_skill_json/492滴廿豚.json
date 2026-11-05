@@ -1,0 +1,226 @@
+{
+  "id": "492",
+  "name": "滴廿豚",
+  "other_name": [],
+  "elements": [
+    "毒",
+    "幻"
+  ],
+  "种族资质": 652,
+  "hp": 114,
+  "atk": 112,
+  "mag": 112,
+  "def": 92,
+  "res": 122,
+  "spd": 100,
+  "特性": "游戏的本质20",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "491滴溜豚",
+      "492滴廿豚"
+    ],
+    "prev": [
+      "491滴溜豚"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "毒针",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "落星",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "腐蚀酸液",
+      "unlock_condition": "（默认）Lv.5"
+    },
+    {
+      "skill_name": "星轨裂变",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "混合态",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "星痕",
+      "unlock_condition": "（默认）Lv.24"
+    },
+    {
+      "skill_name": "晒太阳",
+      "unlock_condition": "（默认）Lv.32"
+    },
+    {
+      "skill_name": "投毒",
+      "unlock_condition": "（默认）Lv.36"
+    },
+    {
+      "skill_name": "应激反应",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "溶解",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "瘴气喷射",
+      "unlock_condition": "（默认）Lv.42"
+    },
+    {
+      "skill_name": "薄纱环",
+      "unlock_condition": "（默认）Lv.44"
+    },
+    {
+      "skill_name": "旋转突击",
+      "unlock_condition": "（默认）Lv.46"
+    },
+    {
+      "skill_name": "大爆炸",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "毒沼",
+      "unlock_condition": "[技能石]毒沼"
+    },
+    {
+      "skill_name": "腐化",
+      "unlock_condition": "[技能石]腐化"
+    },
+    {
+      "skill_name": "剧毒",
+      "unlock_condition": "[技能石]剧毒"
+    },
+    {
+      "skill_name": "不可接触",
+      "unlock_condition": "[技能石]不可接触"
+    },
+    {
+      "skill_name": "奇点",
+      "unlock_condition": "[技能石]奇点"
+    },
+    {
+      "skill_name": "星链",
+      "unlock_condition": "[技能石]星链"
+    },
+    {
+      "skill_name": "仰望夜空",
+      "unlock_condition": "[技能石]仰望夜空"
+    },
+    {
+      "skill_name": "二律背反",
+      "unlock_condition": "[技能石]二律背反"
+    },
+    {
+      "skill_name": "双星",
+      "unlock_condition": "[技能石]双星"
+    },
+    {
+      "skill_name": "潮涌",
+      "unlock_condition": "[技能石]潮涌"
+    },
+    {
+      "skill_name": "洗礼",
+      "unlock_condition": "[技能石]洗礼"
+    },
+    {
+      "skill_name": "水环",
+      "unlock_condition": "[技能石]水环"
+    },
+    {
+      "skill_name": "同频",
+      "unlock_condition": "[技能石]同频"
+    },
+    {
+      "skill_name": "连续毒针",
+      "unlock_condition": "[技能石]连续毒针"
+    },
+    {
+      "skill_name": "操控",
+      "unlock_condition": "[技能石]操控"
+    },
+    {
+      "skill_name": "复写",
+      "unlock_condition": "[技能石]复写"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "泥巴喷射",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "啮合传递",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "（血脉）幻系血脉"
+    }
+  ]
+}

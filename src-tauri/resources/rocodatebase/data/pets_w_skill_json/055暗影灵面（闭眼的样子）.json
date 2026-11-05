@@ -227,6 +227,10 @@
     {
       "skill_name": "回收",
       "unlock_condition": "[技能石]回收"
+    },
+    {
+      "skill_name": "冥暗诅咒",
+      "unlock_condition": "[技能石]冥暗诅咒"
     }
   ]
 }

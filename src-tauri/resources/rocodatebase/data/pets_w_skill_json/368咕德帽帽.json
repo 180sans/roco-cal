@@ -220,6 +220,14 @@
     {
       "skill_name": "观测者效应",
       "unlock_condition": "[技能石]观测者效应"
+    },
+    {
+      "skill_name": "离魂术",
+      "unlock_condition": "技能石"
+    },
+    {
+      "skill_name": "冥暗诅咒",
+      "unlock_condition": "[技能石]冥暗诅咒"
     }
   ]
 }

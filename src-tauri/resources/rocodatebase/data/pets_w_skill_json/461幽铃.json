@@ -204,6 +204,10 @@
     {
       "skill_name": "羽化加速",
       "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "地缚灵",
+      "unlock_condition": "[技能石]地缚灵"
     }
   ]
 }

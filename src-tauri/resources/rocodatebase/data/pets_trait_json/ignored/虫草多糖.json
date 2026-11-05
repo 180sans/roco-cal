@@ -1,0 +1,16 @@
+{
+  "特性": {
+    "名称": "虫草多糖",
+    "效果": "草系技能获得1次随机奉献，虫系技能使敌方获得1层寄生。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "仅施加随机奉献与寄生，不配置当前伤害计算字段。",
+      "ignored_text": "草系技能获得1次随机奉献，虫系技能使敌方获得1层寄生。"
+    }
+  }
+}

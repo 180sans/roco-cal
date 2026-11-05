@@ -210,6 +210,10 @@
     {
       "skill_name": "麦芒",
       "unlock_condition": "[技能石]麦芒"
+    },
+    {
+      "skill_name": "沙涌",
+      "unlock_condition": "技能石"
     }
   ]
 }

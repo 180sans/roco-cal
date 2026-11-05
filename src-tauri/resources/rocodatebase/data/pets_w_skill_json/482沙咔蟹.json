@@ -1,0 +1,210 @@
+{
+  "id": "482",
+  "name": "沙咔蟹",
+  "other_name": [],
+  "elements": [
+    "水",
+    "草"
+  ],
+  "种族资质": 640,
+  "hp": 135,
+  "atk": 128,
+  "mag": 54,
+  "def": 137,
+  "res": 101,
+  "spd": 85,
+  "特性": "沙滩节拍",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "481蟹蟹椰",
+      "482沙咔蟹"
+    ],
+    "prev": [
+      "481蟹蟹椰"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "飞叶",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "抓挠",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "咆哮",
+      "unlock_condition": "（默认）Lv.9"
+    },
+    {
+      "skill_name": "潮涌",
+      "unlock_condition": "（默认）Lv.13"
+    },
+    {
+      "skill_name": "外附传播",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "针刺射击",
+      "unlock_condition": "（默认）Lv.21"
+    },
+    {
+      "skill_name": "水环",
+      "unlock_condition": "（默认）Lv.25"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.32"
+    },
+    {
+      "skill_name": "间歇泉",
+      "unlock_condition": "（默认）Lv.34"
+    },
+    {
+      "skill_name": "洗礼",
+      "unlock_condition": "（默认）Lv.37"
+    },
+    {
+      "skill_name": "纤维化",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "仙人掌刺击",
+      "unlock_condition": "（默认）Lv.47"
+    },
+    {
+      "skill_name": "水幕冲击",
+      "unlock_condition": "[技能石]水幕冲击"
+    },
+    {
+      "skill_name": "潮汐",
+      "unlock_condition": "[技能石]潮汐"
+    },
+    {
+      "skill_name": "水刃",
+      "unlock_condition": "[技能石]水刃"
+    },
+    {
+      "skill_name": "藤绞",
+      "unlock_condition": "[技能石]藤绞"
+    },
+    {
+      "skill_name": "富养化",
+      "unlock_condition": "[技能石]富养化"
+    },
+    {
+      "skill_name": "防御反击",
+      "unlock_condition": "[技能石]防御反击"
+    },
+    {
+      "skill_name": "反击拳",
+      "unlock_condition": "[技能石]反击拳"
+    },
+    {
+      "skill_name": "斩断",
+      "unlock_condition": "[技能石]斩断"
+    },
+    {
+      "skill_name": "连续爪击",
+      "unlock_condition": "[技能石]连续爪击"
+    },
+    {
+      "skill_name": "后发制人",
+      "unlock_condition": "[技能石]后发制人"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "防反",
+      "unlock_condition": "[技能石]防反"
+    },
+    {
+      "skill_name": "有效预防",
+      "unlock_condition": "[技能石]有效预防"
+    },
+    {
+      "skill_name": "离岸流",
+      "unlock_condition": "[技能石]离岸流"
+    },
+    {
+      "skill_name": "猛烈撞击",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "火焰护盾",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "淤泥表皮",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "雪替身",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "集中",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "掩护",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "缠丝劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "报复",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "等价交换",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "械斗",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（血脉）幻系血脉"
+    }
+  ]
+}

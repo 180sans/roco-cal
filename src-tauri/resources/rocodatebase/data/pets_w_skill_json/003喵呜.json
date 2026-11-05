@@ -229,6 +229,10 @@
     {
       "skill_name": "纤维化",
       "unlock_condition": "[技能石]纤维化"
+    },
+    {
+      "skill_name": "维管束重构",
+      "unlock_condition": "[技能石]维管束重构"
     }
   ]
 }

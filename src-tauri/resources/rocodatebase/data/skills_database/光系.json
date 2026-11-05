@@ -202,7 +202,7 @@
     "element": "光",
     "type": "物攻",
     "description": "造成物伤，选择：敌方携带光系技能时威力+50或应对状态时被应对的技能变为透射。",
-    "skill_power": 115,
+    "skill_power": 100,
     "cost": 4,
     "triggered": {
       "mode": "attacker_hold_light_skill",

@@ -1,0 +1,206 @@
+{
+  "id": "476",
+  "name": "龙嵴金脉",
+  "other_name": [],
+  "elements": [
+    "电"
+  ],
+  "种族资质": 629,
+  "hp": 145,
+  "atk": 131,
+  "mag": 58,
+  "def": 127,
+  "res": 88,
+  "spd": 80,
+  "特性": "储备金",
+  "evolution": {
+    "stage": 3,
+    "chain": [
+      "474沉金兽",
+      "475龙头金",
+      "476龙嵴金脉"
+    ],
+    "prev": [
+      "475龙头金"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "导电撞击",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "抓挠",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "力量增效",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "电弧",
+      "unlock_condition": "（默认）Lv.7"
+    },
+    {
+      "skill_name": "咆哮",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "过充电",
+      "unlock_condition": "（默认）Lv.18"
+    },
+    {
+      "skill_name": "惊雷",
+      "unlock_condition": "（默认）Lv.25"
+    },
+    {
+      "skill_name": "通电",
+      "unlock_condition": "（默认）Lv.32"
+    },
+    {
+      "skill_name": "重启",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "电磁偏转",
+      "unlock_condition": "（默认）Lv.41"
+    },
+    {
+      "skill_name": "吨位压制",
+      "unlock_condition": "（默认）Lv.45"
+    },
+    {
+      "skill_name": "交叉闪电",
+      "unlock_condition": "（默认）Lv.50"
+    },
+    {
+      "skill_name": "闪击折返",
+      "unlock_condition": "[技能石]闪击折返"
+    },
+    {
+      "skill_name": "过载回路",
+      "unlock_condition": "[技能石]过载回路"
+    },
+    {
+      "skill_name": "踏雷",
+      "unlock_condition": "[技能石]踏雷"
+    },
+    {
+      "skill_name": "电离爆破",
+      "unlock_condition": "[技能石]电离爆破"
+    },
+    {
+      "skill_name": "龙炮",
+      "unlock_condition": "[技能石]龙炮"
+    },
+    {
+      "skill_name": "龙吟",
+      "unlock_condition": "[技能石]龙吟"
+    },
+    {
+      "skill_name": "岩土暴击",
+      "unlock_condition": "[技能石]岩土暴击"
+    },
+    {
+      "skill_name": "泥浆铠甲",
+      "unlock_condition": "[技能石]泥浆铠甲"
+    },
+    {
+      "skill_name": "震击",
+      "unlock_condition": "[技能石]震击"
+    },
+    {
+      "skill_name": "扫尾",
+      "unlock_condition": "[技能石]扫尾"
+    },
+    {
+      "skill_name": "压扁",
+      "unlock_condition": "[技能石]压扁"
+    },
+    {
+      "skill_name": "棘刺",
+      "unlock_condition": "[技能石]棘刺"
+    },
+    {
+      "skill_name": "取念",
+      "unlock_condition": "[技能石]取念"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "荆棘爪",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "透射",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "跺地",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "啮合传递",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "（血脉）幻系血脉"
+    }
+  ]
+}

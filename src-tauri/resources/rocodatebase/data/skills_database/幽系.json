@@ -291,5 +291,75 @@
     "skill_power": null,
     "cost": 3,
     "effect": "normal"
+  },
+  {
+    "name": "冥暗诅咒",
+    "element": "幽",
+    "type": "状态",
+    "description": "敌方失去5能量，且下回合末回复3能量，应对防御：下回合不回复能量。",
+    "skill_power": null,
+    "cost": 2,
+    "effect": "normal"
+  },
+  {
+    "name": "灵扰",
+    "element": "幽",
+    "type": "物攻",
+    "description": "造成物伤，3连击。偷取敌方能量至少1次后，本技能连击数永久+1。",
+    "skill_power": 25,
+    "cost": 3,
+    "combo": 3,
+    "triggered": {
+      "mode": "energy_stolen_gte_1",
+      "condition": "偷取敌方能量至少1次后",
+      "combo_plus": "1"
+    },
+    "effect": "normal"
+  },
+  {
+    "name": "地缚灵",
+    "element": "幽",
+    "type": "状态",
+    "description": "敌方获得双防-70%，若敌方本回合更换精灵，敌方额外获得速度-50。",
+    "skill_power": null,
+    "cost": 2,
+    "buff_options": [
+      {
+        "label": "敌方物防 -70% / 敌方魔防 -70%",
+        "effects": [
+          {
+            "target": "opponent",
+            "field": "phys_def_buff",
+            "value": -70
+          },
+          {
+            "target": "opponent",
+            "field": "mag_def_buff",
+            "value": -70
+          }
+        ]
+      },
+      {
+        "label": "敌方物防 -70% / 敌方魔防 -70% / 敌方速度 -50",
+        "effects": [
+          {
+            "target": "opponent",
+            "field": "phys_def_buff",
+            "value": -70
+          },
+          {
+            "target": "opponent",
+            "field": "mag_def_buff",
+            "value": -70
+          },
+          {
+            "target": "opponent",
+            "field": "speed_buff",
+            "value": -50
+          }
+        ]
+      }
+    ],
+    "effect": "normal"
   }
 ]

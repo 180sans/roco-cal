@@ -214,6 +214,10 @@
     {
       "skill_name": "绞轮",
       "unlock_condition": "[技能石]绞轮"
+    },
+    {
+      "skill_name": "拖拉机",
+      "unlock_condition": "技能石"
     }
   ]
 }

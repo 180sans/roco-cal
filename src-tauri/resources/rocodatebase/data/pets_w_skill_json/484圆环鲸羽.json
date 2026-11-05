@@ -1,0 +1,206 @@
+{
+  "id": "484",
+  "name": "圆环鲸羽",
+  "other_name": [],
+  "elements": [
+    "幻",
+    "冰"
+  ],
+  "种族资质": 571,
+  "hp": 135,
+  "atk": 38,
+  "mag": 123,
+  "def": 73,
+  "res": 102,
+  "spd": 100,
+  "特性": "环天顶弧",
+  "evolution": {
+    "stage": 2,
+    "chain": [
+      "483鲸羽",
+      "484圆环鲸羽"
+    ],
+    "prev": [
+      "483鲸羽"
+    ],
+    "next": []
+  },
+  "skills": [
+    {
+      "skill_name": "风吹雪",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "音波弹",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "严霜",
+      "unlock_condition": "（默认）Lv.1"
+    },
+    {
+      "skill_name": "星轨裂变",
+      "unlock_condition": "（默认）Lv.6"
+    },
+    {
+      "skill_name": "打雪仗",
+      "unlock_condition": "（默认）Lv.10"
+    },
+    {
+      "skill_name": "加固",
+      "unlock_condition": "（默认）Lv.16"
+    },
+    {
+      "skill_name": "蓝移",
+      "unlock_condition": "（默认）Lv.19"
+    },
+    {
+      "skill_name": "冰点",
+      "unlock_condition": "（默认）Lv.23"
+    },
+    {
+      "skill_name": "防御",
+      "unlock_condition": "（默认）Lv.31"
+    },
+    {
+      "skill_name": "冥想",
+      "unlock_condition": "（默认）Lv.33"
+    },
+    {
+      "skill_name": "大爆炸",
+      "unlock_condition": "（默认）Lv.38"
+    },
+    {
+      "skill_name": "超新星馈赠",
+      "unlock_condition": "（默认）Lv.40"
+    },
+    {
+      "skill_name": "冬至",
+      "unlock_condition": "（默认）Lv.48"
+    },
+    {
+      "skill_name": "坍缩",
+      "unlock_condition": "[技能石]坍缩"
+    },
+    {
+      "skill_name": "奇点",
+      "unlock_condition": "[技能石]奇点"
+    },
+    {
+      "skill_name": "星链",
+      "unlock_condition": "[技能石]星链"
+    },
+    {
+      "skill_name": "仰望夜空",
+      "unlock_condition": "[技能石]仰望夜空"
+    },
+    {
+      "skill_name": "二律背反",
+      "unlock_condition": "[技能石]二律背反"
+    },
+    {
+      "skill_name": "冰冻光线",
+      "unlock_condition": "[技能石]冰冻光线"
+    },
+    {
+      "skill_name": "寒风吹",
+      "unlock_condition": "[技能石]寒风吹"
+    },
+    {
+      "skill_name": "肥皂泡",
+      "unlock_condition": "[技能石]肥皂泡"
+    },
+    {
+      "skill_name": "洗礼",
+      "unlock_condition": "[技能石]洗礼"
+    },
+    {
+      "skill_name": "打鼾",
+      "unlock_condition": "[技能石]打鼾"
+    },
+    {
+      "skill_name": "吹散",
+      "unlock_condition": "[技能石]吹散"
+    },
+    {
+      "skill_name": "魔法增效",
+      "unlock_condition": "[技能石]魔法增效"
+    },
+    {
+      "skill_name": "借用",
+      "unlock_condition": "[技能石]借用"
+    },
+    {
+      "skill_name": "休息回复",
+      "unlock_condition": "（血脉）普通系血脉"
+    },
+    {
+      "skill_name": "蜡质膜",
+      "unlock_condition": "（血脉）草系血脉"
+    },
+    {
+      "skill_name": "引燃",
+      "unlock_condition": "（血脉）火系血脉"
+    },
+    {
+      "skill_name": "蓄水",
+      "unlock_condition": "（血脉）水系血脉"
+    },
+    {
+      "skill_name": "虹光冲击",
+      "unlock_condition": "（血脉）光系血脉"
+    },
+    {
+      "skill_name": "泥巴喷射",
+      "unlock_condition": "（血脉）地系血脉"
+    },
+    {
+      "skill_name": "霜降",
+      "unlock_condition": "（血脉）冰系血脉"
+    },
+    {
+      "skill_name": "升龙咆哮",
+      "unlock_condition": "（血脉）龙系血脉"
+    },
+    {
+      "skill_name": "麻痹",
+      "unlock_condition": "（血脉）电系血脉"
+    },
+    {
+      "skill_name": "毒孢子",
+      "unlock_condition": "（血脉）毒系血脉"
+    },
+    {
+      "skill_name": "假寐",
+      "unlock_condition": "（血脉）虫系血脉"
+    },
+    {
+      "skill_name": "化劲",
+      "unlock_condition": "（血脉）武系血脉"
+    },
+    {
+      "skill_name": "羽化加速",
+      "unlock_condition": "（血脉）翼系血脉"
+    },
+    {
+      "skill_name": "甜心续航",
+      "unlock_condition": "（血脉）萌系血脉"
+    },
+    {
+      "skill_name": "勾魂",
+      "unlock_condition": "（血脉）幽系血脉"
+    },
+    {
+      "skill_name": "贪婪",
+      "unlock_condition": "（血脉）恶系血脉"
+    },
+    {
+      "skill_name": "锁芯",
+      "unlock_condition": "（血脉）机械系血脉"
+    },
+    {
+      "skill_name": "超维投射",
+      "unlock_condition": "（血脉）幻系血脉"
+    }
+  ]
+}

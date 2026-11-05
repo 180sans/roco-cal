@@ -508,5 +508,35 @@
       }
     ],
     "effect": "choice"
+  },
+  {
+    "name": "碎银",
+    "element": "地",
+    "type": "魔攻",
+    "description": "造成魔伤，消耗至少10能量后，本技能能耗永久-5。",
+    "skill_power": 170,
+    "cost": 10,
+    "effect": "normal"
+  },
+  {
+    "name": "矿物置换",
+    "element": "地",
+    "type": "状态",
+    "description": "自己获得魔攻+120%和3回合禁足。",
+    "skill_power": null,
+    "cost": 1,
+    "buff_options": [
+      {
+        "label": "自己魔攻 +120%",
+        "effects": [
+          {
+            "target": "self",
+            "field": "mag_atk_buff",
+            "value": 120
+          }
+        ]
+      }
+    ],
+    "effect": "normal"
   }
 ]

@@ -1,0 +1,16 @@
+{
+  "特性": {
+    "名称": "环天顶弧",
+    "效果": "在场时，若天气为暴风雪，回合结束敌方不会获得冻结，而是获得3层星陨印记。",
+    "battle_effect": {
+      "affects_battle": false,
+      "template": "ignored",
+      "stackable": false,
+      "permanent": false,
+      "stacks_input": false,
+      "effects": [],
+      "note": "仅替换天气下施加的异常状态与印记，不配置当前伤害计算字段。",
+      "ignored_text": "在场时，若天气为暴风雪，回合结束敌方不会获得冻结，而是获得3层星陨印记。"
+    }
+  }
+}

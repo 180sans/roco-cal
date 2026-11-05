@@ -213,6 +213,14 @@
     {
       "skill_name": "许愿池",
       "unlock_condition": "[技能石]许愿池"
+    },
+    {
+      "skill_name": "外附传播",
+      "unlock_condition": "[技能石]外附传播"
+    },
+    {
+      "skill_name": "混合态",
+      "unlock_condition": "[技能石]混合态"
     }
   ]
 }

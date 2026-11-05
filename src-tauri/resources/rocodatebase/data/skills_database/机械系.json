@@ -209,7 +209,7 @@
     "cost": 3,
     "element": "机械",
     "type": "魔攻",
-    "skill_power": 75,
+    "skill_power": 85,
     "description": "造成魔伤，每受到1次抵抗的技能攻击（不含连击），本技能威力永久+20。",
     "triggered": {
       "mode": "incoming_resisted_skill",

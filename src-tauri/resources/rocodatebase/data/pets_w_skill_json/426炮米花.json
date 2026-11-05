@@ -225,6 +225,10 @@
     {
       "skill_name": "急中生智",
       "unlock_condition": "[技能石]急中生智"
+    },
+    {
+      "skill_name": "果粒",
+      "unlock_condition": "[技能石]果粒"
     }
   ]
 }

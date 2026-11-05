@@ -127,14 +127,14 @@
     "element": "火",
     "type": "魔攻",
     "skill_power": 40,
-    "description": "驱散地方所有印记，每驱散1层，获得物攻+20%。",
+    "description": "驱散敌方所有印记，每驱散1层，获得魔攻+20%。",
     "buff_options": [
       {
-        "label": "自己物攻 +20%",
+        "label": "自己魔攻+20%",
         "effects": [
           {
             "target": "self",
-            "field": "phys_atk_buff",
+            "field": "mag_atk_buff",
             "value": 20
           }
         ]
@@ -483,7 +483,7 @@
     "name": "暖气",
     "element": "火",
     "type": "防御",
-    "description": "减伤70%，应对攻击：下一次攻击时，技能威力+50。",
+    "description": "减伤80%，应对攻击：下一次攻击时，技能威力+50。",
     "skill_power": null,
     "cost": 2,
     "buff_options": [
@@ -534,13 +534,13 @@
     "name": "暖阳",
     "element": "火",
     "type": "物攻",
-    "description": "造成物伤，每使用1次其他火系技能，威力永久+40，使用本技能后重置。",
-    "skill_power": 70,
+    "description": "造成物伤，每使用1次其他火系技能，威力永久+60，使用本技能后重置。",
+    "skill_power": 65,
     "cost": 2,
     "effect": "normal",
     "triggered": {
       "mode": "other_fire_skill_count",
-      "skill_power_plus": "40",
+      "skill_power_plus": "60",
       "multiple": true
     }
   },

@@ -184,5 +184,73 @@
     "skill_power": null,
     "cost": 1,
     "effect": "choice"
+  },
+  {
+    "name": "深红龙击",
+    "element": "龙",
+    "type": "物攻",
+    "description": "造成物伤。自己每进入1次蓄力状态，本技能能耗永久-2。",
+    "skill_power": 115,
+    "cost": 5,
+    "effect": "normal"
+  },
+  {
+    "name": "咒火",
+    "element": "龙",
+    "type": "状态",
+    "description": "蓄力，自己获得2层龙噬印记。",
+    "skill_power": null,
+    "cost": 3,
+    "effect": "normal"
+  },
+  {
+    "name": "荒芜之噬",
+    "element": "龙",
+    "type": "物攻",
+    "description": "造成物伤，若击败敌方，自己等级+20。",
+    "skill_power": 130,
+    "cost": 5,
+    "effect": "normal"
+  },
+  {
+    "name": "画龙点睛",
+    "element": "龙",
+    "type": "状态",
+    "description": "蓄力，自己获得双攻+80%和速度+30。任意方式蓄力2次后，本技能不再需要蓄力。",
+    "skill_power": 85,
+    "cost": 1,
+    "buff_options": [
+      {
+        "label": "自己物攻 +80% / 自己魔攻 +80% / 自己速度 +30",
+        "effects": [
+          {
+            "target": "self",
+            "field": "phys_atk_buff",
+            "value": 80
+          },
+          {
+            "target": "self",
+            "field": "mag_atk_buff",
+            "value": 80
+          },
+          {
+            "target": "self",
+            "field": "speed_buff",
+            "value": 30
+          }
+        ]
+      }
+    ],
+    "effect": "normal"
+  },
+  {
+    "name": "龙之爪牙",
+    "element": "龙",
+    "type": "物攻",
+    "description": "蓄力，造成物伤，5连击。",
+    "skill_power": 25,
+    "cost": 3,
+    "combo": 5,
+    "effect": "normal"
   }
 ]

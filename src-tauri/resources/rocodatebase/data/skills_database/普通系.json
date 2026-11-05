@@ -1111,5 +1111,15 @@
       }
     ],
     "effect": "normal"
+  },
+  {
+    "name": "蛋壳",
+    "element": "普通",
+    "type": "防御",
+    "description": "减伤60%，应对攻击：驱散敌方所有增益。",
+    "skill_power": null,
+    "cost": 2,
+    "damage_reduction": "60%",
+    "effect": "normal"
   }
 ]

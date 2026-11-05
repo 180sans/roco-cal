@@ -5,12 +5,12 @@
   "elements": [
     "草"
   ],
-  "种族资质": 659,
-  "hp": 144,
-  "atk": 155,
+  "种族资质": 704,
+  "hp": 164,
+  "atk": 160,
   "mag": 70,
-  "def": 132,
-  "res": 88,
+  "def": 142,
+  "res": 98,
   "spd": 70,
   "特性": "盘根木",
   "evolution": {
@@ -123,7 +123,7 @@
       "unlock_condition": "（血脉）虫系血脉"
     },
     {
-      "skill_name": "贯手",
+      "skill_name": "反击拳",
       "unlock_condition": "（血脉）武系血脉"
     },
     {

@@ -26,5 +26,11 @@
       "004魔力猫"
     ],
     "next": []
-  }
+  },
+  "skills": [
+    {
+      "skill_name": "维管束重构",
+      "unlock_condition": "[技能石]维管束重构"
+    }
+  ]
 }

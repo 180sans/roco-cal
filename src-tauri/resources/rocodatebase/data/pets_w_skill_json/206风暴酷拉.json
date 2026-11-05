@@ -24,5 +24,11 @@
       "206酷拉"
     ],
     "next": []
-  }
+  },
+  "skills": [
+    {
+      "skill_name": "过充电",
+      "unlock_condition": "[技能石]过充电"
+    }
+  ]
 }

@@ -1,0 +1,33 @@
+{
+  "特性": {
+    "名称": "银头寸",
+    "效果": "自己每消耗1点能量，回合结束时获得魔攻+10%。",
+    "battle_effect": {
+      "affects_battle": true,
+      "effect_groups": [
+        {
+          "mode": "energy_consumed",
+          "context": {
+            "subject": "self",
+            "timing": "turn_end"
+          },
+          "stack": {
+            "enabled": true,
+            "input": true,
+            "permanent": false,
+            "hint": "累计消耗能量点数"
+          },
+          "effects": [
+            {
+              "kind": "stat_buff",
+              "target": "self",
+              "values_per_stack": {
+                "mag": 0.1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

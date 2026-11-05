@@ -227,6 +227,10 @@
     {
       "skill_name": "暖阳",
       "unlock_condition": "[技能石]暖阳"
+    },
+    {
+      "skill_name": "间歇泉",
+      "unlock_condition": "[技能石]间歇泉"
     }
   ]
 }

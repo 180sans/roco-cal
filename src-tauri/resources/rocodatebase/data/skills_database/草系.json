@@ -410,7 +410,7 @@
     "element": "草",
     "type": "魔攻",
     "description": "造成魔伤，自己每有1能量，本次技能威力+10。",
-    "skill_power": 50,
+    "skill_power": 60,
     "cost": 4,
     "triggered": {
       "mode": "self_energy_stack",
@@ -457,6 +457,35 @@
     "description": "造成物伤，若上回合双方有精灵使用萌系技能，自己回复7能量。",
     "skill_power": 105,
     "cost": 5,
+    "effect": "normal"
+  },
+  {
+    "name": "外附传播",
+    "element": "草",
+    "type": "防御",
+    "description": "减伤80%，应对攻击：敌方获得2层寄生。",
+    "skill_power": null,
+    "cost": 3,
+    "damage_reduction": "80%",
+    "effect": "normal"
+  },
+  {
+    "name": "果粒",
+    "element": "草",
+    "type": "魔攻",
+    "description": "造成魔伤，2连击。",
+    "skill_power": 45,
+    "cost": 3,
+    "combo": 2,
+    "effect": "normal"
+  },
+  {
+    "name": "维管束重构",
+    "element": "草",
+    "type": "魔攻",
+    "description": "造成魔伤，自己累计回复至少40%生命后，每次使用本技能可回复3能量。",
+    "skill_power": 110,
+    "cost": 4,
     "effect": "normal"
   }
 ]
