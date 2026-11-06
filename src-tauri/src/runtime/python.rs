@@ -117,18 +117,20 @@ fn run_python_with_input(
 }
 
 fn embedded_python(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let local_runtime = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("resources")
-        .join("python");
-    let mut candidates = vec![
-        local_runtime.join("pythonw.exe"),
-        local_runtime.join("python.exe"),
-    ];
+    let mut candidates = Vec::new();
 
     if let Ok(resource_dir) = app.path().resource_dir() {
-        let runtime = resource_dir.join("python");
-        candidates.push(runtime.join("pythonw.exe"));
-        candidates.push(runtime.join("python.exe"));
+        for runtime in [resource_dir.join("resources").join("python"), resource_dir.join("python")] {
+            candidates.push(runtime.join("pythonw.exe"));
+            candidates.push(runtime.join("python.exe"));
+        }
+    }
+
+    #[cfg(debug_assertions)]
+    {
+        let local_runtime = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources").join("python");
+        candidates.push(local_runtime.join("pythonw.exe"));
+        candidates.push(local_runtime.join("python.exe"));
     }
 
     candidates

@@ -74,12 +74,16 @@ struct NativeData(Arc<Mutex<Option<desktop_data::DesktopData>>>);
 struct NativeInference(Arc<OnceLock<inference::Inference>>);
 
 fn resource_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let mut candidates =
-        vec![PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources\\rocodatebase")];
+    let mut candidates = Vec::new();
 
     if let Ok(resource_dir) = app.path().resource_dir() {
+        // Bundle resource paths retain the `resources` directory from tauri.conf.json.
+        candidates.push(resource_dir.join("resources").join("rocodatebase"));
         candidates.push(resource_dir.join("rocodatebase"));
     }
+
+    #[cfg(debug_assertions)]
+    candidates.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources").join("rocodatebase"));
 
     for candidate in &candidates {
         if candidate.join("desktop_api.py").is_file() {
