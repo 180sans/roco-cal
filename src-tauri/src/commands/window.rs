@@ -1,3 +1,4 @@
+use crate::diagnostics;
 use crate::log_recognition_timing;
 use crate::platform::windows::overlay::{OverlayTargetBinding, OverlayTargetState, OverlayInteractionState, OverlayVisibilityState, parse_hwnd, force_overlay_edit_mode, restore_normal_window, set_overlay_click_through};
 #[cfg(windows)]
@@ -64,6 +65,7 @@ pub(crate) fn attach_overlay_target(
     visibility_state: tauri::State<'_, OverlayVisibilityState>,
     hwnd: String,
 ) -> Result<Value, String> {
+    diagnostics::event("window.attach_request", serde_json::json!({"input": hwnd}));
     let target_hwnd = parse_hwnd(&hwnd)?;
     let _transition_guard = visibility_state
         .transition
@@ -116,11 +118,20 @@ pub(crate) fn attach_overlay_target(
         enforce_overlay_borderless(overlay_hwnd as *mut c_void);
         visibility_state.collapsed.store(false, Ordering::Relaxed);
         // Keep the overlay owned by the target so it follows the target window.
-        unsafe { SetWindowLongPtrW(overlay_hwnd as *mut c_void, GWLP_HWNDPARENT, target_hwnd as isize) };
+        unsafe { crate::platform::windows::ffi::SetLastError(0) };
+        let previous_owner = unsafe { SetWindowLongPtrW(overlay_hwnd as *mut c_void, GWLP_HWNDPARENT, target_hwnd as isize) };
+        let owner_error = unsafe { crate::platform::windows::ffi::GetLastError() };
+        let actual_owner = unsafe { GetWindowLongPtrW(overlay_hwnd as *mut c_void, GWLP_HWNDPARENT) };
+        let mut target_pid = 0;
+        unsafe { crate::platform::windows::ffi::GetWindowThreadProcessId(target, &mut target_pid) };
+        diagnostics::event("window.owner_set", serde_json::json!({"previousOwner": format!("0x{previous_owner:X}"),
+            "win32Error": owner_error, "actualOwner": format!("0x{actual_owner:X}"), "matchesTarget": actual_owner == target_hwnd as isize,
+            "targetProcess": diagnostics::process(target_pid), "windows": diagnostics::snapshot(Some(binding))}));
         let _ = set_overlay_taskbar_entry_visible(&app, false);
         let _ = set_overlay_window_title(&app, "");
         let _ = set_overlay_border_visible(&app, false);
         if !sync_overlay_to_target(binding, true) {
+            diagnostics::event("window.attach_alignment_failed", diagnostics::snapshot(Some(binding)));
             unsafe { SetWindowLongPtrW(overlay_hwnd as *mut c_void, GWLP_HWNDPARENT, 0) };
             let _ = restore_normal_window(&app);
             restore_overlay_native_frame(binding);
@@ -132,6 +143,7 @@ pub(crate) fn attach_overlay_target(
             return Err("Unable to align the overlay with the supplied HWND".to_string());
         }
         *state.binding.lock().map_err(|_| "Overlay target state is unavailable".to_string())? = Some(binding);
+        diagnostics::event("window.attached", diagnostics::snapshot(Some(binding)));
         let _ = app.emit("overlay-attachment-change", true);
         let _ = app.emit("overlay-click-through-change", false);
         return Ok(serde_json::json!({ "attached": true, "hwnd": format!("0x{target_hwnd:X}") }));
@@ -159,6 +171,7 @@ pub(crate) fn detach_overlay_target(
         .transition
         .lock()
         .map_err(|_| "Overlay transition state is unavailable".to_string())?;
+    diagnostics::event("window.detach_request", serde_json::json!({}));
     visibility_state.collapsed.store(false, Ordering::Relaxed);
     let binding = state
         .binding

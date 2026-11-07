@@ -1,3 +1,5 @@
+use crate::diagnostics;
+use serde_json::json;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::Ordering;
 #[cfg(windows)]
@@ -40,6 +42,7 @@ struct OverlayHotkeyContext {
     interaction_state: OverlayInteractionState,
     visibility_state: OverlayVisibilityState,
     edit_shortcut: Arc<Mutex<Option<Shortcut>>>,
+    observed_shortcuts: Arc<Mutex<Vec<Shortcut>>>,
 }
 
 #[cfg(windows)]
@@ -212,6 +215,7 @@ pub(crate) fn sync_overlay_to_target(binding: OverlayTargetBinding, raise_overla
     if unsafe { GetClientRect(target, &mut target_client) } == 0
         || unsafe { ClientToScreen(target, &mut target_origin) } == 0
     {
+        diagnostics::event("window.sync_failed", json!({"stage": "client_geometry", "win32Error": unsafe { GetLastError() }, "target": binding.target_hwnd}));
         if !previous_dpi_context.is_null() {
             unsafe { SetThreadDpiAwarenessContext(previous_dpi_context) };
         }
@@ -251,6 +255,9 @@ pub(crate) fn sync_overlay_to_target(binding: OverlayTargetBinding, raise_overla
     } else {
         true
     };
+    if !positioned {
+        diagnostics::event("window.sync_failed", json!({"stage": "SetWindowPos", "win32Error": unsafe { GetLastError() }, "raise": raise_overlay}));
+    }
     if positioned && unsafe { IsWindowVisible(overlay) } == 0 {
         unsafe { ShowWindow(overlay, SW_SHOWNOACTIVATE) };
     }
@@ -283,6 +290,7 @@ fn toggle_overlay_visibility(
         return;
     };
     let collapse = !visibility_state.collapsed.load(Ordering::Relaxed);
+    diagnostics::event("visibility.toggle", json!({"collapse": collapse, "windows": diagnostics::snapshot(Some(binding))}));
     visibility_state
         .collapsed
         .store(collapse, Ordering::Relaxed);
@@ -356,6 +364,9 @@ pub(crate) fn set_overlay_click_through(
         window
             .set_ignore_cursor_events(enabled)
             .map_err(|error| format!("Cannot change overlay interaction mode: {error}"))?;
+    }
+    if state.click_through.load(Ordering::Relaxed) != enabled {
+        diagnostics::event("interaction.click_through", json!({"enabled": enabled}));
     }
     state.click_through.store(enabled, Ordering::Relaxed);
     app.emit("overlay-click-through-change", enabled)
@@ -477,10 +488,12 @@ fn force_overlay_edit_mode_from_hotkey(context: &OverlayHotkeyContext) {
         .ok()
         .and_then(|binding| *binding);
     if binding.is_none() || context.visibility_state.collapsed.load(Ordering::Relaxed) {
+        diagnostics::event("shortcut.edit_skipped", json!({"bound": binding.is_some(), "collapsed": context.visibility_state.collapsed.load(Ordering::Relaxed)}));
         return;
     }
     let _ = set_overlay_click_through(&context.app, &context.interaction_state, false);
-    let _ = context.app.emit("overlay-force-edit-mode", ());
+    let result = context.app.emit("overlay-force-edit-mode", ());
+    diagnostics::event("shortcut.edit_emit", json!({"result": result.map_err(|e| e.to_string())}));
 }
 
 #[cfg(windows)]
@@ -495,6 +508,18 @@ unsafe extern "system" fn overlay_keyboard_hook(code: i32, w_param: usize, l_par
                 .and_then(|slot| slot.lock().ok())
                 .and_then(|guard| guard.clone())
         {
+            if let Ok(shortcuts) = context.observed_shortcuts.lock() {
+                // Observe configured shortcut keys only, never general typing.
+                for shortcut in shortcuts.iter().filter(|s| s.virtual_key == event.vk_code
+                    && ((unsafe { GetAsyncKeyState(0x12) } < 0) || (unsafe { GetAsyncKeyState(0x11) } < 0)
+                        || (0x70..=0x87).contains(&event.vk_code))) {
+                    diagnostics::event("shortcut.hook_observed", json!({"id": shortcut.id, "chord": shortcut.chord,
+                        "flags": event.flags, "foreground": unsafe { GetForegroundWindow() } as usize,
+                        "alt": unsafe { GetAsyncKeyState(0x12) } < 0,
+                        "ctrl": unsafe { GetAsyncKeyState(0x11) } < 0,
+                        "shift": unsafe { GetAsyncKeyState(0x10) } < 0}));
+                }
+            }
             let shortcut = context.edit_shortcut.lock().ok().and_then(|binding| binding.clone());
             let modifiers = u32::from(unsafe { GetAsyncKeyState(0x12) } < 0)
                 | (u32::from(unsafe { GetAsyncKeyState(0x11) } < 0) << 1)
@@ -502,6 +527,7 @@ unsafe extern "system" fn overlay_keyboard_hook(code: i32, w_param: usize, l_par
             if shortcut.as_ref().is_some_and(|shortcut| shortcut.virtual_key == event.vk_code && shortcut.modifiers == modifiers)
                 && unsafe { GetAsyncKeyState(0x5B) } >= 0 && unsafe { GetAsyncKeyState(0x5C) } >= 0
             {
+                diagnostics::event("shortcut.hook_edit", json!({"virtualKey": event.vk_code, "flags": event.flags}));
                 force_overlay_edit_mode_from_hotkey(&context);
             }
         }
@@ -529,12 +555,46 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
     let tracker_app = app.handle().clone();
     let tracker_interaction_state = app.state::<OverlayInteractionState>().inner().clone();
     let tracker_visibility_state = app.state::<OverlayVisibilityState>().inner().clone();
-    std::thread::spawn(move || loop {
-        let binding = overlay_target_state
+    let diagnostic_target_state = overlay_target_state.clone();
+    let diagnostic_interaction_state = tracker_interaction_state.clone();
+    let diagnostic_visibility_state = tracker_visibility_state.clone();
+    // Keep window inspection and disk reporting out of the attachment tracking path.
+    std::thread::spawn(move || {
+      let mut previous = serde_json::Value::Null;
+      let mut heartbeat = std::time::Instant::now();
+      let mut mouse_down = false;
+      let mut last_foreground = 0usize;
+      loop {
+        let binding = diagnostic_target_state
             .binding
             .lock()
             .ok()
             .and_then(|current| *current);
+        let foreground = unsafe { GetForegroundWindow() } as usize;
+        if foreground != last_foreground {
+            last_foreground = foreground;
+            let mut pid = 0;
+            unsafe { GetWindowThreadProcessId(foreground as *mut c_void, &mut pid) };
+            diagnostics::event("window.foreground", json!({"window": diagnostics::window(foreground), "process": diagnostics::process(pid)}));
+        }
+        let down = unsafe { GetAsyncKeyState(1) } < 0;
+        if down && !mouse_down && binding.is_some() {
+            diagnostics::event("window.mouse_down_sample", diagnostics::snapshot(binding));
+        }
+        mouse_down = down;
+        let status = json!({"windows": diagnostics::snapshot(binding),
+            "collapsed": diagnostic_visibility_state.collapsed.load(Ordering::Relaxed),
+            "clickThrough": diagnostic_interaction_state.click_through.load(Ordering::Relaxed)});
+        if status != previous || heartbeat.elapsed() >= Duration::from_secs(15) {
+            diagnostics::event(if status == previous {"window.heartbeat"} else {"window.state_change"}, status.clone());
+            previous = status;
+            heartbeat = std::time::Instant::now();
+        }
+        std::thread::sleep(Duration::from_millis(100));
+      }
+    });
+    std::thread::spawn(move || loop {
+        let binding = overlay_target_state.binding.lock().ok().and_then(|current| *current);
         if let Some(binding) = binding {
             let Ok(_transition_guard) = tracker_visibility_state.transition.lock() else {
                 std::thread::sleep(Duration::from_millis(100));
@@ -552,6 +612,7 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
                 sync_overlay_to_target(binding, false)
             };
             if !tracking_ok {
+                diagnostics::event("window.tracking_failed", diagnostics::snapshot(Some(binding)));
                 if let Ok(mut current) = overlay_target_state.binding.lock() {
                     if *current == Some(binding) {
                         *current = None;
@@ -591,6 +652,7 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
         interaction_state: hotkey_interaction_state.clone(),
         visibility_state: hotkey_visibility_state.clone(),
         edit_shortcut: Arc::new(Mutex::new(None)),
+        observed_shortcuts: Arc::new(Mutex::new(Vec::new())),
     };
     let _ = OVERLAY_HOTKEY_CONTEXT
         .get_or_init(|| Mutex::new(None))
@@ -606,6 +668,7 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
                 0,
             )
         };
+        diagnostics::event("shortcut.hook_install", json!({"success": !hook.is_null(), "error": if hook.is_null() { unsafe { GetLastError() } } else { 0 }}));
         if hook.is_null() {
             return;
         }
@@ -618,25 +681,37 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
             point: WinPoint { x: 0, y: 0 },
         };
         while unsafe { GetMessageW(&mut message, std::ptr::null_mut(), 0, 0) } > 0 {}
+        diagnostics::event("shortcut.hook_stopped", json!({"error": unsafe { GetLastError() }}));
         unsafe { UnhookWindowsHookEx(hook) };
     });
     let configs = std::fs::read_to_string(crate::app_data_dir(app.handle()).join("configs.json"))
         .ok().and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok());
     let bindings = configs.as_ref().and_then(|configs| configs.pointer("/team_layout/shortcuts"))
         .cloned().unwrap_or_else(|| serde_json::json!({}));
+    diagnostics::event("shortcut.config_loaded", json!({"bindings": bindings}));
     let initial = plugin_shortcuts::resolve(&bindings).unwrap_or_else(|error| {
+        diagnostics::event("shortcut.config_invalid", json!({"error": error}));
         eprintln!("Cannot load plugin shortcuts: {error}");
         plugin_shortcuts::resolve(&serde_json::json!({})).unwrap_or_default()
     });
+    if let Ok(mut shortcuts) = hotkey_context.observed_shortcuts.lock() { *shortcuts = initial.clone(); }
     let (sender, requests) = std::sync::mpsc::channel::<ShortcutRequest>();
     let _ = SHORTCUT_REQUESTS.set(sender);
     std::thread::spawn(move || {
         const WM_HOTKEY: u32 = 0x0312;
         const WM_QUIT: u32 = 0x0012;
         let register = |shortcut: &Shortcut| unsafe {
-            RegisterHotKey(std::ptr::null_mut(), shortcut.registration_id, shortcut.modifiers | 0x4000, shortcut.virtual_key) != 0
+            SetLastError(0);
+            let success = RegisterHotKey(std::ptr::null_mut(), shortcut.registration_id, shortcut.modifiers | 0x4000, shortcut.virtual_key) != 0;
+            let error = if success { 0 } else { GetLastError() };
+            diagnostics::event("shortcut.register", json!({"id": shortcut.id, "chord": shortcut.chord,
+                "registrationId": shortcut.registration_id, "success": success, "win32Error": error}));
+            success
         };
-        let unregister = |shortcut: &Shortcut| { unsafe { UnregisterHotKey(std::ptr::null_mut(), shortcut.registration_id) }; };
+        let unregister = |shortcut: &Shortcut| {
+            let success = unsafe { UnregisterHotKey(std::ptr::null_mut(), shortcut.registration_id) } != 0;
+            diagnostics::event("shortcut.unregister", json!({"id": shortcut.id, "success": success}));
+        };
         let mut current = Vec::new();
         for shortcut in initial {
             if register(&shortcut) { current.push(shortcut); }
@@ -661,20 +736,31 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
                 let chord = message.l_param as u32;
                 if chord >> 16 != shortcut.virtual_key || chord & 0xf != shortcut.modifiers { continue; }
                 let binding = hotkey_target_state.binding.lock().ok().and_then(|binding| *binding);
-                if shortcut.requires_target && binding.is_none() { continue; }
+                diagnostics::event("shortcut.received", json!({"id": shortcut.id, "chord": shortcut.chord,
+                    "collapsed": hotkey_visibility_state.collapsed.load(Ordering::Relaxed),
+                    "windows": diagnostics::snapshot(binding)}));
+                if shortcut.requires_target && binding.is_none() {
+                    diagnostics::event("shortcut.skipped", json!({"id": shortcut.id, "reason": "target_not_bound"})); continue;
+                }
                 if shortcut.id == "toggle-visibility" {
                     toggle_overlay_visibility(&hotkey_app, &hotkey_target_state, &hotkey_interaction_state, &hotkey_visibility_state);
                     continue;
                 }
-                if hotkey_visibility_state.collapsed.load(Ordering::Relaxed) { continue; }
+                if hotkey_visibility_state.collapsed.load(Ordering::Relaxed) {
+                    diagnostics::event("shortcut.skipped", json!({"id": shortcut.id, "reason": "collapsed"})); continue;
+                }
                 if shortcut.id == "edit-mode" { force_overlay_edit_mode_from_hotkey(&hotkey_context); }
                 else {
                     if shortcut.id == "skill-order" { force_overlay_edit_mode_from_hotkey(&hotkey_context); }
-                    let _ = hotkey_app.emit(&shortcut.event, ());
+                    let result = hotkey_app.emit(&shortcut.event, ());
+                    diagnostics::event("shortcut.emit", json!({"id": shortcut.id, "event": shortcut.event, "result": result.map_err(|e| e.to_string())}));
                 }
             }
             while let Ok(request) = requests.try_recv() {
+                if let Ok(mut shortcuts) = hotkey_context.observed_shortcuts.lock() { *shortcuts = request.shortcuts.clone(); }
+                diagnostics::event("shortcut.reconfigure", json!({"requested": request.shortcuts.iter().map(|s| json!({"id": s.id, "chord": s.chord})).collect::<Vec<_>>()}));
                 let result = plugin_shortcuts::replace(&mut current, request.shortcuts, register, unregister);
+                diagnostics::event("shortcut.reconfigure_result", json!({"result": result}));
                 update_edit_shortcut(&current);
                 let _ = request.reply.send(result);
             }

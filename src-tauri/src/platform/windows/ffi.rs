@@ -42,6 +42,14 @@ pub(crate) struct KeyboardLowLevelHook {
 #[cfg(windows)]
 #[link(name = "user32")]
 unsafe extern "system" {
+    pub(crate) fn GetForegroundWindow() -> *mut c_void;
+    pub(crate) fn GetWindow(hwnd: *mut c_void, command: u32) -> *mut c_void;
+    pub(crate) fn GetParent(hwnd: *mut c_void) -> *mut c_void;
+    pub(crate) fn GetAncestor(hwnd: *mut c_void, flags: u32) -> *mut c_void;
+    pub(crate) fn GetWindowThreadProcessId(hwnd: *mut c_void, pid: *mut u32) -> u32;
+    pub(crate) fn GetWindowTextW(hwnd: *mut c_void, text: *mut u16, max: i32) -> i32;
+    pub(crate) fn GetClassNameW(hwnd: *mut c_void, text: *mut u16, max: i32) -> i32;
+    pub(crate) fn GetDpiForWindow(hwnd: *mut c_void) -> u32;
     pub(crate) fn IsWindow(hwnd: *mut c_void) -> i32;
     pub(crate) fn IsWindowVisible(hwnd: *mut c_void) -> i32;
     pub(crate) fn IsIconic(hwnd: *mut c_void) -> i32;
@@ -75,6 +83,13 @@ unsafe extern "system" {
     ) -> *mut c_void;
     pub(crate) fn CallNextHookEx(hook: *mut c_void, code: i32, w_param: usize, l_param: isize) -> isize;
     pub(crate) fn UnhookWindowsHookEx(hook: *mut c_void) -> i32;
+}
+
+#[cfg(windows)]
+#[link(name = "kernel32")]
+unsafe extern "system" {
+    pub(crate) fn GetLastError() -> u32;
+    pub(crate) fn SetLastError(error: u32);
 }
 
 #[cfg(windows)]

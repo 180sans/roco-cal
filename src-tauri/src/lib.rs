@@ -2,6 +2,7 @@ mod commands;
 mod battle_commands;
 mod runtime;
 mod platform;
+mod diagnostics;
 use runtime::python::stop_persistent_python_worker;
 use roco_desktop_native::{desktop_data, inference};
 #[cfg(windows)]
@@ -281,6 +282,7 @@ pub fn run() {
         .manage(OverlayInteractionState::default())
         .manage(OverlayVisibilityState::default())
         .setup(|app| {
+            diagnostics::init(app.handle());
             #[cfg(windows)]
             {
                 platform::windows::overlay::start_overlay_runtime(app);
@@ -289,6 +291,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            diagnostics::diagnostic_event,
             commands::window::configure_plugin_shortcuts,
             commands::data::database_summary,
             commands::data::search_pets,
@@ -335,6 +338,8 @@ pub fn run() {
     });
     app.run(|_, event| {
         if matches!(event, tauri::RunEvent::Exit) {
+            diagnostics::event("session.exit", serde_json::json!({}));
+            diagnostics::flush();
             stop_persistent_python_worker();
         }
     });

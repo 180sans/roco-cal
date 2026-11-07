@@ -1,4 +1,5 @@
-import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { diagnostic } from "./diagnostics";
+import { convertFileSrc, invoke as nativeInvoke } from "@tauri-apps/api/core";
 import type { EnemyAttackSkillResponse } from "../enemyAttack";
 import type { NumericOcrMode } from "../numericOcr";
 import type { TraitPowerCandidates } from "../traitAlignment";
@@ -8,6 +9,22 @@ import type {
   SkillListResult, SkillTriggerInfo, WillpowerResponse, ExternalIconCatalog,
 } from "./desktopTypes";
 import { createPromiseCache } from "./promiseCache";
+
+let diagnosticRequestId = 0;
+const tracedCommands = /^(attach_overlay_target|detach_overlay_target|configure_plugin_shortcuts|update_overlay_click_through|force_overlay_edit_mode_command|begin_overlay_mixed_mode|capture_overlay_target|recognize_images|classify_image_samples|calculate.*|core_probe)$/;
+function invoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
+  const id = ++diagnosticRequestId;
+  const started = Date.now();
+  const traced = tracedCommands.test(command);
+  if (traced) diagnostic("command.start", { id, command });
+  const result = args === undefined ? nativeInvoke<T>(command) : nativeInvoke<T>(command, args);
+  void result.then(() => {
+    if (traced) diagnostic("command.ok", { id, command, elapsedMs: Date.now() - started });
+  }, (error) => {
+    diagnostic("command.error", { id, command, elapsedMs: Date.now() - started, error: String(error).slice(0, 6000) });
+  });
+  return result;
+}
 
 type Payload = Record<string, unknown>;
 export type ConfigSection = "pet_picker" | "trait_picker" | "skill_picker" | "ui_tokens" | "burst_panel" | "team_layout" | "replay";

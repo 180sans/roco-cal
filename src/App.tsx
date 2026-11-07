@@ -1,3 +1,4 @@
+import { startFrontendDiagnostics } from "./services/diagnostics";
 import { useLatestRequest } from "./services/useLatestRequest";
 import { useState, type PointerEvent as ReactPointerEvent, useEffect, useMemo } from "react";
 import { type AppState } from "./services/desktopTypes";
@@ -13,6 +14,7 @@ import { PresetManagerPage } from "./features/presets/PresetManagerPage";
 import { InterfaceSettingsPage } from "./features/settings/InterfaceSettingsPage";
 
 function App() {
+  useEffect(startFrontendDiagnostics, []);
   const appRequests = useLatestRequest();
   const [tab, setTab] = useState<"team" | "presets" | "settings">("team");
   const [weather, setWeather] = useState<(typeof WEATHER_OPTIONS)[number]["value"]>("none");

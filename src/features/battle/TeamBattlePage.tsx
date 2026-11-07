@@ -38,7 +38,7 @@ import { desktopApi } from "../../services/desktopApi";
 
 import { beginPluginLongPressDrag, pluginResizeEdges } from "../../pluginLongPressDrag";
 import defaultConfigs from "../../../src-tauri/resources/rocodatebase/data/configs.json";
-import { listen } from "@tauri-apps/api/event";
+import { diagnosticListen as listen, diagnostic } from "../../services/diagnostics";
 import { getCurrentWindow, cursorPosition } from "@tauri-apps/api/window";
 import { WEATHER_OPTIONS, DEFAULT_SKILL_CARD_COUNT, SKILL_TYPE_FILTERS } from "../../domain/constants";
 import { uiTokenValues } from "../settings/uiTokens";
@@ -180,6 +180,7 @@ function TeamBattlePage({
   const [selectedWillpowerElement, setSelectedWillpowerElement] = useState<string | null>(null);
   const [battleContext, setBattleContext] = useState<BattleContext | null>(null);
   const [error, setError] = useState("");
+  useEffect(() => { if (error) diagnostic("battle.error", { error }); }, [error]);
   const [buffOptions, setBuffOptions] = useState<BuffOption[]>([]);
   const [selectedBuffOption, setSelectedBuffOption] = useState(0);
   const [buffShortcutSide, setBuffShortcutSide] = useState<"left" | "right" | null>(null);
@@ -213,6 +214,7 @@ function TeamBattlePage({
   const [layoutMessage, setLayoutMessage] = useState("");
   const [targetHwnd, setTargetHwnd] = useState("");
   const [targetStatus, setTargetStatus] = useState("");
+  useEffect(() => { if (targetStatus) diagnostic("target.status", { status: targetStatus }); }, [targetStatus]);
   const targetStatusTimerRef = useRef<number | undefined>(undefined);
   const calculateQuickSkillsRef = useRef<() => void>(() => undefined);
   const calculateEnemyAttackSkillsRef = useRef<() => void>(() => undefined);
@@ -225,6 +227,7 @@ function TeamBattlePage({
   const [displayMode, setDisplayMode] = useState<"normal" | "plugin">(
     configs.team_layout?.display_mode === "normal" ? "normal" : "plugin",
   );
+  useEffect(() => { diagnostic("battle.context", { targetAttached, mixedMode, displayMode }); }, [targetAttached, mixedMode, displayMode]);
   const enemyAttackRequests = useLatestRequest(calculationInputKey, displayMode);
   const pluginVisibility = savedPluginVisibility(configs);
   const shortcuts = useMemo(() => savedPluginShortcuts(configs), [configs]);
@@ -998,6 +1001,7 @@ function TeamBattlePage({
   }
 
   async function attachTargetWindow() {
+    diagnostic("attach.request", { hwnd: targetHwnd, displayMode, mixedMode });
     setTargetStatus("");
     try {
       mixedModeTokenRef.current += 1;
@@ -1059,6 +1063,7 @@ function TeamBattlePage({
   }, [onOverlayAttachmentChange]);
 
   async function toggleMixedMode() {
+    diagnostic("mixed_mode.request", { next: !mixedMode, targetAttached, displayMode });
     const next = !mixedMode;
     try {
       if (next) {
