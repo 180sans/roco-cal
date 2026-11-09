@@ -1,8 +1,10 @@
 use crate::diagnostics;
 use crate::log_recognition_timing;
-use crate::platform::windows::overlay::{OverlayTargetBinding, OverlayTargetState, OverlayInteractionState, OverlayVisibilityState, parse_hwnd, force_overlay_edit_mode, restore_normal_window, set_overlay_click_through};
+use crate::platform::windows::overlay::{OverlayTargetBinding, OverlayTargetState, OverlayInteractionState, OverlayVisibilityState, parse_hwnd, force_overlay_edit_mode, set_overlay_click_through};
+#[cfg(not(windows))]
+use crate::platform::windows::overlay::restore_normal_window;
 #[cfg(windows)]
-use crate::platform::windows::overlay::{enforce_overlay_borderless, restore_overlay_native_frame, sync_overlay_to_target, set_overlay_taskbar_entry_visible, set_overlay_window_title, set_overlay_border_visible};
+use crate::platform::windows::overlay::{enforce_overlay_borderless, restore_detached_overlay, sync_overlay_to_target, set_overlay_taskbar_entry_visible, set_overlay_window_title, set_overlay_border_visible};
 #[cfg(windows)]
 use crate::platform::windows::capture::capture_window_client_regions;
 #[cfg(windows)]
@@ -26,16 +28,20 @@ pub(crate) fn update_overlay_click_through(
     app: tauri::AppHandle,
     target_state: tauri::State<'_, OverlayTargetState>,
     interaction_state: tauri::State<'_, OverlayInteractionState>,
+    visibility_state: tauri::State<'_, OverlayVisibilityState>,
     enabled: bool,
 ) -> Result<Value, String> {
+    // Serialize the binding check and native mutation with attach/detach/tracking.
+    let _transition_guard = visibility_state.transition.lock()
+        .map_err(|_| "Overlay transition state is unavailable".to_string())?;
     if enabled
-        && target_state
+        && (visibility_state.collapsed.load(Ordering::Relaxed) || target_state
             .binding
             .lock()
             .map_err(|_| "Overlay target state is unavailable".to_string())?
-            .is_none()
+            .is_none())
     {
-        return Err("Bind a target window before enabling click-through mode".to_string());
+        return Err("Bind and expand a target window before enabling click-through mode".to_string());
     }
     set_overlay_click_through(&app, interaction_state.inner(), enabled)?;
     Ok(serde_json::json!({ "clickThrough": enabled }))
@@ -52,7 +58,10 @@ pub(crate) fn begin_overlay_mixed_mode(
 pub(crate) fn force_overlay_edit_mode_command(
     app: tauri::AppHandle,
     interaction_state: tauri::State<'_, OverlayInteractionState>,
+    visibility_state: tauri::State<'_, OverlayVisibilityState>,
 ) -> Result<Value, String> {
+    let _transition_guard = visibility_state.transition.lock()
+        .map_err(|_| "Overlay transition state is unavailable".to_string())?;
     force_overlay_edit_mode(&app, interaction_state.inner())?;
     Ok(serde_json::json!({ "mixedMode": false, "clickThrough": false }))
 }
@@ -86,34 +95,27 @@ pub(crate) fn attach_overlay_target(
         if overlay_hwnd == target_hwnd {
             return Err("The overlay window cannot target itself".to_string());
         }
-        let previous_binding = state
-            .binding
-            .lock()
-            .map_err(|_| "Overlay target state is unavailable".to_string())?
-            .take();
-        const GWL_STYLE: i32 = -16;
-        const GWL_EXSTYLE: i32 = -20;
+        let previous_binding = *state.binding.lock()
+            .map_err(|_| "Overlay target state is unavailable".to_string())?;
+        // Rebinding retains the original independent window, never the attached geometry.
         let binding = OverlayTargetBinding {
             overlay_hwnd,
             target_hwnd,
-            overlay_style: previous_binding
-                .map(|binding| binding.overlay_style)
-                .unwrap_or_else(|| unsafe {
-                    GetWindowLongPtrW(overlay_hwnd as *mut c_void, GWL_STYLE)
-                }),
-            overlay_exstyle: previous_binding
-                .map(|binding| binding.overlay_exstyle)
-                .unwrap_or_else(|| unsafe {
-                    GetWindowLongPtrW(overlay_hwnd as *mut c_void, GWL_EXSTYLE)
-                }),
+            restore: match previous_binding {
+                Some(binding) => binding.restore,
+                None => crate::platform::windows::window_restore::NativeWindowSnapshot::capture(overlay_hwnd as *mut c_void)?,
+            },
+            restore_fullscreen: match previous_binding {
+                Some(binding) => binding.restore_fullscreen,
+                None => window.is_fullscreen().map_err(|error| error.to_string())?,
+            },
         };
+        *state.binding.lock().map_err(|_| "Overlay target state is unavailable".to_string())? = None;
         const SW_HIDE: i32 = 0;
         unsafe { ShowWindow(overlay_hwnd as *mut c_void, SW_HIDE) };
         if let Err(error) = force_overlay_edit_mode(&app, interaction_state.inner()) {
-            restore_overlay_native_frame(binding);
-            const SW_SHOW: i32 = 5;
-            unsafe { ShowWindow(overlay_hwnd as *mut c_void, SW_SHOW) };
-            return Err(error);
+            let restored = restore_detached_overlay(&app, interaction_state.inner(), visibility_state.inner(), Some(binding), "attach_interaction_failed");
+            return Err(format!("{error}; restore={restored:?}"));
         }
         enforce_overlay_borderless(overlay_hwnd as *mut c_void);
         visibility_state.collapsed.store(false, Ordering::Relaxed);
@@ -130,17 +132,10 @@ pub(crate) fn attach_overlay_target(
         let _ = set_overlay_taskbar_entry_visible(&app, false);
         let _ = set_overlay_window_title(&app, "");
         let _ = set_overlay_border_visible(&app, false);
-        if !sync_overlay_to_target(binding, true) {
-            diagnostics::event("window.attach_alignment_failed", diagnostics::snapshot(Some(binding)));
-            unsafe { SetWindowLongPtrW(overlay_hwnd as *mut c_void, GWLP_HWNDPARENT, 0) };
-            let _ = restore_normal_window(&app);
-            restore_overlay_native_frame(binding);
-            let _ = set_overlay_taskbar_entry_visible(&app, true);
-            let _ = set_overlay_window_title(&app, "Roco Database");
-            let _ = set_overlay_border_visible(&app, true);
-            const SW_SHOW: i32 = 5;
-            unsafe { ShowWindow(overlay_hwnd as *mut c_void, SW_SHOW) };
-            return Err("Unable to align the overlay with the supplied HWND".to_string());
+        if actual_owner != target_hwnd as isize || !sync_overlay_to_target(binding, true) {
+            diagnostics::event("window.attach_failed", diagnostics::snapshot(Some(binding)));
+            let restored = restore_detached_overlay(&app, interaction_state.inner(), visibility_state.inner(), Some(binding), "attach_failed");
+            return Err(format!("无法完成窗口绑定：owner 匹配={}，Win32 错误码={}；恢复结果={restored:?}", actual_owner == target_hwnd as isize, owner_error));
         }
         *state.binding.lock().map_err(|_| "Overlay target state is unavailable".to_string())? = Some(binding);
         diagnostics::event("window.attached", diagnostics::snapshot(Some(binding)));
@@ -180,34 +175,15 @@ pub(crate) fn detach_overlay_target(
         .take();
 
     #[cfg(windows)]
-    if let Some(binding) = binding {
-        const GWLP_HWNDPARENT: i32 = -8;
-        unsafe {
-            SetWindowLongPtrW(
-                binding.overlay_hwnd as *mut c_void,
-                GWLP_HWNDPARENT,
-                0,
-            )
-        };
-        restore_overlay_native_frame(binding);
-    }
+    restore_detached_overlay(&app, interaction_state.inner(), visibility_state.inner(), binding, "manual")?;
 
     #[cfg(not(windows))]
-    let _ = binding;
-
-    restore_normal_window(&app)?;
-    #[cfg(windows)]
-    #[cfg(windows)]
-    let _ = set_overlay_taskbar_entry_visible(&app, true);
-    #[cfg(windows)]
-    let _ = set_overlay_window_title(&app, "Roco Database");
-    #[cfg(windows)]
-    let _ = set_overlay_border_visible(&app, true);
-
-    if interaction_state.click_through.load(Ordering::Relaxed) {
+    {
+        let _ = binding;
+        restore_normal_window(&app)?;
         set_overlay_click_through(&app, interaction_state.inner(), false)?;
+        let _ = app.emit("overlay-attachment-change", false);
     }
-    let _ = app.emit("overlay-attachment-change", false);
 
     Ok(serde_json::json!({ "attached": false }))
 }

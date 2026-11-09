@@ -72,13 +72,13 @@ function Roster({
         {!pluginMode ? <h2>{title}</h2> : null}
         <select
           className="roster-import-select"
-          value={selectedGroup}
+          value=""
           title="导入分组"
           onChange={(event) => {
             if (event.target.value) onImportGroup(event.target.value);
           }}
         >
-          <option value="">导入分组</option>
+          <option value="" hidden={Boolean(selectedGroup)}>{selectedGroup || "导入分组"}</option>
           {presets.map((group) => (
             <option key={group.name} value={group.name}>
               {group.name}

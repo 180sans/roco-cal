@@ -162,6 +162,7 @@ function TeamBattlePage({
   const [leftIndex, setLeftIndex] = useState(0);
   const [rightIndex, setRightIndex] = useState(0);
   const [leftGroupName, setLeftGroupName] = useState("");
+  const importedGroupsRef = useRef<Partial<Record<"left" | "right", { name: string; items: string }>>>({});
   const [petPicker, setPetPicker] = useState<{ side: "left" | "right"; index: number } | null>(null);
   const [leftAttacks, setLeftAttacks] = useState(true);
   const [leftOtherBonuses, setLeftOtherBonuses] = useState<TeamOtherBonuses>(blankTeamOtherBonuses);
@@ -977,6 +978,7 @@ function TeamBattlePage({
     const group = presets.find((item) => item.name === leftGroupName);
     setLeftSlots(Array.from({ length: teamSlotCount }, (_, index) => group?.items[index] ? unitFromPreset(group.items[index], true) : blankUnit()));
     setRightSlots(Array.from({ length: teamSlotCount }, blankUnit));
+    delete importedGroupsRef.current.right;
     setLeftIndex(0);
     setRightIndex(0);
     setLeftAttacks(true);
@@ -1022,7 +1024,8 @@ function TeamBattlePage({
   async function detachTargetWindow() {
     setTargetStatus("");
     try {
-      mixedModeTokenRef.current += 1;
+      // Stop polling and calibration before restoring the independent window.
+      await exitMixedMode();
       await desktopApi.detachOverlayTarget();
       setTargetAttached(false);
       setMixedMode(false);
@@ -1048,7 +1051,8 @@ function TeamBattlePage({
     void listen<boolean>("overlay-attachment-change", ({ payload }) => {
       setTargetAttached(payload);
       if (!payload) {
-        setMixedMode(false);
+        // Target loss and failed attachment must cancel the same pending work as manual detach.
+        void exitMixedMode();
         setTargetStatus("目标窗口已关闭，已恢复普通窗口");
         onOverlayAttachmentChange(false);
       }
@@ -1107,7 +1111,7 @@ function TeamBattlePage({
           currentWindow.innerPosition(),
           currentWindow.scaleFactor(),
         ]);
-        if (cancelled) return;
+        if (cancelled || token !== mixedModeTokenRef.current) return;
         const x = (cursor.x - origin.x) / scaleFactor;
         const y = (cursor.y - origin.y) / scaleFactor;
         const element = document.elementFromPoint(x, y);
@@ -1121,7 +1125,7 @@ function TeamBattlePage({
         await desktopApi.setOverlayClickThrough(ignore);
         if (!cancelled && token === mixedModeTokenRef.current) lastIgnore = ignore;
       } catch (err) {
-        if (!cancelled) setError(asError(err));
+        if (!cancelled && token === mixedModeTokenRef.current) setError(asError(err));
       } finally {
         syncing = false;
       }
@@ -1374,11 +1378,16 @@ function TeamBattlePage({
       : [...current, { side, tool }]);
   }
 
+  function applyImportedGroup(side: "left" | "right", group: PresetGroup) {
+    importedGroupsRef.current[side] = { name: group.name, items: JSON.stringify(group.items) };
+    const setter = side === "left" ? setLeftSlots : setRightSlots;
+    setter((slots) => slots.map((slot, index) => (index < group.items.length ? mergePresetIntoUnit(slot, group.items[index]) : blankUnit())));
+  }
+
   function importGroup(side: "left" | "right", groupName: string) {
     const group = presets.find((item) => item.name === groupName);
     if (!group) return;
-    const setter = side === "left" ? setLeftSlots : setRightSlots;
-    setter((slots) => slots.map((slot, index) => (index < group.items.length ? mergePresetIntoUnit(slot, group.items[index]) : slot)));
+    applyImportedGroup(side, group);
     if (side === "left") {
       setLeftGroupName(groupName);
       setLeftIndex(0);
@@ -1386,6 +1395,16 @@ function TeamBattlePage({
       setRightIndex(0);
     }
   }
+
+  useEffect(() => {
+    for (const side of ["left", "right"] as const) {
+      const imported = importedGroupsRef.current[side];
+      if (!imported) continue;
+      const group = presets.find((item) => item.name === imported.name);
+      if (!group || JSON.stringify(group.items) === imported.items) continue;
+      applyImportedGroup(side, group);
+    }
+  }, [presets]);
 
   function currentBattleSides(attackFromLeft = leftAttacks) {
     return selectBattleSides(leftSlots[leftIndex], rightSlots[rightIndex], leftOtherBonuses, rightOtherBonuses, attackFromLeft);
@@ -1549,7 +1568,8 @@ return (
             <button onClick={() => void calculateEnemyAttackSkills()}>敌方攻击 {shortcuts["enemy-attack"]}</button>
           </div>
         </details> : null}
-        {targetStatus || layoutMessage || detectionMessage ? <span>{targetStatus || layoutMessage || detectionMessage}</span> : null}
+        {targetStatus || detectionMessage ? <span>{targetStatus || detectionMessage}</span> : null}
+        {layoutMessage ? <span role="status" aria-live="polite">{layoutMessage}</span> : null}
       </div>
       <div className="team-layout" style={teamLayoutStyle} onPointerDown={startTeamRegionDrag}>
         {displayMode === "plugin" && recognitionStatus ? <section className="recognition-status-panel" data-overlay-control data-plugin-resizable data-plugin-overlay-id="recognition-status" style={{ left: overlayLayout("recognition-status").x, top: overlayLayout("recognition-status").y, width: overlayLayouts["recognition-status"]?.width, height: overlayLayouts["recognition-status"]?.height, ...pluginContentStyle(overlayLayouts["recognition-status"]) }} onPointerDown={startRecognitionStatusDrag} role="status" aria-live="polite">
@@ -1575,7 +1595,7 @@ return (
           {[...BATTLE_START_IMAGE_KEYS, ...BATTLE_LIVE_IMAGE_KEYS, ...BATTLE_LIVE_NUMBER_KEYS].map((key) => {
             const region = detectionRegions[key];
             const visible = (detectionGroup === "battleStart" && BATTLE_START_IMAGE_KEYS.includes(key as typeof BATTLE_START_IMAGE_KEYS[number])) || (detectionGroup === "battleLive" && !BATTLE_START_IMAGE_KEYS.includes(key as typeof BATTLE_START_IMAGE_KEYS[number]));
-            return <button key={key} ref={(element) => { detectionRoiRefs.current[key] = element; }} className={`detection-roi ${key.includes("Image") ? "image" : "number"}${visible ? "" : " hidden"}`} style={{ left: `${region.x}%`, top: `${region.y}%`, width: `${region.width}%`, height: `${region.height}%` }} onPointerDown={(event) => startDetectionPointer(event, key)} title={`长按中心移动 ${detectionLabel(key)}；拖动边缘缩放`}><span>{detectionLabel(key)}</span></button>;
+            return <button key={key} ref={(element) => { detectionRoiRefs.current[key] = element; }} className={`detection-roi ${key.includes("Image") ? "image" : "number"}${BATTLE_LIVE_HEALTH_KEYS.includes(key as typeof BATTLE_LIVE_HEALTH_KEYS[number]) ? " health" : ""}${visible ? "" : " hidden"}`} style={{ left: `${region.x}%`, top: `${region.y}%`, width: `${region.width}%`, height: `${region.height}%` }} onPointerDown={(event) => startDetectionPointer(event, key)} title={`长按中心移动 ${detectionLabel(key)}；拖动边缘缩放`}><span>{detectionLabel(key)}</span></button>;
           })}
         </div> : null}
         <Roster selectedGroup={leftGroupName} panelState={panelState(leftSlots.some((slot) => Boolean(slot.name)))} pluginMode={displayMode === "plugin"} className="team-left-roster" title="队伍" presets={presets} pets={pets} elements={elements} configs={configs} slots={leftSlots} activeIndex={leftIndex} onConfigsChanged={onConfigsChanged} onImportGroup={(groupName) => importGroup("left", groupName)} onSelect={setLeftIndex} onPatchSlot={(partial) => patchSlot("left", leftIndex, partial)} onPatchSlotAt={(index, partial) => patchSlot("left", index, partial)} onChoose={(index) => { setLeftIndex(index); setPetPicker({ side: "left", index }); }} />

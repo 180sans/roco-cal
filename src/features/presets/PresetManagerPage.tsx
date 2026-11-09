@@ -161,7 +161,10 @@ function PresetManagerPage({
         setGroupName(data.groupName);
         setTargetGroup(data.groupName);
       }
-      setSelectedKey(data.presetName || "");
+      const selected = data.presets.find((group) => group.name === (data.groupName || groupName))
+        ?.items.find((item) => item.key === data.presetName);
+      if (selected) selectPreset(selected);
+      else newPreset();
       setMessage(successMessage);
     } catch (err) {
       setError(asError(err));

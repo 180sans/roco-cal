@@ -331,6 +331,9 @@ body:has(.battle-page.mixed-active) .app-header,
   color: var(--ov-text) !important;
 }
 
+/* 绑定态工具栏同样保留选中反馈，悬停时不被通用控件配色覆盖。 */
+.overlay-attached .battle-page.immersive-mode.plugin-mode > .team-layout-actions button.active,
+.overlay-attached .battle-page.immersive-mode.plugin-mode > .team-layout-actions button.active:hover,
 .app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions button.active,
 .app-shell:not(.overlay-attached) .battle-page.plugin-mode > .team-layout-actions .mode-switch button.active,
 .battle-page.immersive-mode.plugin-mode .team-action-shortcuts button[aria-pressed="true"],
@@ -553,11 +556,19 @@ body:has(.battle-page.mixed-active) .app-header,
   background: var(--ov-accent-bg, rgba(36, 107, 88, 0.62)) !important;
 }
 
-/* 特性面板沿用插件面板的深色底，但不画那圈浅色描边（你之前看到的白框就是它）。 */
+/* 特性栏默认隐藏外边框，悬停时按阵营显示描边。 */
 .battle-page.immersive-mode.plugin-mode .floating-team-panel.trait-floating-panel:is(.team-left-trait, .team-right-trait) {
   background: var(--ov-panel) !important;
   border-color: transparent !important;
   box-shadow: none !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .floating-team-panel.trait-floating-panel.team-left-trait:hover {
+  border: 1px solid var(--ov-side-left) !important;
+}
+
+.battle-page.immersive-mode.plugin-mode .floating-team-panel.trait-floating-panel.team-right-trait:hover {
+  border: 1px solid var(--ov-side-right) !important;
 }
 
 /* 标题按钮自身不画框，避免再叠一层浅色矩形。 */
@@ -573,7 +584,6 @@ body:has(.battle-page.mixed-active) .app-header,
 .battle-page.plugin-mode .floating-team-panel:is(.team-left-trait, .team-right-trait):hover {
   /* 悬停不再出现任何额外描边层。 */
   outline: none !important;
-  border-color: transparent !important;
 }
 
 .battle-page.plugin-mode .floating-team-panel:is(.team-left-trait, .team-right-trait) .team-slot-section {
@@ -1047,7 +1057,7 @@ body:has(.plugin-mode) .app-header .weather-panel {
 .detection-roi {
   position: absolute;
   display: grid;
-  place-items: center;
+  place-items: start center;
   box-sizing: border-box;
   border: 2px solid #d83b3b;
   border-radius: 2px;
@@ -1057,12 +1067,39 @@ body:has(.plugin-mode) .app-header .weather-panel {
   letter-spacing: 0;
   cursor: move;
   pointer-events: auto;
-  overflow: hidden;
+  overflow: visible;
+  padding: 0;
 }
 
 .detection-roi.number { border-color: #1677b8; background: rgba(22, 119, 184, 0.08); color: #075887; }
 .detection-roi.hidden { pointer-events: none; visibility: hidden; }
-.detection-roi span { pointer-events: none; white-space: nowrap; text-shadow: 0 1px #fff; }
+.detection-roi span {
+  border-radius: 2px;
+  color: var(--ov-accent, #8fdcb8);
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  left: 0;
+  line-height: 1.2;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding: 0 1px;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  text-shadow: none;
+  top: calc(100% + 4px);
+  white-space: normal;
+}
+
+.detection-roi:hover > span {
+  background: rgba(18, 26, 36, 0.88);
+}
+
+.detection-roi.health span {
+  font-size: 10px;
+}
 
 /* 外描边不改变识别区域的实际边界和截图范围。 */
 .battle-page.plugin-mode .detection-roi {

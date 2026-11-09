@@ -51,12 +51,14 @@ function selectedFamilyForm(value: UnitState, pets: Pet[]) {
 }
 
 function familyFormPatch(value: UnitState, target: Pet, pets: Pet[]): Partial<UnitState> {
-  let current = pets.find((pet) => [pet.label, `${pet.id}${pet.name}`, pet.name].includes(value.name));
+  const source = selectedFamilyForm({ ...value, devolution: 0 }, pets);
+  const megaForm = value.mega_form || (value.mega ? source?.label || null : null);
+  let current = source;
   const visited = new Set<string>();
   let devolution = 0;
-  // Keep existing devolution semantics for ancestors, including their trait source.
+  // Devolve from the selected leader form without clearing its trait source.
   while (current && !visited.has(current.label)) {
-    if (current.label === target.label) return { devolution, mega: false, mega_form: null };
+    if (current.label === target.label) return { devolution, mega: false, mega_form: megaForm };
     visited.add(current.label);
     const previous = current.prevForms?.[0];
     current = pets.find((pet) => pet.label === previous);

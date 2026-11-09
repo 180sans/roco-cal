@@ -14,8 +14,10 @@ use roco_desktop_native::plugin_shortcuts::{self, Shortcut};
 pub(crate) struct OverlayTargetBinding {
     pub(crate) overlay_hwnd: usize,
     pub(crate) target_hwnd: usize,
-    pub(crate) overlay_style: isize,
-    pub(crate) overlay_exstyle: isize,
+    #[cfg(windows)]
+    pub(crate) restore: super::window_restore::NativeWindowSnapshot,
+    #[cfg(windows)]
+    pub(crate) restore_fullscreen: bool,
 }
 
 #[derive(Clone, Default)]
@@ -150,29 +152,40 @@ pub(crate) fn enforce_overlay_borderless(hwnd: *mut c_void) {
     }
 }
 
+/// Caller holds the transition lock and has removed the active binding.
+/// Used for explicit detach, target loss, expand failure and attachment rollback.
 #[cfg(windows)]
-pub(crate) fn restore_overlay_native_frame(binding: OverlayTargetBinding) {
-    const GWL_STYLE: i32 = -16;
-    const GWL_EXSTYLE: i32 = -20;
-    const SWP_NOSIZE: u32 = 0x0001;
-    const SWP_NOMOVE: u32 = 0x0002;
-    const SWP_NOZORDER: u32 = 0x0004;
-    const SWP_NOACTIVATE: u32 = 0x0010;
-    const SWP_FRAMECHANGED: u32 = 0x0020;
-    let hwnd = binding.overlay_hwnd as *mut c_void;
-    unsafe {
-        SetWindowLongPtrW(hwnd, GWL_STYLE, binding.overlay_style);
-        SetWindowLongPtrW(hwnd, GWL_EXSTYLE, binding.overlay_exstyle);
-        SetWindowPos(
-            hwnd,
-            std::ptr::null_mut(),
-            0,
-            0,
-            0,
-            0,
-            SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED,
-        );
+pub(crate) fn restore_detached_overlay(
+    app: &tauri::AppHandle,
+    interaction: &OverlayInteractionState,
+    visibility: &OverlayVisibilityState,
+    binding: Option<OverlayTargetBinding>,
+    reason: &str,
+) -> Result<(), String> {
+    visibility.collapsed.store(false, Ordering::Relaxed);
+    let mut errors = Vec::new();
+    if let Err(error) = set_overlay_click_through(app, interaction, false) { errors.push(error); }
+    interaction.click_through.store(false, Ordering::Relaxed);
+    if let Some(binding) = binding {
+        if let Some(window) = app.get_webview_window("main") {
+            // All callers execute on the UI thread, so runtime fullscreen restoration
+            // completes before applying the saved native styles and placement.
+            match window.is_fullscreen() {
+                Ok(current) if current != binding.restore_fullscreen => {
+                    if let Err(error) = window.set_fullscreen(binding.restore_fullscreen) { errors.push(error.to_string()); }
+                }
+                Err(error) => errors.push(error.to_string()),
+                _ => {}
+            }
+        }
+        if let Err(error) = binding.restore.restore(binding.overlay_hwnd as *mut c_void) { errors.push(error); }
     }
+    if let Err(error) = app.emit("overlay-attachment-change", false) { errors.push(error.to_string()); }
+    diagnostics::event("window.detached", json!({"reason": reason, "errors": errors,
+        "clickThrough": interaction.click_through.load(Ordering::Relaxed),
+        "collapsed": visibility.collapsed.load(Ordering::Relaxed),
+        "windows": diagnostics::snapshot(binding)}));
+    if errors.is_empty() { Ok(()) } else { Err(errors.join("; ")) }
 }
 
 #[cfg(windows)]
@@ -278,17 +291,9 @@ fn toggle_overlay_visibility(
     const SWP_NOSIZE: u32 = 0x0001;
     const SWP_NOZORDER: u32 = 0x0004;
     const SWP_NOOWNERZORDER: u32 = 0x0200;
-    let binding = target_state
-        .binding
-        .lock()
-        .ok()
-        .and_then(|binding| *binding);
-    let Some(binding) = binding else {
-        return;
-    };
-    let Ok(_transition_guard) = visibility_state.transition.lock() else {
-        return;
-    };
+    let Ok(_transition_guard) = visibility_state.transition.lock() else { return; };
+    let binding = target_state.binding.lock().ok().and_then(|binding| *binding);
+    let Some(binding) = binding else { return; };
     let collapse = !visibility_state.collapsed.load(Ordering::Relaxed);
     diagnostics::event("visibility.toggle", json!({"collapse": collapse, "windows": diagnostics::snapshot(Some(binding))}));
     visibility_state
@@ -313,8 +318,7 @@ fn toggle_overlay_visibility(
                 *current = None;
             }
         }
-        let _ = restore_normal_window(app);
-        let _ = app.emit("overlay-attachment-change", false);
+        let _ = restore_detached_overlay(app, interaction_state, visibility_state, Some(binding), "expand_failed");
     }
 }
 
@@ -344,8 +348,8 @@ pub(crate) fn set_overlay_click_through(
             exstyle & !WS_EX_TRANSPARENT
         };
         unsafe {
-            SetWindowLongPtrW(hwnd, GWL_EXSTYLE, next);
-            SetWindowPos(
+            super::window_restore::write_window_long(hwnd, GWL_EXSTYLE, next)?;
+            if SetWindowPos(
                 hwnd,
                 std::ptr::null_mut(),
                 0,
@@ -353,7 +357,7 @@ pub(crate) fn set_overlay_click_through(
                 0,
                 0,
                 SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED,
-            );
+            ) == 0 { return Err(format!("Cannot refresh click-through state: Win32 {}", GetLastError())); }
         }
     }
     #[cfg(not(windows))]
@@ -481,19 +485,24 @@ pub(crate) fn force_overlay_edit_mode(
 
 #[cfg(windows)]
 fn force_overlay_edit_mode_from_hotkey(context: &OverlayHotkeyContext) {
-    let binding = context
-        .target_state
-        .binding
-        .lock()
-        .ok()
-        .and_then(|binding| *binding);
-    if binding.is_none() || context.visibility_state.collapsed.load(Ordering::Relaxed) {
-        diagnostics::event("shortcut.edit_skipped", json!({"bound": binding.is_some(), "collapsed": context.visibility_state.collapsed.load(Ordering::Relaxed)}));
-        return;
-    }
-    let _ = set_overlay_click_through(&context.app, &context.interaction_state, false);
-    let result = context.app.emit("overlay-force-edit-mode", ());
-    diagnostics::event("shortcut.edit_emit", json!({"result": result.map_err(|e| e.to_string())}));
+    let context = context.clone();
+    let app = context.app.clone();
+    let _ = app.run_on_main_thread(move || {
+        let Ok(_transition_guard) = context.visibility_state.transition.lock() else { return; };
+        let binding = context
+            .target_state
+            .binding
+            .lock()
+            .ok()
+            .and_then(|binding| *binding);
+        if binding.is_none() || context.visibility_state.collapsed.load(Ordering::Relaxed) {
+            diagnostics::event("shortcut.edit_skipped", json!({"bound": binding.is_some(), "collapsed": context.visibility_state.collapsed.load(Ordering::Relaxed)}));
+            return;
+        }
+        let _ = set_overlay_click_through(&context.app, &context.interaction_state, false);
+        let result = context.app.emit("overlay-force-edit-mode", ());
+        diagnostics::event("shortcut.edit_emit", json!({"result": result.map_err(|e| e.to_string())}));
+    });
 }
 
 #[cfg(windows)]
@@ -535,6 +544,7 @@ unsafe extern "system" fn overlay_keyboard_hook(code: i32, w_param: usize, l_par
     unsafe { CallNextHookEx(std::ptr::null_mut(), code, w_param, l_param) }
 }
 
+#[cfg(not(windows))]
 pub(crate) fn restore_normal_window(app: &tauri::AppHandle) -> Result<(), String> {
     let window = app
         .get_webview_window("main")
@@ -593,51 +603,30 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
         std::thread::sleep(Duration::from_millis(100));
       }
     });
+    let tick_pending = Arc::new(std::sync::atomic::AtomicBool::new(false));
     std::thread::spawn(move || loop {
-        let binding = overlay_target_state.binding.lock().ok().and_then(|current| *current);
-        if let Some(binding) = binding {
-            let Ok(_transition_guard) = tracker_visibility_state.transition.lock() else {
-                std::thread::sleep(Duration::from_millis(100));
-                continue;
-            };
-            let tracking_ok = if tracker_visibility_state
-                .collapsed
-                .load(Ordering::Relaxed)
-            {
-                unsafe {
-                    IsWindow(binding.target_hwnd as *mut c_void) != 0
-                        && IsWindow(binding.overlay_hwnd as *mut c_void) != 0
-                }
-            } else {
-                sync_overlay_to_target(binding, false)
-            };
-            if !tracking_ok {
-                diagnostics::event("window.tracking_failed", diagnostics::snapshot(Some(binding)));
-                if let Ok(mut current) = overlay_target_state.binding.lock() {
-                    if *current == Some(binding) {
-                        *current = None;
-                        tracker_visibility_state
-                            .collapsed
-                            .store(false, Ordering::Relaxed);
-                        if tracker_interaction_state
-                            .click_through
-                            .swap(false, Ordering::Relaxed)
-                        {
-                            let _ = set_overlay_click_through(
-                                &tracker_app,
-                                &tracker_interaction_state,
-                                false,
-                            );
+        if !tick_pending.swap(true, Ordering::Relaxed) {
+            let app = tracker_app.clone();
+            let target = overlay_target_state.clone();
+            let interaction = tracker_interaction_state.clone();
+            let visibility = tracker_visibility_state.clone();
+            let pending = tick_pending.clone();
+            if tracker_app.run_on_main_thread(move || {
+                if let Ok(_transition_guard) = visibility.transition.lock() {
+                    let binding = target.binding.lock().ok().and_then(|current| *current);
+                    if let Some(binding) = binding {
+                        let tracking_ok = if visibility.collapsed.load(Ordering::Relaxed) {
+                            unsafe { IsWindow(binding.target_hwnd as *mut c_void) != 0 && IsWindow(binding.overlay_hwnd as *mut c_void) != 0 }
+                        } else { sync_overlay_to_target(binding, false) };
+                        if !tracking_ok {
+                            diagnostics::event("window.tracking_failed", diagnostics::snapshot(Some(binding)));
+                            if let Ok(mut current) = target.binding.lock() { *current = None; }
+                            let _ = restore_detached_overlay(&app, &interaction, &visibility, Some(binding), "tracking_failed");
                         }
-                        restore_overlay_native_frame(binding);
-                        let _ = restore_normal_window(&tracker_app);
-                        let _ = set_overlay_taskbar_entry_visible(&tracker_app, true);
-                        let _ = set_overlay_window_title(&tracker_app, "Roco Database");
-                        let _ = set_overlay_border_visible(&tracker_app, true);
-                        let _ = tracker_app.emit("overlay-attachment-change", false);
                     }
                 }
-            }
+                pending.store(false, Ordering::Relaxed);
+            }).is_err() { tick_pending.store(false, Ordering::Relaxed); }
         }
         std::thread::sleep(Duration::from_millis(100));
     });
@@ -743,7 +732,11 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
                     diagnostics::event("shortcut.skipped", json!({"id": shortcut.id, "reason": "target_not_bound"})); continue;
                 }
                 if shortcut.id == "toggle-visibility" {
-                    toggle_overlay_visibility(&hotkey_app, &hotkey_target_state, &hotkey_interaction_state, &hotkey_visibility_state);
+                    let app = hotkey_app.clone();
+                    let target = hotkey_target_state.clone();
+                    let interaction = hotkey_interaction_state.clone();
+                    let visibility = hotkey_visibility_state.clone();
+                    let _ = hotkey_app.run_on_main_thread(move || toggle_overlay_visibility(&app, &target, &interaction, &visibility));
                     continue;
                 }
                 if hotkey_visibility_state.collapsed.load(Ordering::Relaxed) {

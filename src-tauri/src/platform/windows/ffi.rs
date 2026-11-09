@@ -1,7 +1,7 @@
 use std::ffi::c_void;
 
 #[cfg(windows)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
 #[repr(C)]
 pub(crate) struct WinPoint {
     pub(crate) x: i32,
@@ -9,13 +9,25 @@ pub(crate) struct WinPoint {
 }
 
 #[cfg(windows)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
 #[repr(C)]
 pub(crate) struct WinRect {
     pub(crate) left: i32,
     pub(crate) top: i32,
     pub(crate) right: i32,
     pub(crate) bottom: i32,
+}
+
+#[cfg(windows)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
+#[repr(C)]
+pub(crate) struct WinWindowPlacement {
+    pub(crate) length: u32,
+    pub(crate) flags: u32,
+    pub(crate) show_cmd: u32,
+    pub(crate) min_position: WinPoint,
+    pub(crate) max_position: WinPoint,
+    pub(crate) normal_position: WinRect,
 }
 
 #[cfg(windows)]
@@ -57,6 +69,8 @@ unsafe extern "system" {
     pub(crate) fn SetWindowLongPtrW(hwnd: *mut c_void, index: i32, value: isize) -> isize;
     pub(crate) fn SetThreadDpiAwarenessContext(context: *mut c_void) -> *mut c_void;
     pub(crate) fn GetWindowRect(hwnd: *mut c_void, rect: *mut WinRect) -> i32;
+    pub(crate) fn GetWindowPlacement(hwnd: *mut c_void, placement: *mut WinWindowPlacement) -> i32;
+    pub(crate) fn SetWindowPlacement(hwnd: *mut c_void, placement: *const WinWindowPlacement) -> i32;
     pub(crate) fn GetClientRect(hwnd: *mut c_void, rect: *mut WinRect) -> i32;
     pub(crate) fn ClientToScreen(hwnd: *mut c_void, point: *mut WinPoint) -> i32;
     pub(crate) fn SetWindowTextW(hwnd: *mut c_void, text: *const u16) -> i32;

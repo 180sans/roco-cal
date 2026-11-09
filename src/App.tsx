@@ -26,8 +26,9 @@ function App() {
   const [fullscreenEnabled, setFullscreenEnabled] = useState(false);
 
   async function toggleFullscreen() {
-    const next = !fullscreenEnabled;
     try {
+      // Detachment can restore native fullscreen state; query it instead of a stale toggle.
+      const next = !await getCurrentWindow().isFullscreen();
       await getCurrentWindow().setFullscreen(next);
       setFullscreenEnabled(next);
     } catch (err) {

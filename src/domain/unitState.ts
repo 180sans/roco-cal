@@ -107,56 +107,29 @@ function unitFromPreset(preset: PresetItem, showPresetName = false): UnitState {
 }
 
 function mergePresetIntoUnit(current: UnitState, preset: PresetItem): UnitState {
-  // Import only configured preset fields so manually configured slot values survive.
-  const next: UnitState = {
+  // Saved configuration is authoritative, including cleared fields and zero values.
+  // Keep battle-only values (buffs, power bonuses, etc.) from the current slot.
+  const saved = unitFromPreset(preset, true);
+  return {
     ...current,
-    name: `${preset.id}${preset.name}`,
-    display_name: preset.key,
+    name: saved.name,
+    display_name: saved.display_name,
+    iv: saved.iv,
+    personality_bouns: saved.personality_bouns,
+    personality_down: saved.personality_down,
+    bloodline: saved.bloodline,
+    skills: saved.skills,
+    current_skill: saved.current_skill,
+    skill_trigger_stacks: {},
+    skill_usage_mode_choices: {},
+    trait_override_query: saved.trait_override_query,
+    trait_triggered: saved.trait_triggered,
+    trait_stacks: saved.trait_stacks,
+    trait_choices: saved.trait_choices,
+    devolution: saved.devolution,
+    mega: saved.mega,
+    mega_form: saved.mega_form,
   };
-
-  if (preset.iv && Object.keys(preset.iv).length) {
-    next.iv = { ...(current.iv || {}), ...preset.iv };
-  }
-  if (preset.personality_bouns) {
-    next.personality_bouns = preset.personality_bouns;
-  }
-  if (preset.personality_down) {
-    next.personality_down = preset.personality_down;
-  }
-  if (preset.bloodline) {
-    next.bloodline = preset.bloodline;
-  }
-
-  const skills = preset.skills || [];
-  if (skills.some(Boolean)) {
-    next.skills = skills;
-    next.current_skill = skills.find(Boolean) || "";
-    next.skill_trigger_stacks = {};
-  }
-
-  if (preset.trait_override_query) {
-    next.trait_override_query = preset.trait_override_query;
-    next.trait_triggered = Boolean(preset.trait_triggered);
-    next.trait_stacks = Math.max(0, preset.trait_stacks || 0);
-    next.trait_choices = preset.trait_choices ?? {};
-  } else if (preset.trait_triggered || (preset.trait_stacks || 0) > 0) {
-    next.trait_triggered = Boolean(preset.trait_triggered);
-    next.trait_stacks = Math.max(0, preset.trait_stacks || 0);
-    next.trait_choices = preset.trait_choices ?? {};
-  }
-
-  if ((preset.devolution || 0) > 0) {
-    next.devolution = preset.devolution || 0;
-  }
-  if (preset.mega_form) {
-    next.mega = false;
-    next.mega_form = preset.mega_form;
-  } else if (preset.mega) {
-    next.mega = true;
-    next.mega_form = null;
-  }
-
-  return next;
 }
 
 function updateIv(iv: Record<string, number> | null, stat: string, value: string) {

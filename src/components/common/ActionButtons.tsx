@@ -1,9 +1,10 @@
 import { useState } from "react";
+import triggerIcon from "../../../src-tauri/icons/trigger.png?inline";
 
-const BUTTON_ICONS = import.meta.glob<string>("../../../src-tauri/icons/{refresh,trigger}.png", { eager: true, query: "?url", import: "default" });
+const BUTTON_ICONS = import.meta.glob<string>("../../../src-tauri/icons/refresh.png", { eager: true, query: "?url", import: "default" });
 
 function ActionIconButton({ icon, label, className = "", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { icon: "refresh" | "trigger"; label: string }) {
-  const src = BUTTON_ICONS[`../../../src-tauri/icons/${icon}.png`];
+  const src = icon === "trigger" ? triggerIcon : BUTTON_ICONS[`../../../src-tauri/icons/${icon}.png`];
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const showIcon = Boolean(src && failedSrc !== src);
   return <button {...props} className={`${showIcon ? `${icon}-button ` : ""}${className}`.trim()} title={label} aria-label={label}>{showIcon ? <img src={src} alt="" draggable={false} onError={() => setFailedSrc(src)} /> : label}</button>;
