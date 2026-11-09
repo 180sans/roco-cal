@@ -43,7 +43,7 @@ struct OverlayHotkeyContext {
     target_state: OverlayTargetState,
     interaction_state: OverlayInteractionState,
     visibility_state: OverlayVisibilityState,
-    edit_shortcut: Arc<Mutex<Option<Shortcut>>>,
+    overlay_hwnd: usize,
     observed_shortcuts: Arc<Mutex<Vec<Shortcut>>>,
 }
 
@@ -51,9 +51,12 @@ struct OverlayHotkeyContext {
 static OVERLAY_HOTKEY_CONTEXT: OnceLock<Mutex<Option<OverlayHotkeyContext>>> = OnceLock::new();
 
 #[cfg(windows)]
-struct ShortcutRequest {
-    shortcuts: Vec<Shortcut>,
-    reply: std::sync::mpsc::Sender<Result<(), String>>,
+enum ShortcutRequest {
+    Configure {
+        shortcuts: Vec<Shortcut>,
+        reply: std::sync::mpsc::Sender<Result<(), String>>,
+    },
+    Pressed(Shortcut),
 }
 
 #[cfg(windows)]
@@ -65,7 +68,7 @@ pub(crate) fn configure_plugin_shortcuts(bindings: serde_json::Value) -> Result<
         let shortcuts = plugin_shortcuts::resolve(&bindings)?;
         let sender = SHORTCUT_REQUESTS.get().ok_or("快捷键服务尚未启动")?;
         let (reply, response) = std::sync::mpsc::channel();
-        sender.send(ShortcutRequest { shortcuts, reply }).map_err(|_| "快捷键服务已停止")?;
+        sender.send(ShortcutRequest::Configure { shortcuts, reply }).map_err(|_| "快捷键服务已停止")?;
         response.recv().map_err(|_| "快捷键服务已停止")?
     }
     #[cfg(not(windows))]
@@ -507,37 +510,49 @@ fn force_overlay_edit_mode_from_hotkey(context: &OverlayHotkeyContext) {
 
 #[cfg(windows)]
 unsafe extern "system" fn overlay_keyboard_hook(code: i32, w_param: usize, l_param: isize) -> isize {
+    use super::shortcut_scope::{foreground_in_scope, KeyRoute, ShortcutKeys};
+    std::thread_local! {
+        static PRESSED: std::cell::RefCell<ShortcutKeys> = std::cell::RefCell::new(ShortcutKeys::default());
+    }
     const HC_ACTION: i32 = 0;
     const WM_KEYDOWN: usize = 0x0100;
+    const WM_KEYUP: usize = 0x0101;
     const WM_SYSKEYDOWN: usize = 0x0104;
-    if code == HC_ACTION && (w_param == WM_KEYDOWN || w_param == WM_SYSKEYDOWN) && l_param != 0 {
+    const WM_SYSKEYUP: usize = 0x0105;
+    if code == HC_ACTION && matches!(w_param, WM_KEYDOWN | WM_KEYUP | WM_SYSKEYDOWN | WM_SYSKEYUP) && l_param != 0 {
         let event = unsafe { &*(l_param as *const KeyboardLowLevelHook) };
         if let Some(context) = OVERLAY_HOTKEY_CONTEXT
                 .get()
-                .and_then(|slot| slot.lock().ok())
+                .and_then(|slot| slot.try_lock().ok())
                 .and_then(|guard| guard.clone())
         {
-            if let Ok(shortcuts) = context.observed_shortcuts.lock() {
-                // Observe configured shortcut keys only, never general typing.
-                for shortcut in shortcuts.iter().filter(|s| s.virtual_key == event.vk_code
-                    && ((unsafe { GetAsyncKeyState(0x12) } < 0) || (unsafe { GetAsyncKeyState(0x11) } < 0)
-                        || (0x70..=0x87).contains(&event.vk_code))) {
-                    diagnostics::event("shortcut.hook_observed", json!({"id": shortcut.id, "chord": shortcut.chord,
-                        "flags": event.flags, "foreground": unsafe { GetForegroundWindow() } as usize,
-                        "alt": unsafe { GetAsyncKeyState(0x12) } < 0,
-                        "ctrl": unsafe { GetAsyncKeyState(0x11) } < 0,
-                        "shift": unsafe { GetAsyncKeyState(0x10) } < 0}));
-                }
-            }
-            let shortcut = context.edit_shortcut.lock().ok().and_then(|binding| binding.clone());
+            let binding = context.target_state.binding.try_lock().ok().and_then(|binding| *binding);
+            let foreground = unsafe { GetForegroundWindow() } as usize;
+            let target = binding.filter(|binding| unsafe { IsWindow(binding.target_hwnd as *mut c_void) } != 0)
+                .map(|binding| binding.target_hwnd);
+            let in_scope = foreground_in_scope(foreground, context.overlay_hwnd, target);
+            let down = matches!(w_param, WM_KEYDOWN | WM_SYSKEYDOWN);
             let modifiers = u32::from(unsafe { GetAsyncKeyState(0x12) } < 0)
                 | (u32::from(unsafe { GetAsyncKeyState(0x11) } < 0) << 1)
                 | (u32::from(unsafe { GetAsyncKeyState(0x10) } < 0) << 2);
-            if shortcut.as_ref().is_some_and(|shortcut| shortcut.virtual_key == event.vk_code && shortcut.modifiers == modifiers)
-                && unsafe { GetAsyncKeyState(0x5B) } >= 0 && unsafe { GetAsyncKeyState(0x5C) } >= 0
-            {
-                diagnostics::event("shortcut.hook_edit", json!({"virtualKey": event.vk_code, "flags": event.flags}));
-                force_overlay_edit_mode_from_hotkey(&context);
+            let shortcut = if in_scope && down
+                && unsafe { GetAsyncKeyState(0x5B) } >= 0 && unsafe { GetAsyncKeyState(0x5C) } >= 0 {
+                context.observed_shortcuts.try_lock().ok().and_then(|shortcuts| shortcuts.iter().find(|shortcut|
+                    shortcut.virtual_key == event.vk_code && shortcut.modifiers == modifiers
+                    && (!shortcut.requires_target || target.is_some())
+                    && (!context.visibility_state.collapsed.load(Ordering::Relaxed) || shortcut.id == "toggle-visibility")
+                ).cloned())
+            } else { None };
+            match PRESSED.with(|keys| keys.borrow_mut().route(event.vk_code, down, in_scope, shortcut.is_some())) {
+                KeyRoute::Consume => return 1,
+                KeyRoute::Trigger => {
+                    // Dispatch and disk logging stay off the keyboard hook thread.
+                    if SHORTCUT_REQUESTS.get().is_some_and(|sender| sender.send(ShortcutRequest::Pressed(shortcut.unwrap())).is_ok()) {
+                        return 1;
+                    }
+                    PRESSED.with(|keys| keys.borrow_mut().route(event.vk_code, false, false, false));
+                }
+                KeyRoute::Pass => {}
             }
         }
     }
@@ -640,9 +655,11 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
         target_state: hotkey_target_state.clone(),
         interaction_state: hotkey_interaction_state.clone(),
         visibility_state: hotkey_visibility_state.clone(),
-        edit_shortcut: Arc::new(Mutex::new(None)),
+        overlay_hwnd: app.get_webview_window("main").and_then(|window| window.hwnd().ok()).map_or(0, |hwnd| hwnd.0 as usize),
         observed_shortcuts: Arc::new(Mutex::new(Vec::new())),
     };
+    let (sender, requests) = std::sync::mpsc::channel::<ShortcutRequest>();
+    let _ = SHORTCUT_REQUESTS.set(sender);
     let _ = OVERLAY_HOTKEY_CONTEXT
         .get_or_init(|| Mutex::new(None))
         .lock()
@@ -684,47 +701,21 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
         plugin_shortcuts::resolve(&serde_json::json!({})).unwrap_or_default()
     });
     if let Ok(mut shortcuts) = hotkey_context.observed_shortcuts.lock() { *shortcuts = initial.clone(); }
-    let (sender, requests) = std::sync::mpsc::channel::<ShortcutRequest>();
-    let _ = SHORTCUT_REQUESTS.set(sender);
     std::thread::spawn(move || {
-        const WM_HOTKEY: u32 = 0x0312;
-        const WM_QUIT: u32 = 0x0012;
-        let register = |shortcut: &Shortcut| unsafe {
-            SetLastError(0);
-            let success = RegisterHotKey(std::ptr::null_mut(), shortcut.registration_id, shortcut.modifiers | 0x4000, shortcut.virtual_key) != 0;
-            let error = if success { 0 } else { GetLastError() };
-            diagnostics::event("shortcut.register", json!({"id": shortcut.id, "chord": shortcut.chord,
-                "registrationId": shortcut.registration_id, "success": success, "win32Error": error}));
-            success
-        };
-        let unregister = |shortcut: &Shortcut| {
-            let success = unsafe { UnregisterHotKey(std::ptr::null_mut(), shortcut.registration_id) } != 0;
-            diagnostics::event("shortcut.unregister", json!({"id": shortcut.id, "success": success}));
-        };
-        let mut current = Vec::new();
-        for shortcut in initial {
-            if register(&shortcut) { current.push(shortcut); }
-            else { eprintln!("Cannot register {} ({})", shortcut.label, shortcut.chord); }
-        }
-        let update_edit_shortcut = |shortcuts: &[Shortcut]| {
-            if let Ok(mut binding) = hotkey_context.edit_shortcut.lock() {
-                *binding = shortcuts.iter().find(|shortcut| shortcut.id == "edit-mode").cloned();
-            }
-        };
-        update_edit_shortcut(&current);
-        let mut message = WinMessage {
-            hwnd: std::ptr::null_mut(), message: 0, w_param: 0, l_param: 0,
-            time: 0, point: WinPoint { x: 0, y: 0 },
-        };
-        'runtime: loop {
-            // Drain old key messages before accepting a new configuration.
-            while unsafe { PeekMessageW(&mut message, std::ptr::null_mut(), 0, 0, 1) } != 0 {
-                if message.message == WM_QUIT { break 'runtime; }
-                if message.message != WM_HOTKEY { continue; }
-                let Some(shortcut) = current.iter().find(|shortcut| shortcut.registration_id as usize == message.w_param) else { continue; };
-                let chord = message.l_param as u32;
-                if chord >> 16 != shortcut.virtual_key || chord & 0xf != shortcut.modifiers { continue; }
+        while let Ok(request) = requests.recv() {
+            match request {
+              ShortcutRequest::Pressed(shortcut) => {
+                // A queued key must not act after switching windows or replacing its binding.
+                let configured = hotkey_context.observed_shortcuts.lock().ok()
+                    .is_some_and(|shortcuts| shortcuts.contains(&shortcut));
+                if !configured { continue; }
                 let binding = hotkey_target_state.binding.lock().ok().and_then(|binding| *binding);
+                let foreground = unsafe { GetForegroundWindow() } as usize;
+                if !super::shortcut_scope::foreground_in_scope(foreground, hotkey_context.overlay_hwnd,
+                    binding.map(|binding| binding.target_hwnd)) {
+                    diagnostics::event("shortcut.skipped", json!({"id": shortcut.id, "reason": "foreground_outside_scope"}));
+                    continue;
+                }
                 diagnostics::event("shortcut.received", json!({"id": shortcut.id, "chord": shortcut.chord,
                     "collapsed": hotkey_visibility_state.collapsed.load(Ordering::Relaxed),
                     "windows": diagnostics::snapshot(binding)}));
@@ -748,17 +739,16 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
                     let result = hotkey_app.emit(&shortcut.event, ());
                     diagnostics::event("shortcut.emit", json!({"id": shortcut.id, "event": shortcut.event, "result": result.map_err(|e| e.to_string())}));
                 }
-            }
-            while let Ok(request) = requests.try_recv() {
-                if let Ok(mut shortcuts) = hotkey_context.observed_shortcuts.lock() { *shortcuts = request.shortcuts.clone(); }
-                diagnostics::event("shortcut.reconfigure", json!({"requested": request.shortcuts.iter().map(|s| json!({"id": s.id, "chord": s.chord})).collect::<Vec<_>>()}));
-                let result = plugin_shortcuts::replace(&mut current, request.shortcuts, register, unregister);
+              }
+              ShortcutRequest::Configure { shortcuts, reply } => {
+                diagnostics::event("shortcut.reconfigure", json!({"scope": "foreground_window", "requested": shortcuts.iter().map(|s| json!({"id": s.id, "chord": s.chord})).collect::<Vec<_>>()}));
+                let result = hotkey_context.observed_shortcuts.lock()
+                    .map(|mut current| *current = shortcuts)
+                    .map_err(|_| "快捷键配置状态不可用".to_string());
                 diagnostics::event("shortcut.reconfigure_result", json!({"result": result}));
-                update_edit_shortcut(&current);
-                let _ = request.reply.send(result);
+                let _ = reply.send(result);
+              }
             }
-            std::thread::sleep(Duration::from_millis(15));
         }
-        for shortcut in &current { unregister(shortcut); }
     });
 }
