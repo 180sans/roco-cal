@@ -60,7 +60,7 @@
 
 初步说明见[插件模式](#插件模式)。
 
-**重要**: 如果需要长期稳定使用，请务必仔细阅操作指南[操作指南](./操作指南.md)
+**重要**: 如果需要长期稳定使用，请务必仔细阅[操作指南](./操作指南.md)
 
 本项目采用模型识别和游戏效果模拟的方式进行计算，涉及一定的配置、校对和操作要求，不能便捷使用，存在一定的学习成本
 
@@ -97,7 +97,21 @@ Get-Process | Where-Object {$_.MainWindowTitle -like "*洛克王国*"} | Select-
 
 <img src="images_instruct/获取窗口id.png" width="600">
 
+有人反馈这个命令会不返回窗口id，我暂时不知道是什么问题，我下面提供另外两个命令
+
+```powershell
+Get-Process -Name "NRC-Win64-Shipping" | Select-Object Id, ProcessName, MainWindowTitle, MainWindowHandle 
+```
+
+
+```powershell
+Get-Process |
+    Where-Object {$_.MainWindowTitle -like "*NRC-Win64-Shipping*"} |
+    Select-Object -ExpandProperty MainWindowHandle
+```
+
 ### 框效果说明
+
 <img src="images_instruct/框说明.png" width="600"> 
 
 - 队伍框: 导入已有分组
