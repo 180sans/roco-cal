@@ -151,7 +151,10 @@ function PickerModal({
   });
   const [skillType, setSkillType] = useState(locateCurrentSkill || searchSkillDescriptions ? "" : (config.skill_type as string) || "");
   const [sortDesc, setSortDesc] = useState(Boolean(config.sort_desc));
-  const [finalOnly, setFinalOnly] = useState(locateCurrentPet && !useSavedPetFilters ? false : Boolean(config.final_only));
+  const [finalOnly, setFinalOnly] = useState(() => {
+    if (locateCurrentPet && !useSavedPetFilters && initialPet && !initialPet.isFinal) return false;
+    return Boolean(config.final_only);
+  });
   const configuredPetTab = config.active_tab === "preset" || config.active_tab === "library" ? config.active_tab : null;
   const groupConfigKey = `preset_group_${preferredGroup}`;
   const configuredGroupName = typeof config[groupConfigKey] === "string" ? (config[groupConfigKey] as string) : "";

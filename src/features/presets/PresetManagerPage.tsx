@@ -408,6 +408,7 @@ function PresetManagerPage({
         <PickerModal
           mode="pet"
           preferredGroup={groupName}
+          initialPetName={editor.name}
           presets={presets}
           pets={pets}
           elements={elements}

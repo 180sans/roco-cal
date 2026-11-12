@@ -40,8 +40,9 @@
 > 注意：由于当前版本尚未进行代码签名，Windows SmartScreen 可能提示“Windows 已保护你的电脑”，安装程序也可能显示为“未认证”。
 
 ## 简单使用
-1. 使用管理员运行.exe(（由于需要绑定窗口，需要管理员运行避免权限问题）)
-2. 点击"精灵保存"->"阵容码" 将游戏阵容码导入，输入分组名
+1. 使用管理员运行.exe(由于需要绑定窗口，需要管理员运行避免权限问题)
+
+2. 点击"精灵保存"->"阵容码" 将游戏阵容码导入，输入分组名 **注意**地区形态无法区分，需要手动点击选宠切换正确的形态
 
 <img src="images_instruct/阵容码.png" width="600">
 
@@ -85,9 +86,9 @@
 - ctrl+I/o 我方/敌方所有技能buff面板，用于快捷应用我方/敌方buff
 - ctrl+Y 调整技能顺序，选择其他技能。主要用于处理传动和临时更换技能的情况
 
-### 获取窗口ID
+### 获取窗口id
 
-使用 PowerShell 命令获取窗口 ID（`MainWindowHandle` 下的数字）。
+使用 PowerShell 命令获取窗口id （`MainWindowHandle` 下的数字）。
 
 需要注意的是，会有两个窗口：一个是启动器窗口（launcher），另一个（NRC-Win64-Shipping）才是游戏窗口。
 
@@ -103,12 +104,22 @@ Get-Process | Where-Object {$_.MainWindowTitle -like "*洛克王国*"} | Select-
 Get-Process -Name "NRC-Win64-Shipping" | Select-Object Id, ProcessName, MainWindowTitle, MainWindowHandle 
 ```
 
-
 ```powershell
 Get-Process |
     Where-Object {$_.MainWindowTitle -like "*NRC-Win64-Shipping*"} |
     Select-Object -ExpandProperty MainWindowHandle
 ```
+
+实在不行用获取全部窗口的命令, 找到ProcessName为"NRC-Win64-Shipping"对应的窗口id
+
+```powershell
+Get-Process | Where-Object { $_.MainWindowHandle -ne 0 } |
+Select-Object ProcessName, Id, MainWindowTitle, MainWindowHandle |
+Format-Table -AutoSize 
+```
+
+<img src="images_instruct/全部窗口id.png" width="600">
+
 
 ### 框效果说明
 

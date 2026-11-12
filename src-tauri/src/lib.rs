@@ -17,56 +17,8 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex, OnceLock};
 use tauri::Manager;
 
-const RECOGNITION_LOG_MAX_BYTES: usize = 1024 * 1024;
-static RECOGNITION_LOG_LOCK: Mutex<()> = Mutex::new(());
-
-fn log_recognition_timing(app: &tauri::AppHandle, message: &str) {
-    let Ok(_guard) = RECOGNITION_LOG_LOCK.lock() else {
-        return;
-    };
-    let path = app_data_dir(app).join("recognition-timing.log");
-    let Ok(()) = std::fs::create_dir_all(
-        path.parent()
-            .unwrap_or_else(|| std::path::Path::new(".")),
-    ) else {
-        return;
-    };
-    let timestamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|duration| duration.as_millis())
-        .unwrap_or_default();
-    let mut line = format!("{timestamp} {message}\n").into_bytes();
-    if line.len() > RECOGNITION_LOG_MAX_BYTES {
-        let start = line.len() - RECOGNITION_LOG_MAX_BYTES;
-        line.drain(..start);
-    }
-    let Ok(mut file) = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&path)
-    else {
-        return;
-    };
-    if std::io::Write::write_all(&mut file, &line).is_err() {
-        return;
-    }
-    let Ok(length) = file.metadata().map(|metadata| metadata.len() as usize) else {
-        return;
-    };
-    if length > RECOGNITION_LOG_MAX_BYTES {
-        drop(file);
-        let Ok(mut contents) = std::fs::read(&path) else {
-            return;
-        };
-        let start = contents.len().saturating_sub(RECOGNITION_LOG_MAX_BYTES);
-        let boundary = contents[start..]
-            .iter()
-            .position(|byte| *byte == b'\n')
-            .map(|offset| start + offset + 1)
-            .unwrap_or(contents.len());
-        contents.drain(..boundary);
-        let _ = std::fs::write(path, contents);
-    }
+fn log_recognition_timing(_app: &tauri::AppHandle, message: &str) {
+    diagnostics::event("performance.timing", serde_json::json!({ "message": message }));
 }
 
 #[derive(Clone, Default)]
@@ -106,11 +58,15 @@ async fn run_native_data(app: tauri::AppHandle, command: &str, payload: Value) -
     let data = app.state::<NativeData>().inner().clone();
     let command = command.to_owned();
     tauri::async_runtime::spawn_blocking(move || {
-        let mut guard = data.0.lock().map_err(|e| e.to_string())?;
-        if guard.is_none() {
-            *guard = Some(desktop_data::DesktopData::new(resource_root(&app)?, app_data_dir(&app)));
-        }
-        guard.as_mut().unwrap().dispatch(&command, &payload)
+        let result = (|| {
+            let mut guard = data.0.lock().map_err(|e| e.to_string())?;
+            if guard.is_none() {
+                *guard = Some(desktop_data::DesktopData::new(resource_root(&app)?, app_data_dir(&app)));
+            }
+            guard.as_mut().unwrap().dispatch(&command, &payload)
+        })();
+        diagnostics::report_result("native.data", &command, &result);
+        result
     }).await.map_err(|e| format!("Native data task failed: {e}"))?
 }
 
@@ -153,6 +109,7 @@ async fn run_native_inference(app: tauri::AppHandle, payload: Value, classify: b
                 started.elapsed().as_secs_f64() * 1000.0,
             ),
         );
+        diagnostics::report_result("native.inference", if classify { "classify" } else { "recognize" }, &result);
         result
     }).await.map_err(|e| format!("Native inference task failed: {e}"))?
 }
@@ -243,7 +200,11 @@ fn create_main_window(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>
     // Before App::run, App still owns the runtime and creates the native window
     // synchronously. The AppHandle path discards native creation errors.
     let window_builder = tauri::WebviewWindowBuilder::from_config(app, &window_config)?
-        .data_directory(webview_dir);
+        .data_directory(webview_dir)
+        // A launcher may initially minimize the native parent. WebView2's
+        // MoveFocus returns E_INVALIDARG in that state and aborts Wry::build.
+        // Request focus only after restoring and showing the completed window.
+        .focused(false);
     let window_builder = if let Some((width, height)) = configured_window_size(app.handle()) {
         window_builder.inner_size(width, height)
     } else {
@@ -268,6 +229,10 @@ fn create_main_window(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>
     // A launcher can pass a minimized startup state to the first native window.
     window.unminimize()?;
     window.show()?;
+    if let Err(error) = window.set_focus() {
+        diagnostics::event("startup.focus_failed", serde_json::json!({ "error": error.to_string() }));
+        eprintln!("[startup] Main window created, but focus request failed: {error}");
+    }
     eprintln!("[startup] Main window initialized; restore and show requested");
     Ok(())
 }
@@ -282,7 +247,6 @@ pub fn run() {
         .manage(OverlayInteractionState::default())
         .manage(OverlayVisibilityState::default())
         .setup(|app| {
-            diagnostics::init(app.handle());
             #[cfg(windows)]
             {
                 platform::windows::overlay::start_overlay_runtime(app);
@@ -333,6 +297,9 @@ pub fn run() {
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
+    // Tauri runs setup only after App::run starts. Window creation below must
+    // already have the disk logger and panic hook available if it fails.
+    diagnostics::init(app.handle());
     create_main_window(&app).unwrap_or_else(|error| {
         panic!("[startup] Cannot initialize main window: {error} ({error:?})");
     });

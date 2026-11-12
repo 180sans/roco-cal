@@ -1,14 +1,16 @@
 //! Release-enabled, bounded JSONL diagnostics. Never records battle payloads or typed keys.
 use serde_json::{json, Value};
-use std::{io::Write, path::PathBuf, sync::{Mutex, OnceLock, mpsc::{self, SyncSender}, atomic::{AtomicU64, Ordering}}, time::{Instant, SystemTime, UNIX_EPOCH}};
+use std::{sync::{Mutex, OnceLock, mpsc::{self, SyncSender}, atomic::{AtomicU64, Ordering}}, time::{Instant, SystemTime, UNIX_EPOCH}};
+
+#[path = "diagnostic_store.rs"]
+mod store;
+use store::Store as Log;
 
 static LOG: OnceLock<Mutex<Log>> = OnceLock::new();
 static QUEUE: OnceLock<SyncSender<Message>> = OnceLock::new();
 static STARTED: OnceLock<Instant> = OnceLock::new();
 static DROPPED: AtomicU64 = AtomicU64::new(0);
 enum Message { Record(Value), Flush(mpsc::Sender<()>) }
-struct Log { path: PathBuf }
-const MAX_BYTES: u64 = 4 * 1024 * 1024;
 
 pub(crate) fn init(app: &tauri::AppHandle) {
     let directory = crate::app_data_dir(app).join("diagnostics");
@@ -16,10 +18,12 @@ pub(crate) fn init(app: &tauri::AppHandle) {
         eprintln!("Cannot create diagnostics directory {}: {error}", directory.display());
         return;
     }
-    // Separate files avoid rotation races between concurrently running instances.
     let _ = STARTED.set(Instant::now());
-    let path = directory.join(format!("plugin-{}.jsonl", std::process::id()));
-    let _ = LOG.set(Mutex::new(Log { path }));
+    let log = match Log::new(&directory) {
+        Ok(log) => log,
+        Err(error) => { eprintln!("Cannot initialize diagnostics: {error}"); return; }
+    };
+    let _ = LOG.set(Mutex::new(log));
     let (sender, receiver) = mpsc::sync_channel(2048);
     let _ = QUEUE.set(sender);
     std::thread::spawn(move || {
@@ -40,8 +44,6 @@ pub(crate) fn init(app: &tauri::AppHandle) {
         "exeModifiedUtcMs": std::env::current_exe().ok().and_then(|path| std::fs::metadata(path).ok())
             .and_then(|m| m.modified().ok()).and_then(|t| t.duration_since(UNIX_EPOCH).ok()).map(|t| t.as_millis()),
     }));
-    let _ = std::fs::write(directory.join("说明.txt"),
-        "请在问题发生后尽快退出插件，将整个 diagnostics 文件夹压缩后发送。\r\nplugin-进程号.jsonl 为当前日志，.1/.2/.3 为轮转历史；每个进程最多约 16 MB。\r\n时间 utcMs 为 UTC 毫秒时间戳，elapsedMs 为本次启动后的毫秒数。\r\n请附上发生时间、游戏客户端、按下的快捷键、点击位置及双方管理员运行情况。\r\n日志包含程序路径、相关窗口标题和句柄，不记录输入文本、其他按键或战斗请求内容。\r\n");
     let previous = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
         event("rust.panic", json!({"message": info.to_string()}));
@@ -52,12 +54,37 @@ pub(crate) fn init(app: &tauri::AppHandle) {
 
 use tauri::Manager;
 
+fn record_level(name: &str, details: &Value) -> Option<&'static str> {
+    let failed_result = details.get("result").and_then(|value| value.get("Err")).is_some();
+    let errors = details.get("errors").and_then(Value::as_array).is_some_and(|errors| !errors.is_empty());
+    let error = details.get("error").is_some_and(|error| !error.is_null() && error != "" && error != 0 && error != false);
+    if name.contains("error") || name.contains("failed") || name.contains("panic")
+        || name.ends_with("unhandled_rejection") || name.ends_with("config_invalid")
+        || failed_result || errors || error || details.get("success") == Some(&Value::Bool(false))
+        || details.get("matchesTarget") == Some(&Value::Bool(false)) {
+        return Some("error");
+    }
+    match name {
+        "session.start" | "session.exit" | "frontend.start" |
+        "window.attach_request" | "window.attached" | "window.detached" => Some("info"),
+        _ => None,
+    }
+}
+
+pub(crate) fn report_result<T>(component: &str, command: &str, result: &Result<T, String>) {
+    if let Err(error) = result {
+        event("backend.error", json!({"component": component, "command": command,
+            "error": error.chars().take(6000).collect::<String>()}));
+    }
+}
+
 pub(crate) fn event(name: &str, details: Value) {
+    let Some(level) = record_level(name, &details) else { return };
     let Some(queue) = QUEUE.get() else { return };
     let elapsed = STARTED.get().map(|started| started.elapsed().as_millis());
     let row = json!({"utcMs": SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis(),
         "elapsedMs": elapsed, "pid": std::process::id(), "thread": format!("{:?}", std::thread::current().id()),
-        "event": name, "details": details});
+        "level": level, "event": name, "details": details});
     if queue.try_send(Message::Record(row)).is_err() { DROPPED.fetch_add(1, Ordering::Relaxed); }
 }
 
@@ -75,19 +102,7 @@ fn write(mut row: Value) {
     let Ok(log) = log.lock() else { return };
     let dropped = DROPPED.swap(0, Ordering::Relaxed);
     if dropped != 0 { row["droppedBeforeThisRecord"] = json!(dropped); }
-    let result = (|| -> std::io::Result<()> {
-        if std::fs::metadata(&log.path).map(|m| m.len() >= MAX_BYTES).unwrap_or(false) {
-            let backup = |n| log.path.with_extension(format!("jsonl.{n}"));
-            if backup(3).exists() { std::fs::remove_file(backup(3))?; }
-            for n in (1..3).rev() {
-                if backup(n).exists() { std::fs::rename(backup(n), backup(n + 1))?; }
-            }
-            std::fs::rename(&log.path, backup(1))?;
-        }
-        let mut file = std::fs::OpenOptions::new().create(true).append(true).open(&log.path)?;
-        writeln!(file, "{row}")?;
-        file.flush()
-    })();
+    let result = log.append(format!("{row}\n").as_bytes());
     if let Err(error) = result { eprintln!("Diagnostic log write failed: {error}"); }
 }
 

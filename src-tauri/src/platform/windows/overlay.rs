@@ -580,44 +580,6 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
     let tracker_app = app.handle().clone();
     let tracker_interaction_state = app.state::<OverlayInteractionState>().inner().clone();
     let tracker_visibility_state = app.state::<OverlayVisibilityState>().inner().clone();
-    let diagnostic_target_state = overlay_target_state.clone();
-    let diagnostic_interaction_state = tracker_interaction_state.clone();
-    let diagnostic_visibility_state = tracker_visibility_state.clone();
-    // Keep window inspection and disk reporting out of the attachment tracking path.
-    std::thread::spawn(move || {
-      let mut previous = serde_json::Value::Null;
-      let mut heartbeat = std::time::Instant::now();
-      let mut mouse_down = false;
-      let mut last_foreground = 0usize;
-      loop {
-        let binding = diagnostic_target_state
-            .binding
-            .lock()
-            .ok()
-            .and_then(|current| *current);
-        let foreground = unsafe { GetForegroundWindow() } as usize;
-        if foreground != last_foreground {
-            last_foreground = foreground;
-            let mut pid = 0;
-            unsafe { GetWindowThreadProcessId(foreground as *mut c_void, &mut pid) };
-            diagnostics::event("window.foreground", json!({"window": diagnostics::window(foreground), "process": diagnostics::process(pid)}));
-        }
-        let down = unsafe { GetAsyncKeyState(1) } < 0;
-        if down && !mouse_down && binding.is_some() {
-            diagnostics::event("window.mouse_down_sample", diagnostics::snapshot(binding));
-        }
-        mouse_down = down;
-        let status = json!({"windows": diagnostics::snapshot(binding),
-            "collapsed": diagnostic_visibility_state.collapsed.load(Ordering::Relaxed),
-            "clickThrough": diagnostic_interaction_state.click_through.load(Ordering::Relaxed)});
-        if status != previous || heartbeat.elapsed() >= Duration::from_secs(15) {
-            diagnostics::event(if status == previous {"window.heartbeat"} else {"window.state_change"}, status.clone());
-            previous = status;
-            heartbeat = std::time::Instant::now();
-        }
-        std::thread::sleep(Duration::from_millis(100));
-      }
-    });
     let tick_pending = Arc::new(std::sync::atomic::AtomicBool::new(false));
     std::thread::spawn(move || loop {
         if !tick_pending.swap(true, Ordering::Relaxed) {

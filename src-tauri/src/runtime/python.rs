@@ -197,6 +197,10 @@ fn persistent_python_payload(app: &tauri::AppHandle, command: &str, payload: &Va
                 return envelope.data.ok_or_else(|| "Python worker response is missing data".to_string());
             }
             Err(error) => {
+                crate::diagnostics::event("python.worker.error", serde_json::json!({
+                    "command": command, "attempt": attempt + 1,
+                    "error": error.chars().take(6000).collect::<String>()
+                }));
                 last_error = error;
                 if let Some(mut dead_worker) = guard.take() {
                     let _ = dead_worker.child.kill();
@@ -224,7 +228,9 @@ pub(crate) fn stop_persistent_python_worker() {
 pub(crate) async fn run_python_async(app: tauri::AppHandle, args: Vec<String>) -> Result<Value, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let arg_refs = args.iter().map(String::as_str).collect::<Vec<_>>();
-        run_python(app, &arg_refs)
+        let result = run_python(app, &arg_refs);
+        crate::diagnostics::report_result("python.battle", arg_refs.first().copied().unwrap_or(""), &result);
+        result
     })
     .await
     .map_err(|error| format!("Python task failed: {error}"))?
@@ -240,17 +246,21 @@ pub(crate) async fn run_python_payload_async(
         .map_err(|error| format!("Cannot serialize payload: {error}"))?;
     let command = command.to_string();
     tauri::async_runtime::spawn_blocking(move || {
-        if battle_commands::execution(&command)? == ExecutionMode::Persistent {
-            let payload: Value = serde_json::from_str(&payload_text)
-                .map_err(|error| format!("Cannot decode serialized Python payload: {error}"))?;
-            persistent_python_payload(&app, &command, &payload)
-        } else {
-            run_python_with_input(
-                app,
-                &[command.as_str(), "--payload-stdin"],
-                Some(&payload_text),
-            )
-        }
+        let result = (|| {
+            if battle_commands::execution(&command)? == ExecutionMode::Persistent {
+                let payload: Value = serde_json::from_str(&payload_text)
+                    .map_err(|error| format!("Cannot decode serialized Python payload: {error}"))?;
+                persistent_python_payload(&app, &command, &payload)
+            } else {
+                run_python_with_input(
+                    app,
+                    &[command.as_str(), "--payload-stdin"],
+                    Some(&payload_text),
+                )
+            }
+        })();
+        crate::diagnostics::report_result("python.battle", &command, &result);
+        result
     })
     .await
     .map_err(|error| format!("Python task failed: {error}"))?
