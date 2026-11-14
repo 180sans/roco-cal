@@ -1097,6 +1097,104 @@ fn personality(
     }
     (Some(plus), Some(minus), notes)
 }
+// Only forms explicitly identified in test3.yaml are recorded here. Unknown codes
+// continue through the existing name/skill lookup rather than guessing a form.
+fn team_code_form(code: &str) -> Option<&'static str> {
+    Some(match code {
+        "1p" => "220海枝枝（翠绿纶布）",
+        "1n" => "220海枝枝（杏黄百合）",
+        "1m" => "220海枝枝（碧蓝珊瑚）",
+        "1o" => "220海枝枝（洋红沙丁）",
+        "2N" => "167皇家狮鹫（高山地的样子）",
+        "w5" => "167皇家狮鹫（崖间地的样子）",
+        "zV" => "020岚鸟（春天的样子）",
+        "zW" => "020岚鸟（夏天的样子）",
+        "vd" => "020岚鸟",
+        "zX" => "020岚鸟（秋天的样子）",
+        "wk" => "026石冠王蜥",
+        "2u" => "026石冠王蜥（球球尾巴的样子）",
+        "xC" => "034化蝶（平常的样子）",
+        "2O" => "034化蝶（幽冥眼的样子）",
+        "2Q" => "034化蝶（奇丽花的样子）",
+        "2P" => "034化蝶（喵喵的样子）",
+        "0E" => "078千棘盔",
+        "2V" => "078千棘盔（磨损的样子）",
+        "zg" => "046卡瓦重（雪山附近的样子）",
+        "vi" => "046卡瓦重（草地附近的样子）",
+        "ze" => "046卡瓦重（火山附近的样子）",
+        "zf" => "046卡瓦重（沙地附近的样子）",
+        "22" => "173嗜波螺",
+        "25" => "173嗜波螺（被污染的样子）",
+        "1v" => "058梦悠悠（穿旧睡衣的样子）",
+        "1x" => "058梦悠悠（穿星星睡衣的样子）",
+        "0x" => "120风滚暮虫（金黄的样子）",
+        "2q" => "120风滚暮虫（枯叶的样子）",
+        "x6" => "081星光狮（星光能量的样子）",
+        "1z" => "081星光狮（月光能量的样子）",
+        "3_" => "238月亮砣（上弦的样子）",
+        "4B" => "238月亮砣（下弦的样子）",
+        "3S" => "260乌拉塔（极昼的样子）",
+        "3V" => "260乌拉塔（极夜的样子）",
+        "2A" => "279遁地鼠（储水时的样子）",
+        "vO" => "279遁地鼠（枯水期的样子）",
+        "6f" => "361加油蟹（单只海葵的样子）",
+        "5M" => "361加油蟹（两只海葵的样子）",
+        _ => return None,
+    })
+}
+
+fn team_code_pet_ids(code: &str) -> Vec<&str> {
+    // The first member follows B~G; subsequent members follow ~. In both
+    // positions the two characters immediately before ~~~ identify the pet.
+    Regex::new(r"([A-Za-z0-9_-]{2})~~~")
+        .unwrap()
+        .captures_iter(code)
+        .map(|capture| capture.get(1).unwrap().as_str())
+        .collect()
+}
+
+type TeamCodeEntry = (String, String, Vec<String>);
+
+fn match_team_code_presets(
+    entries: &[TeamCodeEntry],
+    pet_codes: &[&str],
+    original: &Map<String, Value>,
+) -> Vec<Option<String>> {
+    let mut pairs = vec![];
+    for (i, (name, _, skills)) in entries.iter().take(6).enumerate() {
+        let known_form = pet_codes.get(i).and_then(|code| team_code_form(code));
+        let incoming: BTreeSet<_> = skills.iter().map(String::as_str).collect();
+        for (j, (key, preset)) in original.iter().enumerate() {
+            let old_name = strip_id(text(&preset["name"]));
+            if base_name(old_name) != base_name(strip_id(name)) {
+                continue;
+            }
+            if known_form.is_some_and(|form| strip_id(form) != old_name) {
+                continue;
+            }
+            let old_skills: BTreeSet<_> = array(&preset["skills"])
+                .iter().map(text).filter(|s| !s.is_empty()).collect();
+            let score = (
+                incoming == old_skills,
+                incoming.intersection(&old_skills).count(),
+                std::cmp::Reverse(i.abs_diff(j)),
+            );
+            pairs.push((score, i, key.clone()));
+        }
+    }
+    // Reserve unchanged members first, so a changed duplicate cannot consume
+    // another member's preset. Each old preset may be used only once.
+    pairs.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)));
+    let mut matches = vec![None; entries.len().min(6)];
+    let mut used = BTreeSet::new();
+    for (_, i, key) in pairs {
+        if matches[i].is_none() && used.insert(key.clone()) {
+            matches[i] = Some(key);
+        }
+    }
+    matches
+}
+
 impl DesktopData {
     fn team_candidates(&self, query: &str) -> Vec<&Value> {
         let normalized = query.trim();
@@ -1223,9 +1321,20 @@ impl DesktopData {
             ));
         }
         let mut items = Map::new();
+        let pet_codes = team_code_pet_ids(code);
+        let original = presets[group].as_object().cloned().unwrap_or_default();
+        let previous = match_team_code_presets(&entries, &pet_codes, &original);
         for (i, ((name, blood, skills), record)) in entries.iter().zip(records).take(6).enumerate()
         {
             let candidates = self.team_candidates(name);
+            let known_form = pet_codes.get(i).and_then(|code| team_code_form(code));
+            let coded_pet = known_form.and_then(|form| candidates.iter().copied().find(|p| label(p) == form));
+            let previous_key = previous[i].as_ref();
+            let previous_preset = previous_key.and_then(|key| original.get(key));
+            let previous_pet = previous_preset.and_then(|preset| candidates.iter().copied().find(|p| {
+                strip_id(text(&preset["name"])) == text(&p["name"])
+                    && (preset["id"].is_null() || preset["id"] == p["id"])
+            }));
             let owned = |p: &Value| {
                 array(&p["skills"])
                     .iter()
@@ -1237,7 +1346,7 @@ impl DesktopData {
                 .copied()
                 .filter(|p| skills.iter().all(|s| owned(p).contains(s)))
                 .collect();
-            let Some(p) = matched.first().or_else(|| candidates.first()) else {
+            let Some(p) = coded_pet.or(previous_pet).or_else(|| matched.first().copied()).or_else(|| candidates.first().copied()) else {
                 report.push(format!("{name}：精灵库中没有找到，已跳过"));
                 continue;
             };
@@ -1264,7 +1373,14 @@ impl DesktopData {
             let mut lines = vec![format!("{name} → {}", label(p))];
             let n = candidates.len();
             let m = matched.len();
-            if n > 1 {
+            if coded_pet.is_some() {
+                lines.push("阵容码已确定形态".into());
+                if previous_pet.is_some() {
+                    lines.push("已匹配原预设，保留其他设置".into());
+                }
+            } else if previous_pet.is_some() {
+                lines.push("已匹配原预设，保留形态及其他设置".into());
+            } else if n > 1 {
                 lines.push(if m == 1 {
                     format!("候选形态 {n} 个，技能表唯一确定这个形态")
                 } else if m > 1 {
@@ -1298,14 +1414,22 @@ impl DesktopData {
             } else {
                 text(&p["name"])
             };
-            let mut key = pet_name.to_owned();
+            let mut key = previous_key.cloned().unwrap_or_else(|| pet_name.to_owned());
             let mut suffix = 2;
             while items.contains_key(&key) {
                 key = format!("{pet_name} {suffix}");
                 suffix += 1;
             }
-            items.insert(key,json!({"id":p["id"],"name":pet_name,"iv":iv,"personality_bouns":plus,"personality_down":minus,"skills":skills,"bloodline":if blood.is_empty(){Value::Null}else{json!(blood)},
-                "trait_override_query":null,"trait_triggered":false,"trait_stacks":0,"trait_choices":{},"devolution":0,"mega":false,"mega_form":null}));
+            let mut imported = json!({"id":p["id"],"name":pet_name,"iv":iv,"personality_bouns":plus,"personality_down":minus,"skills":skills,"bloodline":if blood.is_empty(){Value::Null}else{json!(blood)},
+                "trait_override_query":null,"trait_triggered":false,"trait_stacks":0,"trait_choices":{},"devolution":0,"mega":false,"mega_form":null});
+            if let Some(previous) = previous_preset.filter(|_| previous_pet.is_some()) {
+                let mut preserved = previous.clone();
+                for field in ["id", "name", "iv", "personality_bouns", "personality_down", "skills", "bloodline"] {
+                    preserved[field] = imported[field].clone();
+                }
+                imported = preserved;
+            }
+            items.insert(key, imported);
         }
         if items.is_empty() {
             return Err("没有可导入的精灵，请检查阵容码内容".into());
@@ -1313,5 +1437,146 @@ impl DesktopData {
         presets[group] = Value::Object(items);
         save(&self.user.join("presets.json"), &presets)?;
         Ok(json!({"presets":self.preset_groups(&presets),"groupName":group,"report":report}))
+    }
+}
+
+#[cfg(test)]
+mod team_code_tests {
+    use super::*;
+
+    #[test]
+    fn imports_all_38_annotated_forms_from_reference_teams() {
+        let fixture = Fixture::new();
+        let reference = include_str!("../../../scripts/fixtures/team-code-forms.txt");
+        let entry_re = Regex::new(r"^#\s*([^：:]+)[：:][^{}]*\{([^}]*)\}").unwrap();
+        let mut entries = vec![];
+        let mut expected = vec![];
+        let mut annotated_count = 0;
+        let mut species = BTreeSet::new();
+        for line in reference.lines().map(str::trim) {
+            if let Some(capture) = entry_re.captures(line) {
+                let annotation = line.rsplit_once('#').map(|(_, tail)| tail.trim())
+                    .filter(|tail| tail.chars().next().is_some_and(|c| c.is_ascii_digit()));
+                let name = annotation.map(strip_id).unwrap_or(capture[1].trim()).to_owned();
+                let id = annotation.map(|label| &label[..3]).unwrap_or("999");
+                entries.push(json!({"id":id,"name":name,"skills":capture[2].split('、').map(|skill| json!({"skill_name":skill})).collect::<Vec<_>>()}));
+                expected.push(annotation.map(str::to_owned));
+            }
+            if !line.starts_with("B~G") { continue; }
+            assert_eq!(team_code_pet_ids(line).len(), entries.len());
+            let mut data = DesktopData::new(fixture.0.join("resources"), fixture.0.join("user"));
+            data.pets = entries.clone();
+            // Make every form of a species own every skill in this reference
+            // team: skill matching alone can no longer identify the form.
+            let all_skills: Vec<_> = entries.iter().flat_map(|pet| array(&pet["skills"]).iter().cloned()).collect();
+            for pet in &mut data.pets { pet["skills"] = json!(all_skills); }
+            let comments = entries.iter().map(|pet| format!("# {}：血脉、{{技能}}", base_name(text(&pet["name"]))))
+                .collect::<Vec<_>>().join("\n");
+            data.import_team_code(&json!({"mode":"create","groupName":"参考分组","text":format!("{comments}\n{line}")})).unwrap();
+            let saved = data.presets().unwrap();
+            let items: Vec<_> = saved["参考分组"].as_object().unwrap().values().collect();
+            assert_eq!(items.len(), expected.len());
+            for (actual, annotation) in items.iter().zip(&expected) {
+                if let Some(annotation) = annotation {
+                    assert_eq!(label(actual), *annotation);
+                    annotated_count += 1;
+                    species.insert(base_name(strip_id(annotation)).to_owned());
+                }
+            }
+            entries.clear();
+            expected.clear();
+        }
+        assert_eq!(annotated_count, 38);
+        assert_eq!(species.len(), 15);
+    }
+
+    #[test]
+    fn extracts_first_and_later_pet_codes_without_confusing_header_or_trailer() {
+        let codes = team_code_pet_ids("B~GzV~~~N~C~BQBPBUayBM~bRns~bRqq~a0bQ~zW~~~N~D~BQBPBUbRoe~ayGq~ayBM~a2y0~ZZC~BA~A~");
+        assert_eq!(codes, ["zV", "zW"]);
+        assert_eq!(team_code_form(codes[0]), Some("020岚鸟（春天的样子）"));
+        assert_eq!(team_code_form("??"), None);
+        assert_eq!(team_code_form("yg"), None, "unannotated forms must not be guessed");
+    }
+
+    #[test]
+    fn matches_unchanged_duplicate_before_member_with_changed_skills() {
+        let original = json!({
+            "先前的第一只": {"name":"岚鸟（秋天的样子）","skills":["风起","扇风"]},
+            "先前的第二只": {"name":"岚鸟（春天的样子）","skills":["风起","闪击"]}
+        });
+        let entries = vec![
+            ("岚鸟".into(), "".into(), vec!["风起".into(), "新技能".into()]),
+            ("岚鸟".into(), "".into(), vec!["风起".into(), "扇风".into()]),
+        ];
+        assert_eq!(match_team_code_presets(&entries, &["??", "??"], original.as_object().unwrap()),
+            [Some("先前的第二只".into()), Some("先前的第一只".into())]);
+        let known = match_team_code_presets(&entries, &["zX", "zV"], original.as_object().unwrap());
+        assert_eq!(known, [Some("先前的第一只".into()), Some("先前的第二只".into())]);
+        let replacement = vec![("海枝枝".into(), "".into(), vec!["风起".into()])];
+        assert_eq!(match_team_code_presets(&replacement, &["1p"], original.as_object().unwrap()), [None]);
+    }
+
+    struct Fixture(PathBuf);
+    impl Fixture {
+        fn new() -> Self {
+            let path = std::env::temp_dir().join(format!("roco-team-code-{}-{}", std::process::id(),
+                std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+            std::fs::create_dir_all(&path).unwrap();
+            Self(path)
+        }
+    }
+    impl Drop for Fixture {
+        fn drop(&mut self) { let _ = std::fs::remove_dir_all(&self.0); }
+    }
+
+    #[test]
+    fn overwrite_preserves_custom_settings_and_unknown_form_while_updating_encoded_fields() {
+        let fixture = Fixture::new();
+        let mut data = DesktopData::new(fixture.0.join("resources"), fixture.0.join("user"));
+        data.pets = vec![
+            json!({"id":"020","name":"岚鸟（春天的样子）","skills":[{"skill_name":"旧技能"},{"skill_name":"新技能"}]}),
+            json!({"id":"020","name":"岚鸟（秋天的样子）","skills":[{"skill_name":"旧技能"},{"skill_name":"新技能"}]})
+        ];
+        let original = json!({"id":"020","name":"岚鸟（秋天的样子）","skills":["旧技能"],
+            "iv":{"hp":10},"personality_bouns":"hp","personality_down":"spd","bloodline":"旧血脉",
+            "trait_override_query":"指定特性","trait_triggered":true,"trait_stacks":3,"trait_choices":{"choice":2},
+            "devolution":2,"mega":true,"mega_form":"指定萌化","extra":"保留"});
+        for mode in ["overwrite", "create"] {
+            save(&data.user.join("presets.json"), &json!({"分组":{"自定义名字":original},"其他组":{"原样":original}})).unwrap();
+            data.import_team_code(&json!({"mode":mode,"groupName":"分组",
+                "text":"# 岚鸟：翼系血脉、{新技能}\nB~G??~~~N~c~BSBPBTbRq0~bRpk~a5R4~bRrm~ZZC~BA~A~"})).unwrap();
+            let saved = data.presets().unwrap();
+            let result = &saved["分组"]["自定义名字"];
+            assert_eq!(saved["分组"].as_object().unwrap().len(), 1);
+            for field in ["id","name","trait_override_query","trait_triggered","trait_stacks","trait_choices","devolution","mega","mega_form","extra"] {
+                assert_eq!(result[field], original[field], "{mode}: {field}");
+            }
+            assert_eq!(result["skills"], json!(["新技能"]));
+            assert_eq!(result["bloodline"], "翼系血脉");
+            assert_eq!(result["iv"], json!({"hp":10,"atk":0,"mag":0,"def":10,"res":10,"spd":0}));
+            assert_eq!(result["personality_bouns"], "hp");
+            assert_eq!(result["personality_down"], "mag");
+            assert_eq!(saved["其他组"]["原样"], original);
+        }
+    }
+
+    #[test]
+    fn collected_code_overrides_ambiguous_skills_and_does_not_inherit_a_different_form() {
+        let fixture = Fixture::new();
+        let mut data = DesktopData::new(fixture.0.join("resources"), fixture.0.join("user"));
+        data.pets = vec![
+            json!({"id":"020","name":"岚鸟（春天的样子）","skills":[{"skill_name":"技能"}]}),
+            json!({"id":"020","name":"岚鸟（秋天的样子）","skills":[{"skill_name":"技能"}]})
+        ];
+        save(&data.user.join("presets.json"), &json!({"分组":{"春天":{"id":"020","name":"岚鸟（春天的样子）","skills":["技能"],"trait_stacks":5}}})).unwrap();
+        data.import_team_code(&json!({"mode":"overwrite","groupName":"分组",
+            "text":"# 岚鸟：翼系血脉、{技能}\nB~GzX~~~N~c~BSBPBTbRq0~bRpk~a5R4~bRrm~ZZC~BA~A~"})).unwrap();
+        let saved = data.presets().unwrap();
+        let items = saved["分组"].as_object().unwrap();
+        assert_eq!(items.len(), 1);
+        let result = items.values().next().unwrap();
+        assert_eq!(result["name"], "岚鸟（秋天的样子）");
+        assert_eq!(result["trait_stacks"], 0);
     }
 }
