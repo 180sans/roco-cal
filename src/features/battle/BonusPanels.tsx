@@ -257,7 +257,7 @@ function BattleBonusToolPanel({
       <header onPointerDown={startDrag}>
         <div className="inline-row">
           <strong>{title}</strong>
-          {tool === "dedication" || tool === "thunderstorm" ? <RefreshButton className="compact-button" onClick={() => onChange(tool === "dedication" ? { dedication_power_stacks: 0, dedication_combo_stacks: 0 } : { burst_triggered_effect_ids: [] })} /> : null}
+          {pluginMode || tool !== "marks" ? <RefreshButton className="compact-button" onClick={() => onChange(tool === "dedication" ? { dedication_power_stacks: 0, dedication_combo_stacks: 0 } : tool === "marks" ? { charge_mark_stacks: 0, attack_mark_stacks: 0, momentum_mark_stacks: 0, starfall_mark_stacks: 0 } : { burst_triggered_effect_ids: [] })} /> : null}
         </div>
         <button className="icon-button" title="关闭" aria-label="关闭" onClick={onClose}>×</button>
       </header>

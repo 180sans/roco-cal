@@ -1487,7 +1487,13 @@ body:has(.plugin-mode) .app-header .weather-panel {
 
 .battle-page.plugin-mode .result-floating {
   max-height: 365px;
+  scrollbar-gutter: auto;
+  scrollbar-width: none;
   width: 435px;
+}
+
+.battle-page.plugin-mode .result-floating::-webkit-scrollbar {
+  display: none;
 }
 
 .battle-page.plugin-mode .bonus-tool-floating.dedication {
@@ -2223,6 +2229,18 @@ body:has(.plugin-mode) .app-header .weather-panel {
 
 .result-floating.has-willpower { width: min(680px, calc(100vw - 32px)); }
 .battle-page.plugin-mode .result-floating.has-willpower { width: 680px; }
+
+.battle-page.plugin-mode .result-floating.has-willpower {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.battle-page.plugin-mode .willpower-result-tabs {
+  grid-template-columns: repeat(auto-fit, minmax(min(64px, 100%), 1fr));
+}
+
+.battle-page.plugin-mode .willpower-result-tabs button {
+  min-width: 0;
+}
 
 .bonus-tool-floating {
   background: #f8fdf9;
@@ -5275,7 +5293,7 @@ button.trigger-button > img {
 
 /* 原生下拉的弹出列表不继承祖先配色，必须单独给底色。 */
 .battle-page.immersive-mode.plugin-mode option,
-.overlay-attached-picker.skill-picker-backdrop .picker-modal option {
+.skill-picker-backdrop .picker-modal option {
   background: #16202c;
   color: var(--ov-field-text);
 }
@@ -5334,7 +5352,7 @@ button.trigger-button > img {
 
 /* 精灵 / 技能选择器沿用同一套层级，只是底色更实。 */
 .battle-page.immersive-mode.plugin-mode .picker-modal,
-.overlay-attached-picker.skill-picker-backdrop .picker-modal {
+.skill-picker-backdrop .picker-modal {
   backdrop-filter: blur(10px) saturate(0.8) brightness(0.55);
   background: rgba(18, 26, 36, 0.88) !important;
   border: 1px solid var(--ov-panel-border) !important;
@@ -5343,19 +5361,19 @@ button.trigger-button > img {
 }
 
 .battle-page.immersive-mode.plugin-mode .picker-modal :is(h2, .field-label, .ui-field-title, .picker-hint),
-.overlay-attached-picker.skill-picker-backdrop .picker-modal :is(h2, .field-label, .ui-field-title, .picker-hint) {
+.skill-picker-backdrop .picker-modal :is(h2, .field-label, .ui-field-title, .picker-hint) {
   color: var(--ov-text) !important;
 }
 
 .battle-page.immersive-mode.plugin-mode .picker-modal :is(button, input, select, .compact-picker-card),
-.overlay-attached-picker.skill-picker-backdrop .picker-modal :is(button, input, select, .compact-picker-card) {
+.skill-picker-backdrop .picker-modal :is(button, input, select, .compact-picker-card) {
   background: var(--ov-field) !important;
   border: 1px solid var(--ov-field-border) !important;
   color: var(--ov-field-text) !important;
 }
 
 .battle-page.immersive-mode.plugin-mode .picker-modal .compact-picker-card :is(strong, span, em),
-.overlay-attached-picker.skill-picker-backdrop .picker-modal .compact-picker-card :is(strong, span, em) {
+.skill-picker-backdrop .picker-modal .compact-picker-card :is(strong, span, em) {
   color: var(--ov-field-text) !important;
   opacity: 1;
 }
@@ -5378,18 +5396,18 @@ button.trigger-button > img {
   color: #fff !important;
 }
 
-.overlay-attached-picker.skill-picker-backdrop .picker-modal select {
+.skill-picker-backdrop .picker-modal select {
   color-scheme: dark;
 }
 
-.overlay-attached-picker.skill-picker-backdrop .picker-modal :is(.segmented, .picker-element-grid, .picker-skill-type-grid) button.active {
+.skill-picker-backdrop .picker-modal :is(.segmented, .picker-element-grid, .picker-skill-type-grid) button.active {
   background: var(--ov-accent-bg) !important;
   border-color: var(--ov-accent-border) !important;
   color: #f0fff8 !important;
 }
 
-.overlay-attached-picker.skill-picker-backdrop .picker-modal .filter-toggle[aria-pressed="true"],
-.overlay-attached-picker.skill-picker-backdrop .picker-modal .filter-toggle[aria-pressed="true"]:hover {
+.skill-picker-backdrop .picker-modal .filter-toggle[aria-pressed="true"],
+.skill-picker-backdrop .picker-modal .filter-toggle[aria-pressed="true"]:hover {
   background: #23785e !important;
   border-color: #8fdcb8 !important;
   color: #fff !important;
@@ -6005,29 +6023,29 @@ button.trigger-button > img {
   right: -5px;
 }
 
-/* 其他工具、愿力及敌方攻击结果的缩放热区留在框内，避免撑出无内容的滚动条。 */
-.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating.has-willpower, .enemy-attack-panel, .plugin-buff-shortcut-panel) > .plugin-resize-edge.top {
+/* 其他工具、计算结果及敌方攻击结果的缩放热区留在框内，避免撑出无内容的滚动条。 */
+.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating, .enemy-attack-panel, .plugin-buff-shortcut-panel) > .plugin-resize-edge.top {
   height: 5px;
   left: 0;
   right: 0;
   top: 0;
 }
 
-.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating.has-willpower, .enemy-attack-panel, .plugin-buff-shortcut-panel) > .plugin-resize-edge.bottom {
+.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating, .enemy-attack-panel, .plugin-buff-shortcut-panel) > .plugin-resize-edge.bottom {
   height: 5px;
   left: 0;
   right: 0;
   bottom: 0;
 }
 
-.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating.has-willpower, .enemy-attack-panel, .plugin-buff-shortcut-panel) > .plugin-resize-edge.left {
+.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating, .enemy-attack-panel, .plugin-buff-shortcut-panel) > .plugin-resize-edge.left {
   width: 5px;
   top: 0;
   bottom: 0;
   left: 0;
 }
 
-.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating.has-willpower, .enemy-attack-panel, .plugin-buff-shortcut-panel) > .plugin-resize-edge.right {
+.battle-page.plugin-mode :is(.team-bonus-toolbar, .bonus-tool-floating, .result-floating, .enemy-attack-panel, .plugin-buff-shortcut-panel) > .plugin-resize-edge.right {
   width: 5px;
   top: 0;
   bottom: 0;
