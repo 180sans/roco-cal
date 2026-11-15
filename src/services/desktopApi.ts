@@ -67,6 +67,7 @@ export const desktopApi = {
   captureOverlayTarget: (args: CaptureRequest) => invoke<{ regions: Record<string, string> }>("capture_overlay_target", args),
   setOverlayClickThrough: (enabled: boolean) => invoke("update_overlay_click_through", { enabled }),
   attachOverlayTarget: (hwnd: string) => invoke<{ attached: boolean; hwnd: string }>("attach_overlay_target", { hwnd }),
+  findOverlayWindow: (processName: string) => invoke<{ hwnd: string }>("find_overlay_window", { processName }),
   detachOverlayTarget: () => invoke("detach_overlay_target"),
 };
 

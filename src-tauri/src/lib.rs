@@ -3,6 +3,10 @@ mod battle_commands;
 mod runtime;
 mod platform;
 mod diagnostics;
+#[cfg(windows)]
+pub fn run_visibility_input_helper() -> bool {
+    platform::windows::visibility_input::run_helper_if_requested()
+}
 use runtime::python::stop_persistent_python_worker;
 use roco_desktop_native::{desktop_data, inference};
 #[cfg(windows)]
@@ -290,6 +294,7 @@ pub fn run() {
             commands::data::record_recognition_timing,
             commands::window::capture_overlay_target,
             commands::window::attach_overlay_target,
+            commands::window::find_overlay_window,
             commands::window::detach_overlay_target,
             commands::window::update_overlay_click_through,
             commands::window::begin_overlay_mixed_mode,

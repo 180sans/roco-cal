@@ -1139,12 +1139,43 @@ fn team_code_form(code: &str) -> Option<&'static str> {
         "vO" => "279遁地鼠（枯水期的样子）",
         "6f" => "361加油蟹（单只海葵的样子）",
         "5M" => "361加油蟹（两只海葵的样子）",
+        "vL" => "065蹦蹦花（海神球形态）",
+        "zn" => "065蹦蹦花（彩玉球形态）",
+        "zo" => "065蹦蹦花（短毛球形态）",
+        "zp" => "065蹦蹦花（象牙球形态）",
+        "1N" => "056幽冥眼（睁眼的样子）",
+        "2a" => "056幽冥眼（闭眼的样子）",
+        "3f" => "189棋骑士（白子）",
+        "3k" => "189棋骑士（黑子）",
+        "3i" => "191棋祈督（白子）",
+        "3n" => "191棋祈督（黑子）",
+        "3h" => "190棋齐垒（白子）",
+        "3m" => "190棋齐垒（黑子）",
+        "3l" => "192棋绮后（黑子）",
+        "3g" => "192棋绮后（白子）",
+        "vE" => "011鸭吉吉（蓬松的样子）",
+        "vc" => "011鸭吉吉（紧实的样子）",
+        "15" => "040晶石蜗（星彩榴石的样子）",
+        "17" => "040晶石蜗（蓝锥矿的样子）",
+        "2e" => "040晶石蜗（烧蓝黄金的样子）",
+        "zs" => "040晶石蜗（西瓜碧玺的样子）",
+        "14" => "040晶石蜗（莲花刚玉的样子）",
+        "16" => "040晶石蜗（火山琉璃的样子）",
+        "2E" => "236圣代甜甜（蓝莓巧克力口味）",
+        "2F" => "236圣代甜甜（蓝莓草莓口味）",
+        "2G" => "236圣代甜甜（蓝莓抹茶口味）",
+        "2H" => "236圣代甜甜（杨桃巧克力口味）",
+        "2I" => "236圣代甜甜（杨桃草莓口味）",
+        "2J" => "236圣代甜甜（杨桃抹茶口味）",
+        "w2" => "236圣代甜甜（樱桃巧克力口味）",
+        "2C" => "236圣代甜甜（樱桃草莓口味）",
+        "2D" => "236圣代甜甜（樱桃抹茶口味）",
         _ => return None,
     })
 }
 
 fn team_code_pet_ids(code: &str) -> Vec<&str> {
-    // The first member follows B~G; subsequent members follow ~. In both
+    // The first member follows the team header; subsequent members follow ~. In both
     // positions the two characters immediately before ~~~ identify the pet.
     Regex::new(r"([A-Za-z0-9_-]{2})~~~")
         .unwrap()
@@ -1445,7 +1476,7 @@ mod team_code_tests {
     use super::*;
 
     #[test]
-    fn imports_all_38_annotated_forms_from_reference_teams() {
+    fn imports_all_69_annotated_forms_from_reference_teams() {
         let fixture = Fixture::new();
         let reference = include_str!("../../../scripts/fixtures/team-code-forms.txt");
         let entry_re = Regex::new(r"^#\s*([^：:]+)[：:][^{}]*\{([^}]*)\}").unwrap();
@@ -1462,7 +1493,7 @@ mod team_code_tests {
                 entries.push(json!({"id":id,"name":name,"skills":capture[2].split('、').map(|skill| json!({"skill_name":skill})).collect::<Vec<_>>()}));
                 expected.push(annotation.map(str::to_owned));
             }
-            if !line.starts_with("B~G") { continue; }
+            if !line.starts_with("B~") || !line.contains("~~~") { continue; }
             assert_eq!(team_code_pet_ids(line).len(), entries.len());
             let mut data = DesktopData::new(fixture.0.join("resources"), fixture.0.join("user"));
             data.pets = entries.clone();
@@ -1486,8 +1517,8 @@ mod team_code_tests {
             entries.clear();
             expected.clear();
         }
-        assert_eq!(annotated_count, 38);
-        assert_eq!(species.len(), 15);
+        assert_eq!(annotated_count, 69);
+        assert_eq!(species.len(), 24);
     }
 
     #[test]

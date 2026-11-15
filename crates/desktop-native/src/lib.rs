@@ -4,6 +4,8 @@ pub mod desktop_data;
 pub mod external_icons;
 pub mod plugin_shortcuts;
 pub mod inference;
+#[cfg(windows)]
+pub mod window_access;
 
 mod encoding;
 pub use encoding::{base64_encode, decode_base64};

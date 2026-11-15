@@ -45,6 +45,7 @@ struct OverlayHotkeyContext {
     visibility_state: OverlayVisibilityState,
     overlay_hwnd: usize,
     observed_shortcuts: Arc<Mutex<Vec<Shortcut>>>,
+    visibility_keys: Arc<Mutex<super::shortcut_scope::ShortcutKeys>>,
 }
 
 #[cfg(windows)]
@@ -166,6 +167,7 @@ pub(crate) fn restore_detached_overlay(
     reason: &str,
 ) -> Result<(), String> {
     visibility.collapsed.store(false, Ordering::Relaxed);
+    let _ = app.emit("overlay-collapsed-change", false);
     let mut errors = Vec::new();
     if let Err(error) = set_overlay_click_through(app, interaction, false) { errors.push(error); }
     interaction.click_through.store(false, Ordering::Relaxed);
@@ -182,6 +184,15 @@ pub(crate) fn restore_detached_overlay(
             }
         }
         if let Err(error) = binding.restore.restore(binding.overlay_hwnd as *mut c_void) { errors.push(error); }
+    }
+    // Losing the game can leave the restored window behind the newly activated
+    // application. Native placement restoration alone only makes it visible.
+    if reason == "tracking_failed" {
+        if let Some(window) = app.get_webview_window("main") {
+            if let Err(error) = window.show() { errors.push(error.to_string()); }
+            if let Err(error) = window.unminimize() { errors.push(error.to_string()); }
+            if let Err(error) = window.set_focus() { errors.push(error.to_string()); }
+        }
     }
     if let Err(error) = app.emit("overlay-attachment-change", false) { errors.push(error.to_string()); }
     diagnostics::event("window.detached", json!({"reason": reason, "errors": errors,
@@ -290,10 +301,7 @@ fn toggle_overlay_visibility(
     interaction_state: &OverlayInteractionState,
     visibility_state: &OverlayVisibilityState,
 ) {
-    const SWP_NOACTIVATE: u32 = 0x0010;
-    const SWP_NOSIZE: u32 = 0x0001;
-    const SWP_NOZORDER: u32 = 0x0004;
-    const SWP_NOOWNERZORDER: u32 = 0x0200;
+    const SW_HIDE: i32 = 0;
     let Ok(_transition_guard) = visibility_state.transition.lock() else { return; };
     let binding = target_state.binding.lock().ok().and_then(|binding| *binding);
     let Some(binding) = binding else { return; };
@@ -304,17 +312,7 @@ fn toggle_overlay_visibility(
         .store(collapse, Ordering::Relaxed);
     if collapse {
         let _ = set_overlay_click_through(app, interaction_state, false);
-        unsafe {
-            SetWindowPos(
-                binding.overlay_hwnd as *mut c_void,
-                std::ptr::null_mut(),
-                -32000,
-                -32000,
-                0,
-                0,
-                SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER,
-            )
-        };
+        unsafe { ShowWindow(binding.overlay_hwnd as *mut c_void, SW_HIDE) };
     } else if !sync_overlay_to_target(binding, true) {
         if let Ok(mut current) = target_state.binding.lock() {
             if *current == Some(binding) {
@@ -323,6 +321,7 @@ fn toggle_overlay_visibility(
         }
         let _ = restore_detached_overlay(app, interaction_state, visibility_state, Some(binding), "expand_failed");
     }
+    let _ = app.emit("overlay-collapsed-change", visibility_state.collapsed.load(Ordering::Relaxed));
 }
 
 pub(crate) fn set_overlay_click_through(
@@ -509,6 +508,39 @@ fn force_overlay_edit_mode_from_hotkey(context: &OverlayHotkeyContext) {
 }
 
 #[cfg(windows)]
+fn route_visibility_shortcut(context: &OverlayHotkeyContext,
+    key: u32, down: bool,
+    modifiers: u32, windows_key: bool) -> Option<Shortcut> {
+    let shortcut = context.observed_shortcuts.lock().ok()
+        .and_then(|shortcuts| shortcuts.iter().find(|shortcut| shortcut.id == "toggle-visibility").cloned());
+    let binding = context.target_state.binding.lock().ok().and_then(|binding| *binding);
+    let target = binding.filter(|binding| unsafe { IsWindow(binding.target_hwnd as *mut c_void) } != 0)
+        .map(|binding| binding.target_hwnd);
+    let foreground = unsafe { GetForegroundWindow() } as usize;
+    // Recovery must not depend on which window Windows reports as foreground
+    // after the overlay hides. The visibility key is enabled by a live binding.
+    let in_scope = target.is_some();
+    let matches = shortcut.as_ref().is_some_and(|shortcut| shortcut.virtual_key == key
+        && shortcut.modifiers == modifiers && !windows_key
+        && (!shortcut.requires_target || target.is_some()));
+    let Ok(mut keys) = context.visibility_keys.lock() else { return None; };
+    let route = keys.route(key, down, in_scope, matches);
+    if !down && shortcut.as_ref().is_some_and(|shortcut| shortcut.virtual_key == key) {
+        diagnostics::event("shortcut.visibility_release", json!({"foreground": foreground,
+            "target": target, "inScope": in_scope, "matches": matches,
+            "modifiers": modifiers, "windowsKey": windows_key}));
+    }
+    // Record only an accepted visibility press. Never log held-key repeats or
+    // keyboard input belonging to other applications.
+    if route == super::shortcut_scope::KeyRoute::Trigger {
+        drop(keys);
+        diagnostics::event("shortcut.visibility_accepted", json!({"foreground": foreground,
+            "target": target, "collapsed": context.visibility_state.collapsed.load(Ordering::Relaxed)}));
+        shortcut
+    } else { None }
+}
+
+#[cfg(windows)]
 unsafe extern "system" fn overlay_keyboard_hook(code: i32, w_param: usize, l_param: isize) -> isize {
     use super::shortcut_scope::{foreground_in_scope, KeyRoute, ShortcutKeys};
     std::thread_local! {
@@ -538,7 +570,8 @@ unsafe extern "system" fn overlay_keyboard_hook(code: i32, w_param: usize, l_par
             let shortcut = if in_scope && down
                 && unsafe { GetAsyncKeyState(0x5B) } >= 0 && unsafe { GetAsyncKeyState(0x5C) } >= 0 {
                 context.observed_shortcuts.try_lock().ok().and_then(|shortcuts| shortcuts.iter().find(|shortcut|
-                    shortcut.virtual_key == event.vk_code && shortcut.modifiers == modifiers
+                    shortcut.id != "toggle-visibility"
+                    && shortcut.virtual_key == event.vk_code && shortcut.modifiers == modifiers
                     && (!shortcut.requires_target || target.is_some())
                     && (!context.visibility_state.collapsed.load(Ordering::Relaxed) || shortcut.id == "toggle-visibility")
                 ).cloned())
@@ -619,6 +652,7 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
         visibility_state: hotkey_visibility_state.clone(),
         overlay_hwnd: app.get_webview_window("main").and_then(|window| window.hwnd().ok()).map_or(0, |hwnd| hwnd.0 as usize),
         observed_shortcuts: Arc::new(Mutex::new(Vec::new())),
+        visibility_keys: Arc::new(Mutex::new(super::shortcut_scope::ShortcutKeys::default())),
     };
     let (sender, requests) = std::sync::mpsc::channel::<ShortcutRequest>();
     let _ = SHORTCUT_REQUESTS.set(sender);
@@ -626,6 +660,20 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
         .get_or_init(|| Mutex::new(None))
         .lock()
         .map(|mut slot| *slot = Some(hotkey_context.clone()));
+    let visibility_context = hotkey_context.clone();
+    let (visibility_configuration, visibility_configuration_events) = std::sync::mpsc::channel();
+    let stop_visibility_configuration = visibility_configuration.clone();
+    std::thread::spawn(move || {
+        let result = super::visibility_input::receive_from_helper(visibility_configuration_events,
+            stop_visibility_configuration, |key, down, modifiers, windows_key| {
+            if let Some(shortcut) = route_visibility_shortcut(&visibility_context, key, down, modifiers, windows_key) {
+                if let Some(sender) = SHORTCUT_REQUESTS.get() {
+                    let _ = sender.send(ShortcutRequest::Pressed(shortcut));
+                }
+            }
+        });
+        diagnostics::event("shortcut.visibility_input_stopped", json!({"result": result}));
+    });
     std::thread::spawn(move || {
         const WH_KEYBOARD_LL: i32 = 13;
         let hook = unsafe {
@@ -663,6 +711,8 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
         plugin_shortcuts::resolve(&serde_json::json!({})).unwrap_or_default()
     });
     if let Ok(mut shortcuts) = hotkey_context.observed_shortcuts.lock() { *shortcuts = initial.clone(); }
+    let _ = visibility_configuration.send(Some(initial.iter().find(|shortcut| shortcut.id == "toggle-visibility")
+        .map(|shortcut| shortcut.virtual_key).unwrap_or(0)));
     std::thread::spawn(move || {
         while let Ok(request) = requests.recv() {
             match request {
@@ -673,7 +723,8 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
                 if !configured { continue; }
                 let binding = hotkey_target_state.binding.lock().ok().and_then(|binding| *binding);
                 let foreground = unsafe { GetForegroundWindow() } as usize;
-                if !super::shortcut_scope::foreground_in_scope(foreground, hotkey_context.overlay_hwnd,
+                let visibility_request = shortcut.id == "toggle-visibility";
+                if !visibility_request && !super::shortcut_scope::foreground_in_scope(foreground, hotkey_context.overlay_hwnd,
                     binding.map(|binding| binding.target_hwnd)) {
                     diagnostics::event("shortcut.skipped", json!({"id": shortcut.id, "reason": "foreground_outside_scope"}));
                     continue;
@@ -689,7 +740,9 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
                     let target = hotkey_target_state.clone();
                     let interaction = hotkey_interaction_state.clone();
                     let visibility = hotkey_visibility_state.clone();
-                    let _ = hotkey_app.run_on_main_thread(move || toggle_overlay_visibility(&app, &target, &interaction, &visibility));
+                    if let Err(error) = hotkey_app.run_on_main_thread(move || toggle_overlay_visibility(&app, &target, &interaction, &visibility)) {
+                        diagnostics::event("visibility.dispatch_failed", json!({"error": error.to_string()}));
+                    }
                     continue;
                 }
                 if hotkey_visibility_state.collapsed.load(Ordering::Relaxed) {
@@ -703,10 +756,13 @@ pub(crate) fn start_overlay_runtime(app: &mut tauri::App) {
                 }
               }
               ShortcutRequest::Configure { shortcuts, reply } => {
+                let visibility_key = shortcuts.iter().find(|shortcut| shortcut.id == "toggle-visibility")
+                    .map(|shortcut| shortcut.virtual_key).unwrap_or(0);
                 diagnostics::event("shortcut.reconfigure", json!({"scope": "foreground_window", "requested": shortcuts.iter().map(|s| json!({"id": s.id, "chord": s.chord})).collect::<Vec<_>>()}));
                 let result = hotkey_context.observed_shortcuts.lock()
                     .map(|mut current| *current = shortcuts)
                     .map_err(|_| "快捷键配置状态不可用".to_string());
+                if result.is_ok() { let _ = visibility_configuration.send(Some(visibility_key)); }
                 diagnostics::event("shortcut.reconfigure_result", json!({"result": result}));
                 let _ = reply.send(result);
               }

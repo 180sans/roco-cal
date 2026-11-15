@@ -214,6 +214,8 @@ function TeamBattlePage({
   const enemyPickerRequests = useLatestRequest(enemyAttackPayloadRef.current);
   const [layoutMessage, setLayoutMessage] = useState("");
   const [targetHwnd, setTargetHwnd] = useState("");
+  const [targetProcessName, setTargetProcessName] = useState("NRC-Win64-Shipping");
+  const [findingTargetWindow, setFindingTargetWindow] = useState(false);
   const [targetStatus, setTargetStatus] = useState("");
   useEffect(() => { if (targetStatus) diagnostic("target.status", { status: targetStatus }); }, [targetStatus]);
   const targetStatusTimerRef = useRef<number | undefined>(undefined);
@@ -223,6 +225,7 @@ function TeamBattlePage({
   const alignTraitStacksRef = useRef<() => void>(() => undefined);
   const openSkillOrderRef = useRef<() => void>(() => undefined);
   const [targetAttached, setTargetAttached] = useState(false);
+  const [overlayCollapsed, setOverlayCollapsed] = useState(false);
   const [mixedMode, setMixedMode] = useState(false);
   const mixedModeTokenRef = useRef(0);
   const [displayMode, setDisplayMode] = useState<"normal" | "plugin">(
@@ -1017,7 +1020,21 @@ function TeamBattlePage({
       onOverlayAttachmentChange(response.attached);
       setTargetStatus(`已绑定 ${response.hwnd}`);
     } catch (err) {
-      showTemporaryTargetStatus(`绑定失败：${asError(err)}`);
+      showTemporaryTargetStatus(`绑定失败：${asError(err)}。请尝试启用管理员运行`);
+    }
+  }
+
+  async function findTargetWindow() {
+    setFindingTargetWindow(true);
+    setTargetStatus("");
+    try {
+      const response = await desktopApi.findOverlayWindow(targetProcessName);
+      setTargetHwnd(response.hwnd);
+      setTargetStatus(`已获取窗口 ${response.hwnd}`);
+    } catch (err) {
+      showTemporaryTargetStatus(`获取窗口失败：${asError(err)}`);
+    } finally {
+      setFindingTargetWindow(false);
     }
   }
 
@@ -1083,7 +1100,19 @@ function TeamBattlePage({
   }
 
   useEffect(() => {
-    if (!mixedMode || !targetAttached || displayMode !== "plugin") return;
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    void listen<boolean>("overlay-collapsed-change", ({ payload }) => {
+      setOverlayCollapsed(payload);
+    }).then((stop) => {
+      if (disposed) stop();
+      else unlisten = stop;
+    }).catch((err) => setError(asError(err)));
+    return () => { disposed = true; unlisten?.(); };
+  }, []);
+
+  useEffect(() => {
+    if (!mixedMode || !targetAttached || overlayCollapsed || displayMode !== "plugin") return;
     let cancelled = false;
     const token = mixedModeTokenRef.current;
     let lastIgnore: boolean | null = null;
@@ -1154,7 +1183,7 @@ function TeamBattlePage({
       // Vite 热更新会卸载此 effect；同时恢复原生窗口交互，避免残留点击穿透。
       void desktopApi.setOverlayClickThrough(false).catch(() => undefined);
     };
-  }, [mixedMode, targetAttached, displayMode]);
+  }, [mixedMode, targetAttached, overlayCollapsed, displayMode]);
 
   useEffect(() => {
     let disposed = false;
@@ -1539,6 +1568,8 @@ return (
               />
             </label>
             <button onClick={() => void attachTargetWindow()} disabled={!targetHwnd.trim()}>绑定窗口</button>
+            <label>进程名 <input value={targetProcessName} onChange={(event) => setTargetProcessName(event.target.value)} /></label>
+            <button onClick={() => void findTargetWindow()} disabled={findingTargetWindow || !targetProcessName.trim()}>{findingTargetWindow ? "获取中…" : "获取窗口"}</button>
             {targetAttached ? <button onClick={() => void detachTargetWindow()}>解绑窗口</button> : null}
             <button onClick={() => void toggleMixedMode()} disabled={!targetAttached} aria-pressed={mixedMode} className={mixedMode ? "active" : ""}>
               {mixedMode ? "关闭混合" : "混合模式"}

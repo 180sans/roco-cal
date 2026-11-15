@@ -66,7 +66,11 @@ fn record_level(name: &str, details: &Value) -> Option<&'static str> {
     }
     match name {
         "session.start" | "session.exit" | "frontend.start" |
-        "window.attach_request" | "window.attached" | "window.detached" => Some("info"),
+        "window.attach_request" | "window.attached" | "window.detached" |
+        "visibility.toggle" |
+        "shortcut.visibility_input_ready" | "shortcut.visibility_release" |
+        "shortcut.visibility_accepted" => Some("info"),
+        "shortcut.skipped" if details.get("id").and_then(Value::as_str) == Some("toggle-visibility") => Some("info"),
         _ => None,
     }
 }

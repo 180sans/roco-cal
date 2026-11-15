@@ -18,6 +18,17 @@ use std::sync::atomic::Ordering;
 use tauri::{Emitter, Manager};
 
 #[tauri::command]
+pub(crate) async fn find_overlay_window(process_name: String) -> Result<Value, String> {
+    #[cfg(windows)]
+    return tauri::async_runtime::spawn_blocking(move || {
+        roco_desktop_native::window_access::find_window_by_process(&process_name)
+            .map(|hwnd| serde_json::json!({ "hwnd": format!("0x{hwnd:X}") }))
+    }).await.map_err(|error| error.to_string())?;
+    #[cfg(not(windows))]
+    { let _ = process_name; Err("获取进程窗口仅支持 Windows".into()) }
+}
+
+#[tauri::command]
 pub(crate) async fn configure_plugin_shortcuts(bindings: Value) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || crate::platform::windows::overlay::configure_plugin_shortcuts(bindings))
         .await.map_err(|error| error.to_string())?
@@ -35,13 +46,18 @@ pub(crate) fn update_overlay_click_through(
     let _transition_guard = visibility_state.transition.lock()
         .map_err(|_| "Overlay transition state is unavailable".to_string())?;
     if enabled
-        && (visibility_state.collapsed.load(Ordering::Relaxed) || target_state
+        && target_state
             .binding
             .lock()
             .map_err(|_| "Overlay target state is unavailable".to_string())?
-            .is_none())
+            .is_none()
     {
         return Err("Bind and expand a target window before enabling click-through mode".to_string());
+    }
+    // A hit-test queued before collapse may arrive after the native window hides.
+    // Keep it interactive until expansion instead of rejecting that stale request.
+    if enabled && visibility_state.collapsed.load(Ordering::Relaxed) {
+        return Ok(serde_json::json!({ "clickThrough": false }));
     }
     set_overlay_click_through(&app, interaction_state.inner(), enabled)?;
     Ok(serde_json::json!({ "clickThrough": enabled }))
@@ -140,6 +156,7 @@ pub(crate) fn attach_overlay_target(
         *state.binding.lock().map_err(|_| "Overlay target state is unavailable".to_string())? = Some(binding);
         diagnostics::event("window.attached", diagnostics::snapshot(Some(binding)));
         let _ = app.emit("overlay-attachment-change", true);
+        let _ = app.emit("overlay-collapsed-change", false);
         let _ = app.emit("overlay-click-through-change", false);
         return Ok(serde_json::json!({ "attached": true, "hwnd": format!("0x{target_hwnd:X}") }));
     }
