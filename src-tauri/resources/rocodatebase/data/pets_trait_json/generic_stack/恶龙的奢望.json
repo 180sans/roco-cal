@@ -20,7 +20,7 @@
             "permanent": false,
             "default": 99,
             "min": 1,
-            "step": 1,
+            "step": 10,
             "hint": "当前等级：每层代表1级，可手动填写技能改变或进化继承后的实际等级"
           },
           "effects": [

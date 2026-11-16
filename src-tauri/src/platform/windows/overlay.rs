@@ -185,6 +185,12 @@ pub(crate) fn restore_detached_overlay(
         }
         if let Err(error) = binding.restore.restore(binding.overlay_hwnd as *mut c_void) { errors.push(error); }
     }
+    // Restoring native styles alone does not re-register an already visible
+    // window with Explorer's taskbar after it was hidden as an owned overlay.
+    if let Err(error) = set_overlay_taskbar_entry_visible(app, true) { errors.push(error); }
+    if let Some(window) = app.get_webview_window("main") {
+        if let Err(error) = window.set_skip_taskbar(false) { errors.push(error.to_string()); }
+    }
     // Losing the game can leave the restored window behind the newly activated
     // application. Native placement restoration alone only makes it visible.
     if reason == "tracking_failed" {

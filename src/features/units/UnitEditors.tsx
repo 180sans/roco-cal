@@ -231,7 +231,15 @@ function TeamTraitEditor({
       stacks: value.trait_stacks,
       choices: value.trait_choices,
     })
-      .then((data) => { if (request.isCurrent()) setTraitRuntime(data.runtime); })
+      .then((data) => {
+        if (!request.isCurrent()) return;
+        const groups = data.trait?.["特性"]?.battle_effect?.effect_groups;
+        const stack = Array.isArray(groups)
+          ? groups.find((group: any) => group.stack?.enabled === true && group.stack?.input !== false)?.stack
+          : undefined;
+        setTraitRuntime({ ...data.runtime,
+          stack_step: typeof stack?.step === "number" && stack.step > 0 ? stack.step : 1 });
+      })
       .catch((err) => { if (request.isCurrent()) setTraitRuntime({ error: asError(err) }); });
   }, [traitQuery, selectedMegaForm, resolveMega, value.trait_triggered, value.trait_stacks, value.trait_choices]);
 
@@ -259,7 +267,7 @@ function TeamTraitEditor({
           ) : null}
           {traitRuntime?.stack_input ? (
             <div className="trait-stack-control">
-              <NumberInput value={traitRuntime.current_level ?? value.trait_stacks} min={traitRuntime.current_level != null ? 1 : 0} max={99} onChange={(trait_stacks) => onChange({ trait_stacks })} />
+              <NumberInput value={traitRuntime.current_level != null ? value.trait_stacks || traitRuntime.current_level : value.trait_stacks} min={traitRuntime.current_level != null ? 1 : 0} max={99} step={traitRuntime.stack_step ?? 1} onChange={(trait_stacks) => onChange({ trait_stacks })} />
             </div>
           ) : null}
           {traitRuntime?.stack_input ? <RefreshButton className="compact-button trait-reset-button" onClick={() => onChange({ trait_override_query: null, trait_triggered: false, trait_stacks: 0, trait_choices: {} })} /> : null}

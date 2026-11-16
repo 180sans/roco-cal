@@ -2480,6 +2480,8 @@ body:has(.plugin-mode) .app-header .weather-panel {
 }
 
 .number-stepper button {
+  touch-action: none;
+  user-select: none;
   background: transparent;
   border: 0;
   border-radius: 2px;

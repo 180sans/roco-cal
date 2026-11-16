@@ -756,7 +756,7 @@ function TeamBattlePage({
       cleanupGesture?.();
       cleanupGesture = undefined;
       const path = event.composedPath();
-      if (path.some((node) => node instanceof HTMLElement && node.matches(".modal-backdrop, .trait-expanded-content, .team-buff-grid, .slot-iv-popover, .plugin-resize-edge"))) return;
+      if (path.some((node) => node instanceof HTMLElement && node.matches(".modal-backdrop, .trait-expanded-content, .team-buff-grid, .slot-iv-popover, .plugin-resize-edge, .number-input-control"))) return;
       const panel = path.find((node): node is HTMLElement => node instanceof HTMLElement && node.matches("[data-plugin-resizable]"));
       if (!panel) return;
       if (pluginResizeEdges(panel.getBoundingClientRect(), event.clientX, event.clientY)) return;
@@ -780,7 +780,7 @@ function TeamBattlePage({
       cleanupResize?.();
       cleanupResizeClick?.();
       const path = event.composedPath();
-      if (path.some((node) => node instanceof HTMLElement && node.matches(".modal-backdrop, .trait-expanded-content, .team-buff-grid, .slot-iv-popover"))) return;
+      if (path.some((node) => node instanceof HTMLElement && node.matches(".modal-backdrop, .trait-expanded-content, .team-buff-grid, .slot-iv-popover, .number-input-control"))) return;
       const resizeEdge = path.find((node): node is HTMLElement => node instanceof HTMLElement && node.classList.contains("plugin-resize-edge"));
       const panel = resizeEdge?.closest<HTMLElement>("[data-plugin-resizable]")
         || path.find((node): node is HTMLElement => node instanceof HTMLElement && node.matches("[data-plugin-resizable]"));
@@ -1459,6 +1459,17 @@ function TeamBattlePage({
   useEffect(() => {
     let unlisten: (() => void) | undefined;
     let disposed = false;
+    const onKeyDown = (event: KeyboardEvent) => {
+      const key = { code: event.code, key: event.key, ctrlKey: event.ctrlKey, altKey: event.altKey,
+        shiftKey: event.shiftKey, metaKey: event.metaKey, repeat: false } as KeyboardEvent;
+      if (displayMode !== "plugin" || !shortcutMatches(key, shortcuts["quick-calculate"])) return;
+      // WebView2 otherwise handles Ctrl+J as its built-in downloads command
+      // when the native shortcut hook does not consume the key.
+      event.preventDefault();
+      event.stopPropagation();
+      if (!event.repeat) calculateQuickSkillsRef.current();
+    };
+    window.addEventListener("keydown", onKeyDown, true);
     void listen("overlay-quick-calculate", () => calculateQuickSkillsRef.current())
       .then((dispose) => {
         if (disposed) dispose();
@@ -1468,8 +1479,9 @@ function TeamBattlePage({
     return () => {
       disposed = true;
       unlisten?.();
+      window.removeEventListener("keydown", onKeyDown, true);
     };
-  }, []);
+  }, [displayMode, shortcuts]);
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
