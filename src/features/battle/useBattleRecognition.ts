@@ -170,7 +170,10 @@ function useBattleRecognition(dependencies: BattleRecognitionDependencies) {
         const imageKeys = kind === "battleStart" ? BATTLE_START_IMAGE_KEYS : BATTLE_LIVE_IMAGE_KEYS;
         tasks.push({ keys: imageKeys, run: async () => {
           const images = imageKeys.map((key) => ({ key, imageDataUrl: cropDetection(capture, key) }));
-          const result = await invokeRecognitionTimed(() => desktopApi.classifyImageSamples({ images }), "calibration classifier");
+          const [, result] = await Promise.all([
+            kind === "battleStart" ? saveOcrDebugImages("battle-start", images) : Promise.resolve(),
+            invokeRecognitionTimed(() => desktopApi.classifyImageSamples({ images }), "calibration classifier"),
+          ]);
           imageKeys.forEach((key, index) => {
             const label = result.items[index]?.label?.trim();
             setItem(key, label || "识别失败：没有结果", Boolean(label));
