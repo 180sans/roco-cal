@@ -366,7 +366,12 @@ function PresetManagerPage({
           <FieldLabel className="preset-pet-label">
             <span className="ui-field-title preset-section-title">精灵</span>
             <div className="preset-pet-row">
-              <input className="preset-pet-input" list="pet-options" value={editor.name} onChange={(event) => patchEditor({ name: event.target.value })} placeholder="选择或输入精灵" />
+              <input className="preset-pet-input" readOnly value={editor.name} onClick={() => setPicker("pet")} onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setPicker("pet");
+                }
+              }} aria-label="选择精灵" aria-haspopup="dialog" placeholder="选择精灵" />
               <button className="preset-pet-picker-button" onClick={() => setPicker("pet")}>选宠</button>
             </div>
           </FieldLabel>

@@ -1781,7 +1781,6 @@ return (
           mode="pet"
           preferredGroup={petPicker.side === "left" ? "attackers" : "defenders"}
           initialPetName={(petPicker.side === "left" ? leftSlots : rightSlots)[petPicker.index].name}
-          useSavedPetFilters={displayMode === "plugin"}
           presets={presets}
           pets={pets}
           elements={elements}
@@ -1800,7 +1799,14 @@ return (
             setPetPicker(null);
           }}
           onPickPet={(pet) => {
-            setSlot(petPicker.side, petPicker.index, { ...blankUnit(), name: pet.label });
+            const current = (petPicker.side === "left" ? leftSlots : rightSlots)[petPicker.index];
+            setSlot(petPicker.side, petPicker.index, {
+              ...blankUnit(),
+              name: pet.label,
+              iv: current.iv,
+              personality_bouns: current.personality_bouns,
+              personality_down: current.personality_down,
+            });
             setPetPicker(null);
           }}
           onPickSkill={() => undefined}

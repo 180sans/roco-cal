@@ -107,7 +107,6 @@ function PickerModal({
   onPickSkill,
   onPickTrait,
   initialPetName = "",
-  useSavedPetFilters = false,
   onClearPet,
   initialSkillName = "",
   onClearSkill,
@@ -119,7 +118,7 @@ function PickerModal({
   pets: Pet[];
   petSkills: SkillItem[];
   allSkills: SkillItem[];
-  traits: Pet[];
+  traits?: Pet[];
   elements: string[];
   configs: PickerConfigs;
   onConfigsChanged: (configs: PickerConfigs) => void;
@@ -129,7 +128,6 @@ function PickerModal({
   onPickSkill: (skill: SkillItem) => void;
   onPickTrait: (pet: Pet) => void;
   initialPetName?: string;
-  useSavedPetFilters?: boolean;
   onClearPet?: () => void;
   initialSkillName?: string;
   onClearSkill?: () => void;
@@ -137,13 +135,14 @@ function PickerModal({
 }) {
   const section = mode === "pet" ? "pet_picker" : mode === "trait" ? "trait_picker" : "skill_picker";
   const config = configs[section] || {};
-  const locateCurrentPet = mode === "pet" && Boolean(initialPetName);
+  const isPetSelection = mode !== "skill";
+  const sourcePets = useMemo(() => mode === "trait" ? traits ?? pets.filter((pet) => Boolean(pet.traitName)) : pets, [mode, traits, pets]);
+  const locateCurrentPet = isPetSelection && Boolean(initialPetName);
   const locateCurrentSkill = mode === "skill" && Boolean(initialSkillName);
-  const initialPet = pets.find((pet) => pet.label === initialPetName || pet.name === initialPetName || `${pet.id}${pet.name}` === initialPetName);
+  const initialPet = sourcePets.find((pet) => pet.label === initialPetName || pet.name === initialPetName || `${pet.id}${pet.name}` === initialPetName);
   const [query, setQuery] = useState("");
   const [element, setElement] = useState(locateCurrentSkill || searchSkillDescriptions ? "" : (config.element as string) || "");
   const [petElements, setPetElements] = useState<string[]>(() => {
-    if (locateCurrentPet && !useSavedPetFilters) return [];
     const savedElements = Array.isArray(config.selected_elements)
       ? config.selected_elements.filter((value): value is string => typeof value === "string" && Boolean(value))
       : [];
@@ -151,15 +150,12 @@ function PickerModal({
   });
   const [skillType, setSkillType] = useState(locateCurrentSkill || searchSkillDescriptions ? "" : (config.skill_type as string) || "");
   const [sortDesc, setSortDesc] = useState(Boolean(config.sort_desc));
-  const [finalOnly, setFinalOnly] = useState(() => {
-    if (locateCurrentPet && !useSavedPetFilters && initialPet && !initialPet.isFinal) return false;
-    return Boolean(config.final_only);
-  });
+  const [finalOnly, setFinalOnly] = useState(Boolean(config.final_only));
   const configuredPetTab = config.active_tab === "preset" || config.active_tab === "library" ? config.active_tab : null;
   const groupConfigKey = `preset_group_${preferredGroup}`;
   const configuredGroupName = typeof config[groupConfigKey] === "string" ? (config[groupConfigKey] as string) : "";
   const [petTab, setPetTab] = useState<"preset" | "library">(
-    locateCurrentPet && !useSavedPetFilters ? "library" : onPickPreset && presets.length ? configuredPetTab || "preset" : "library",
+    onPickPreset && presets.length ? configuredPetTab || "preset" : "library",
   );
   const [groupName, setGroupName] = useState(configuredGroupName || preferredGroup);
   const [skillTab, setSkillTab] = useState<"pet" | "library">(locateCurrentSkill ? "pet" : (config.active_tab as "pet" | "library") || "pet");
@@ -178,7 +174,6 @@ function PickerModal({
       const pet = petFromPreset(preset, petLookup);
       return !pet || petMatchesPickerFilters(pet, petElements, finalOnly);
     }) : [], [mode, petTab, currentGroup, normalizedQuery, petLookup, petElements, finalOnly]);
-  const sourcePets = mode === "trait" ? traits : pets;
   const filteredPets = useMemo(() => {
     if (mode === "skill" || (mode === "pet" && petTab === "preset")) return [];
     const petMatchesSearch = (pet: Pet) => {
@@ -208,14 +203,14 @@ function PickerModal({
     }
     return sourcePets
       .filter((pet) => !normalizedQuery || petMatchesSearch(pet) || matchingEvolutionForms.has(pet.label))
-      .filter((pet) => petMatchesPickerFilters(pet, mode === "pet" ? petElements : element ? [element] : [], finalOnly))
+      .filter((pet) => petMatchesPickerFilters(pet, petElements, finalOnly))
       .sort((a, b) => {
         const idA = Number(a.id) || Number.MAX_SAFE_INTEGER;
         const idB = Number(b.id) || Number.MAX_SAFE_INTEGER;
         const result = idA === idB ? a.name.localeCompare(b.name, "zh-Hans-CN") : idA - idB;
         return sortDesc ? -result : result;
       });
-  }, [mode, petTab, sourcePets, normalizedQuery, petElements, element, finalOnly, sortDesc]);
+  }, [mode, petTab, sourcePets, normalizedQuery, petElements, finalOnly, sortDesc]);
   const currentSkillSource = skillTab === "pet" ? petSkills : allSkills;
   const filteredSkills = useMemo(() => mode === "skill" ? currentSkillSource
     .filter((skill) => !normalizedQuery || watchSkillMatchesSearch(skill, normalizedQuery))
@@ -242,7 +237,7 @@ function PickerModal({
   }, []);
 
   return createPortal(
-    <div data-overlay-control className={`modal-backdrop${mode === "skill" || mode === "pet" ? " skill-picker-backdrop" : ""}${document.documentElement.classList.contains("overlay-attached") ? " overlay-attached-picker" : ""}`} onMouseDown={(event) => {
+    <div data-overlay-control className={`modal-backdrop skill-picker-backdrop${document.documentElement.classList.contains("overlay-attached") ? " overlay-attached-picker" : ""}`} onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
       <section className="picker-modal compact-picker" onMouseDown={(event) => event.stopPropagation()}>
@@ -253,7 +248,7 @@ function PickerModal({
             <button className="icon-button" onClick={onClose} aria-label="关闭" title="关闭">×</button>
           </div>
         </header>
-        <div className={mode === "pet" ? "picker-tools pet-picker-tools" : "picker-tools"}>
+        <div className={isPetSelection ? "picker-tools pet-picker-tools" : "picker-tools"}>
           <div className="picker-tools-main">
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={mode === "skill" ? "搜索技能名称或描述，如：印记" : "搜索..."} />
             {mode === "pet" && onPickPreset && presets.length ? (
@@ -335,7 +330,7 @@ function PickerModal({
           <div className={`picker-filter-row${mode === "skill" ? " with-skill-types" : ""}`}>
             <div className="picker-element-grid" aria-label="属性筛选">
               {elements.map((item) => {
-                const selected = mode === "pet" ? petElements.includes(item) : element === item;
+                const selected = isPetSelection ? petElements.includes(item) : element === item;
                 return <button
                   key={item}
                   className={selected ? "active" : ""}
@@ -343,7 +338,7 @@ function PickerModal({
                   aria-label={item}
                   title={item}
                   onClick={() => {
-                    if (mode !== "pet") {
+                    if (!isPetSelection) {
                       setElement((current) => current === item ? "" : item);
                       return;
                     }
@@ -394,7 +389,7 @@ function PickerModal({
             </div>
           ) : mode !== "skill" ? (
             <div className="picker-tools-sub">
-              <button onClick={() => void saveConfig({ element: mode === "pet" ? petElements[0] || "" : element, selected_elements: mode === "pet" ? petElements : undefined, sort_desc: sortDesc, final_only: finalOnly })}>
+              <button onClick={() => void saveConfig({ element: petElements[0] || "", selected_elements: petElements, sort_desc: sortDesc, final_only: finalOnly })}>
                 保存配置
               </button>
             </div>
@@ -402,7 +397,7 @@ function PickerModal({
         </div>
         <PickerCardList
           itemCount={mode === "skill" ? filteredSkills.length : mode === "pet" && petTab === "preset" && onPickPreset ? filteredPresets.length : filteredPets.length}
-          initialIndex={locateCurrentPet ? filteredPets.findIndex((pet) => pet.label === initialPet?.label) : locateCurrentSkill ? filteredSkills.findIndex((skill) => skill.name === initialSkillName) : -1}
+          initialIndex={locateCurrentPet ? mode === "pet" && petTab === "preset" && onPickPreset ? filteredPresets.findIndex((preset) => petFromPreset(preset, petLookup)?.label === initialPet?.label) : filteredPets.findIndex((pet) => pet.label === initialPet?.label) : locateCurrentSkill ? filteredSkills.findIndex((skill) => skill.name === initialSkillName) : -1}
           renderItem={(index) => {
             const skill = filteredSkills[index];
             const preset = filteredPresets[index];

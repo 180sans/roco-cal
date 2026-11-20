@@ -295,11 +295,11 @@ function TeamTraitEditor({
       {picker ? (
         <PickerModal
           mode="trait"
+          initialPetName={selectedMegaForm || traitQuery}
           pets={pets}
           elements={elements}
           petSkills={[]}
           allSkills={[]}
-          traits={pets.filter((pet) => Boolean(pet.traitName))}
           configs={configs}
           onConfigsChanged={onConfigsChanged}
           onClose={() => setPicker(false)}

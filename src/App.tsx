@@ -111,9 +111,6 @@ function App() {
         : null}
       </header>
       {error ? <div className="error-banner">{error}</div> : null}
-      <datalist id="pet-options">
-        {data?.pets.map((pet) => <option key={pet.label} value={pet.label} />)}
-      </datalist>
       {data ? (
         <>
           <div className="battle-view" hidden={tab !== "team"}>
