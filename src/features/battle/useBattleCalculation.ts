@@ -179,7 +179,7 @@ export function useBattleCalculation(dependencies: BattleCalculationDependencies
     const attacker = enemyAttackPayloadRef.current?.attacker;
     if (!attacker) return;
     try {
-      const data = await cachedListSkills(attacker.mega_form || attacker.name);
+      const data = await cachedListSkills(attacker.name);
       if (!request.isCurrent()) return;
       const damaging = (skill: SkillItem) => ["物攻", "魔攻"].includes(skill.detail?.type || skill.type || "");
       setEnemySkillData({ petSkills: data.petSkills.filter(damaging), allSkills: data.allSkills.filter(damaging) });

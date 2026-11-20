@@ -303,13 +303,8 @@ def calculate_enemy_attack_skills(payload: dict[str, Any]) -> dict[str, Any]:
             "stackValues": stacks,
         }
 
-    # Ctrl+K 取敌方精灵的技能库（该精灵可学到的全部技能），不是当前携带的技能。
-    mega_form = (attacker.get("mega_form") or "").strip()
-    attacker_pet = pets_dataset.find(
-        mega_form or attacker.get("name") or "",
-        devolution=int(attacker.get("devolution", 0) or 0),
-        mega=bool(attacker.get("mega", False)) and not mega_form,
-    )
+    # Ctrl+K 按敌方精灵原形态取技能库，不随萌化或退化改变。
+    attacker_pet = pets_dataset.find(attacker.get("name") or "")
     library_names: list[str] = []
     if isinstance(attacker_pet, dict):
         for entry in attacker_pet.get("skills") or []:

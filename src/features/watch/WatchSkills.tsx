@@ -235,7 +235,7 @@ function EnemyWatchSkillsPanel({ layout, onLayoutChange, configuration, onConfig
   self: UnitState;
   enemy: UnitState;
 }) {
-  const enemyName = enemy.mega_form || enemy.name;
+  const enemyName = enemy.name;
   const [skillData, setSkillData] = useState<{ name: string; skills: SkillItem[] }>({ name: "", skills: [] });
   const group = configuration.groups.find((item) => item.id === configuration.activeGroupId)!;
   const needsAdvantages = group.rules.some((rule) => rule.kind === "super-effective");
