@@ -1097,7 +1097,7 @@ fn personality(
     }
     (Some(plus), Some(minus), notes)
 }
-// Only forms explicitly identified in test3.yaml are recorded here. Unknown codes
+// Only forms explicitly identified in team-code-forms.txt are recorded here. Unknown codes
 // continue through the existing name/skill lookup rather than guessing a form.
 fn team_code_form(code: &str) -> Option<&'static str> {
     Some(match code {
@@ -1170,6 +1170,8 @@ fn team_code_form(code: &str) -> Option<&'static str> {
         "w2" => "236圣代甜甜（樱桃巧克力口味）",
         "2C" => "236圣代甜甜（樱桃草莓口味）",
         "2D" => "236圣代甜甜（樱桃抹茶口味）",
+        "7e" => "478阿瓦鲨（柠檬鲨的样子）",
+        "7f" => "478阿瓦鲨（虎纹鲨的样子）",
         _ => return None,
     })
 }
@@ -1476,7 +1478,7 @@ mod team_code_tests {
     use super::*;
 
     #[test]
-    fn imports_all_69_annotated_forms_from_reference_teams() {
+    fn imports_all_71_annotated_forms_from_reference_teams() {
         let fixture = Fixture::new();
         let reference = include_str!("../../../scripts/fixtures/team-code-forms.txt");
         let entry_re = Regex::new(r"^#\s*([^：:]+)[：:][^{}]*\{([^}]*)\}").unwrap();
@@ -1517,8 +1519,8 @@ mod team_code_tests {
             entries.clear();
             expected.clear();
         }
-        assert_eq!(annotated_count, 69);
-        assert_eq!(species.len(), 24);
+        assert_eq!(annotated_count, 71);
+        assert_eq!(species.len(), 25);
     }
 
     #[test]
